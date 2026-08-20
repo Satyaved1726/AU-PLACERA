@@ -9,7 +9,7 @@ import { useDeleteAnnouncement } from '../../features/announcements/hooks/useDel
 import type { DigitalAnnouncement } from '../../types';
 import { 
   Megaphone, Plus, Trash2, Upload, X, 
-  ExternalLink, CheckCircle2, AlertCircle, ShieldCheck, FileText 
+  ExternalLink, CheckCircle2, AlertCircle, ShieldCheck, FileText, Download 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -22,6 +22,7 @@ export const Announcements: React.FC = () => {
   // Search and OIA filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [oiaFilter, setOiaFilter] = useState<'all' | 'general' | 'oia'>('all');
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<DigitalAnnouncement | null>(null);
 
   // Modal State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -394,11 +395,14 @@ export const Announcements: React.FC = () => {
                       </a>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center max-h-[600px] relative group overflow-hidden">
+                    <div 
+                      onClick={() => setSelectedAnnouncement(ann)}
+                      className="flex items-center justify-center max-h-[600px] relative group overflow-hidden cursor-pointer"
+                    >
                       <img 
                         src={ann.image_url} 
                         alt={ann.title} 
-                        className="w-full h-auto object-contain animate-fade-in"
+                        className="w-full h-auto object-contain animate-fade-in group-hover:scale-[1.01] transition-transform duration-200"
                         loading="lazy"
                       />
                     </div>
@@ -668,6 +672,82 @@ export const Announcements: React.FC = () => {
                   Confirm Delete
                 </Button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* LIGHTBOX / FULL SCREEN IMAGE VIEWER */}
+      <AnimatePresence>
+        {selectedAnnouncement && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 select-none p-0 sm:p-4 animate-fade-in">
+            {/* Close backdrop */}
+            <div 
+              onClick={() => setSelectedAnnouncement(null)}
+              className="absolute inset-0 cursor-zoom-out" 
+            />
+
+            {/* Lightbox Container Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-4xl bg-slate-950 sm:rounded-2xl overflow-hidden relative z-10 flex flex-col h-[90vh] sm:h-[85vh]"
+            >
+
+              {/* Floating Action Header */}
+              <div className="absolute top-4 right-4 z-40 flex items-center gap-3">
+                <a
+                  href={selectedAnnouncement.image_url}
+                  download={`notice-${selectedAnnouncement.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 bg-slate-900/60 hover:bg-slate-900 text-white rounded-full backdrop-blur-sm transition-colors border border-white/10 flex items-center justify-center shadow-md shadow-black/20"
+                  title="Download Document"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Download className="h-5 w-5" />
+                </a>
+                
+                {selectedAnnouncement.external_url && (
+                  <a
+                    href={selectedAnnouncement.external_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors flex items-center justify-center shadow-md shadow-blue-500/10"
+                    title="Register / View Link"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <ExternalLink className="h-5 w-5" />
+                  </a>
+                )}
+
+                <button
+                  onClick={() => setSelectedAnnouncement(null)}
+                  className="p-2 bg-slate-900/60 hover:bg-slate-900 text-white rounded-full backdrop-blur-sm transition-colors border border-white/10 flex items-center justify-center shadow-md shadow-black/20"
+                  aria-label="Close details"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Document display panel */}
+              <div className="w-full h-full bg-slate-950 flex items-center justify-center p-4">
+                {selectedAnnouncement.image_url.toLowerCase().split('?')[0].endsWith('.pdf') ? (
+                  <iframe
+                    src={selectedAnnouncement.image_url}
+                    className="w-full h-full border-0 rounded-xl"
+                    title={selectedAnnouncement.title}
+                  />
+                ) : (
+                  <img
+                    src={selectedAnnouncement.image_url}
+                    alt={selectedAnnouncement.title}
+                    className="max-w-full max-h-[72vh] object-contain rounded-lg shadow-2xl border border-white/5 my-auto"
+                  />
+                )}
+              </div>
+
             </motion.div>
           </div>
         )}
