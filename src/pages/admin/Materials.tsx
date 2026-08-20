@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardBody } from '../../components/common/Card';
-import { Button } from '../../components/common/Button';
 import { useMaterialsConfig, useUpdateMaterialsConfig } from '../../features/materials/hooks/useMaterialsConfig';
-import { BookOpen, Link2, FileText, CheckCircle, AlertTriangle, RefreshCw, Eye } from 'lucide-react';
-
+import { 
+  FileText, Link2, Eye, RefreshCw, CheckCircle2, 
+  AlertCircle, Copy, ExternalLink, School 
+} from 'lucide-react';
+import materialsIllustration from '../../assets/materials_illustration.jpg';
+import heroIllustration from '../../assets/hero.png';
 
 export const Materials: React.FC = () => {
   const { data: config, isLoading, error: fetchError, refetch } = useMaterialsConfig();
@@ -26,12 +28,11 @@ export const Materials: React.FC = () => {
     }
   }, [config]);
 
-  const validateUrl = (url: string) => {
-    if (!url.trim()) return 'Google Drive Folder URL is required.';
-    if (!url.startsWith('https://drive.google.com/') && !url.startsWith('https://docs.google.com/')) {
-      return 'Warning: Link does not appear to be a valid Google Drive address (expected: drive.google.com).';
-    }
-    return null;
+  const handleCopyUrl = () => {
+    if (!driveUrl) return;
+    navigator.clipboard.writeText(driveUrl);
+    setSuccessMsg('Google Drive URL copied to clipboard!');
+    setTimeout(() => setSuccessMsg(null), 3000);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -41,10 +42,8 @@ export const Materials: React.FC = () => {
     setFormError(null);
     setSuccessMsg(null);
 
-    // Validate inputs
-    const urlValidation = validateUrl(driveUrl);
-    if (urlValidation && urlValidation.includes('required')) {
-      setFormError(urlValidation);
+    if (!driveUrl.trim()) {
+      setFormError('Google Drive Folder URL is required.');
       return;
     }
 
@@ -57,186 +56,218 @@ export const Materials: React.FC = () => {
         drive_url: driveUrl.trim()
       });
       setSuccessMsg('Materials configuration updated successfully!');
-      
-      // Clear success message after 4s
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
-      console.error('[MATERIALS_MGMT] Update failed:', err);
-      setFormError(err.message || 'Failed to save configuration details. Please verify your RLS permissions.');
+      setFormError(err.message || 'Failed to save configuration details.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const isUrlWarning = driveUrl && !driveUrl.startsWith('https://drive.google.com/') && !driveUrl.startsWith('https://docs.google.com/');
-
   return (
-    <div className="max-w-xl mx-auto space-y-6 select-none pb-12 px-4 sm:px-0">
+    <div className="max-w-xl mx-auto space-y-6 select-none pb-16 px-4 sm:px-0">
       
-      {/* Header */}
-      <div>
-        <h1 className="text-base font-black text-slate-800 tracking-tight uppercase tracking-wide flex items-center gap-2">
-          <BookOpen className="h-5 w-5 text-primary shrink-0" />
-          <span>Materials Management</span>
-        </h1>
-        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 leading-relaxed">
-          Configure titles, descriptions, and Google Drive URL mappings for university academic worksheets.
-        </p>
+      {/* Header Banner Section */}
+      <div className="flex items-center justify-between gap-6 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm relative overflow-hidden">
+        <div className="space-y-1 z-10 flex-1">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-1.5 uppercase">
+            <span>Materials Management</span>
+          </h1>
+          <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider leading-relaxed">
+            Configure titles, descriptions, and Google Drive URL mappings for university academic worksheets.
+          </p>
+        </div>
+        
+        <div className="relative shrink-0 select-none pointer-events-none">
+          <div className="absolute -inset-2 bg-blue-500/10 rounded-full blur-xl animate-pulse" />
+          <img 
+            src={materialsIllustration} 
+            alt="Materials Google Drive 3D Illustration" 
+            className="h-20 w-20 sm:h-24 sm:w-24 object-contain relative z-10 rounded-2xl"
+          />
+        </div>
       </div>
 
       {isLoading ? (
-        // Loading skeleton
-        <div className="h-64 bg-slate-100 rounded-2xl animate-pulse border border-slate-200" />
+        <div className="h-96 bg-white border border-slate-150 rounded-3xl animate-pulse shadow-sm" />
       ) : fetchError ? (
-        // Fetch error console
-        <Card elevation={2} className="border border-red-200 bg-red-50/20 shadow-sm">
-          <CardBody className="p-6 text-center space-y-3">
-            <AlertTriangle className="h-8 w-8 text-red-500 mx-auto" />
-            <h2 className="text-xs font-bold text-slate-700">Failed to Retrieve Configuration</h2>
-            <p className="text-[10px] text-slate-400 font-semibold max-w-sm mx-auto">
-              Verify that the `materials_config` table exists in Supabase and that you have applied Migration 17.
-            </p>
-            <Button variant="outline" size="sm" onClick={() => refetch()} className="flex items-center gap-1.5 mx-auto font-black mt-2">
-              <RefreshCw className="h-3 w-3" />
-              Retry Connection
-            </Button>
-          </CardBody>
-        </Card>
-      ) : !config ? (
-        // No active row fallback
-        <Card elevation={2} className="border border-amber-200 bg-amber-50/20 shadow-sm">
-          <CardBody className="p-6 text-center space-y-3">
-            <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto" />
-            <h2 className="text-xs font-bold text-slate-700">No Configuration Seeding Found</h2>
-            <p className="text-[10px] text-slate-400 font-semibold max-w-sm mx-auto">
-              Please apply Migration 17 to seed the default Materials Drive parameters.
-            </p>
-          </CardBody>
-        </Card>
+        <div className="bg-white border border-slate-150 rounded-3xl p-6 text-center space-y-4 shadow-sm">
+          <AlertCircle className="h-10 w-10 text-red-500 mx-auto" />
+          <h2 className="text-xs font-black text-slate-700 uppercase tracking-wider">Failed to Retrieve Configuration</h2>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-relaxed max-w-sm mx-auto">
+            Please check your internet connection or reload the database configuration table.
+          </p>
+          <button 
+            onClick={() => refetch()} 
+            className="h-9 px-4.5 bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-slate-100 flex items-center gap-1.5 mx-auto active:scale-95 transition-all shadow-sm"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>Retry Connection</span>
+          </button>
+        </div>
       ) : (
-        // Configuration Editor Form
         <form onSubmit={handleSave} className="space-y-6">
-          <Card elevation={2} className="border border-slate-200 shadow-md">
-            <CardBody className="p-6 space-y-4">
-              
-              <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">
+          
+          {/* Form Editor Card */}
+          <div className="bg-white border border-slate-150 shadow-sm rounded-3xl p-6 space-y-5">
+            
+            <div className="flex items-center gap-2 pb-2.5 border-b border-slate-100">
+              <School className="h-4.5 w-4.5 text-[#0B3C5D]" />
+              <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">
                 Google Drive Settings
               </h2>
+            </div>
 
-              {/* Title Field */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
-                  Materials Portal Title
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    required
-                    placeholder="Preparation Materials"
-                    className="w-full pl-3 pr-3 py-2.5 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:border-primary transition-all font-semibold text-slate-800"
-                  />
-                </div>
+            {/* Form Feedback Alerts */}
+            {formError && (
+              <div className="p-3.5 bg-red-50 border border-red-150 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2.5">
+                <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                <span>{formError}</span>
               </div>
+            )}
+            {successMsg && (
+              <div className="p-3.5 bg-emerald-50 border border-emerald-150 text-emerald-700 text-xs font-semibold rounded-xl flex items-start gap-2.5">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                <span>{successMsg}</span>
+              </div>
+            )}
 
-              {/* Description Field */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
-                  Portal Subtitle/Description
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
-                  placeholder="Access curated worksheets and guidelines..."
-                  className="w-full p-3 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:focus:border-primary transition-all font-semibold text-slate-800 resize-none"
+            {/* Title Input */}
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-0.5">
+                Materials Portal Title
+              </label>
+              <div className="bg-slate-50/50 border border-slate-200 rounded-2xl px-4 py-1.5 flex items-center gap-3 focus-within:border-secondary focus-within:bg-white transition-all shadow-sm">
+                <FileText className="h-4 w-4 text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. Preparation Materials"
+                  className="w-full bg-transparent focus:outline-none text-xs font-semibold text-slate-850 h-8"
                 />
               </div>
+            </div>
 
-              {/* URL Field */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
-                  Google Drive Folder URL
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                    <Link2 className="h-4 w-4" />
-                  </span>
-                  <input
-                    type="url"
-                    value={driveUrl}
-                    onChange={(e) => setDriveUrl(e.target.value)}
-                    required
-                    placeholder="https://drive.google.com/drive/folders/..."
-                    className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:border-primary transition-all font-semibold text-slate-805"
-                  />
-                </div>
-
-                {isUrlWarning && (
-                  <span className="text-[9px] text-amber-600 font-bold flex items-center gap-1 mt-1 bg-amber-50 p-2 rounded-lg border border-amber-100">
-                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                    <span>Warning: Link does not appear to be a standard Google Drive folder URL.</span>
-                  </span>
-                )}
+            {/* Subtitle / Description Input */}
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-0.5">
+                Portal Subtitle / Description
+              </label>
+              <div className="bg-slate-50/50 border border-slate-200 rounded-2xl px-4 py-2.5 flex items-start gap-3 focus-within:border-secondary focus-within:bg-white transition-all shadow-sm">
+                <FileText className="h-4 w-4 text-slate-400 shrink-0 mt-1" />
+                <textarea
+                  required
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="e.g. Access curated aptitude worksheets, coding resources..."
+                  className="w-full bg-transparent focus:outline-none text-xs font-semibold text-slate-850 leading-relaxed resize-none"
+                />
               </div>
+            </div>
 
-              {/* Success / Error feedbacks */}
-              {formError && (
-                <div className="p-3 bg-red-50 border border-red-150 text-red-600 font-semibold rounded-xl text-[10px] flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 shrink-0" />
-                  <span>{formError}</span>
-                </div>
+            {/* Google Drive Folder URL */}
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-0.5">
+                Google Drive Folder URL
+              </label>
+              <div className="bg-slate-50/50 border border-slate-200 rounded-2xl pl-4 pr-2 py-1.5 flex items-center gap-3 focus-within:border-secondary focus-within:bg-white transition-all shadow-sm">
+                <Link2 className="h-4 w-4 text-slate-400 shrink-0" />
+                <input
+                  type="url"
+                  required
+                  value={driveUrl}
+                  onChange={(e) => setDriveUrl(e.target.value)}
+                  placeholder="https://drive.google.com/drive/folders/..."
+                  className="w-full bg-transparent focus:outline-none text-xs font-semibold text-slate-850 h-8"
+                />
+                <button
+                  type="button"
+                  onClick={handleCopyUrl}
+                  className="p-1.5 hover:bg-slate-100 text-slate-400 hover:text-slate-655 rounded-lg transition-colors shrink-0"
+                  title="Copy Link"
+                >
+                  <Copy className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-3.5 bg-[#0B3C5D] hover:bg-[#0B3C5D]/90 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all select-none active:scale-[0.98] shadow-md shadow-slate-900/5 mt-4 disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin shrink-0" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <FileText className="h-4 w-4 shrink-0" />
+                  <span>Save Drive Configuration</span>
+                </>
               )}
+            </button>
 
-              {successMsg && (
-                <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-600 font-semibold rounded-xl text-[10px] flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 shrink-0" />
-                  <span>{successMsg}</span>
-                </div>
-              )}
-
-              {/* Submit CTA */}
-              <Button 
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-primary hover:bg-primary-light text-white flex items-center justify-center gap-2 py-4 font-black uppercase tracking-wider text-[10px] rounded-xl shadow-md transition-all shrink-0 select-none"
-              >
-                {isSubmitting ? (
-                  <>
-                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                    <span>Saving Changes...</span>
-                  </>
-                ) : (
-                  <>
-                    <FileText className="h-3.5 w-3.5" />
-                    <span>Save Drive Configuration</span>
-                  </>
-                )}
-              </Button>
-
-            </CardBody>
-          </Card>
+          </div>
 
           {/* Quick Preview Dashboard Card */}
-          <Card elevation={2} className="border border-slate-200 bg-slate-50/50 shadow-sm">
-            <CardBody className="p-5 space-y-2">
+          <div className="bg-white border border-slate-150 shadow-sm rounded-3xl p-5 space-y-3.5">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5 text-slate-500 font-black text-[9px] uppercase tracking-wider">
                 <Eye className="h-3.5 w-3.5 text-slate-400" />
                 <span>Live Student Portal Preview</span>
               </div>
-              <div className="bg-white border border-slate-150 rounded-xl p-4 shadow-sm">
-                <span className="text-xs font-black text-slate-800 block">{title || 'Preparation Materials'}</span>
-                <span className="text-[9px] font-semibold text-slate-400 block mt-0.5 leading-relaxed">{description || 'Curated aptitude worksheets and mock resources.'}</span>
-                <div className="mt-3 py-1.5 px-3 bg-blue-50/50 border border-blue-100 text-blue-600 font-bold text-[9px] uppercase tracking-wider rounded-lg inline-flex items-center gap-1">
-                  <span>Target Destination:</span>
-                  <span className="font-semibold text-slate-500 lowercase truncate max-w-[200px]">{driveUrl || 'drive.google.com'}</span>
+              {driveUrl && (
+                <a
+                  href={driveUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[9px] font-black uppercase text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                >
+                  <span>View Full</span>
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
+
+            {/* Replicated Student Materials card UI */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50/30 border border-blue-100 rounded-3xl p-6 relative overflow-hidden flex items-center justify-between gap-4 select-none">
+              <div className="space-y-3 relative z-10 flex-1">
+                <div className="space-y-1">
+                  <h3 className="text-base sm:text-lg font-black text-slate-800 tracking-tight leading-snug">
+                    {title || 'Preparation Materials'}
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-slate-500 font-bold leading-relaxed max-w-sm">
+                    {description || 'Access curated worksheets and guidelines.'}
+                  </p>
+                </div>
+                
+                <div>
+                  <span className="inline-flex px-3 py-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-[8px] font-black uppercase tracking-wider rounded-lg select-none">
+                    Active
+                  </span>
                 </div>
               </div>
-            </CardBody>
-          </Card>
+
+              <div className="h-20 w-28 sm:h-24 sm:w-32 relative z-10 shrink-0 pointer-events-none select-none">
+                <img 
+                  src={heroIllustration} 
+                  alt="Student Prep Hero Logo" 
+                  className="h-full w-full object-contain filter drop-shadow-sm"
+                />
+              </div>
+            </div>
+
+          </div>
+
         </form>
       )}
+
     </div>
   );
 };
