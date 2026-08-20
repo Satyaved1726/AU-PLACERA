@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: 11 60 93;        /* #0B3C5D - Deep Navy */
+    --secondary: 50 140 193;    /* #328CC1 - University Blue */
+    --accent: 169 29 34;        /* #A91D22 - Anurag Red */
+    --neutral-navy: 29 39 49;   /* #1D2731 - Charcoal */
+    --neutral-gold: 217 179 16; /* #D9B310 - Gold */
+  }
+
+  body {
+    @apply text-slate-800 font-sans antialiased min-h-screen selection:bg-primary/10 selection:text-primary;
+    background-color: #f8fafc;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(50, 140, 193, 0.04) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(11, 60, 93, 0.03) 0px, transparent 50%);
+    background-attachment: fixed;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Custom subtle focus states */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-secondary/50 ring-offset-2 ring-offset-slate-50;
+  }
+}
+
+/* Custom Scrollbar for professional visual feel */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-50;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+}
+
+/* Centralized Card Layout styles */
+.au-card-l1 {
+  @apply bg-white border border-slate-200/75 rounded-2xl transition-all duration-200;
+}
+
+.au-card-l2 {
+  @apply bg-white border border-slate-200/75 rounded-2xl shadow-[0_2px_8px_-1px_rgba(0,0,0,0.03),0_1px_3px_-1px_rgba(0,0,0,0.02)] transition-all duration-200;
+}
+
+.au-card-l3 {
+  @apply bg-white border border-slate-200/80 rounded-2xl shadow-[0_12px_24px_-4px_rgba(11,60,93,0.04),0_4px_12px_-2px_rgba(11,60,93,0.02)] transition-all duration-300;
+}
+
+/* Premium Form Inputs styling */
+.au-input {
+  @apply w-full h-10 px-3.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium placeholder-slate-400 focus:outline-none focus:bg-white focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-150;
+}
+
+.au-input-error {
+  @apply border-red-300 focus:border-red-500 focus:ring-red-500/10;
+}
+
+/* Horizontal swipe filters scrollbar hide */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
