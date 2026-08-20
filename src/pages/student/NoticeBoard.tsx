@@ -181,7 +181,22 @@ export const NoticeBoard: React.FC = () => {
               <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">
                 ⭐ Priority Notices
               </h4>
-              <div className="grid grid-cols-1 gap-4">
+              
+              {/* Mobile Horizontal Swipe Carousel */}
+              <div className="md:hidden flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-4 -mx-4 px-4 pb-2.5 select-none">
+                {priorityNotices.map(post => (
+                  <motion.div 
+                    key={post.id} 
+                    variants={cardVariants}
+                    className="w-[85vw] max-w-[280px] shrink-0 snap-start"
+                  >
+                    <PostCard post={post} onViewDetail={setSelectedPost} />
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Desktop Standard List */}
+              <div className="hidden md:grid grid-cols-1 gap-4">
                 {priorityNotices.map(post => (
                   <motion.div key={post.id} variants={cardVariants}>
                     <PostCard post={post} onViewDetail={setSelectedPost} />
