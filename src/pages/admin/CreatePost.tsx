@@ -11,7 +11,7 @@ import { Sparkles, CheckCircle2, ChevronRight, AlertCircle, Plus, Loader2 } from
 
 export const CreatePost: React.FC = () => {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, loading } = useAuth();
   const createPostMutation = useCreatePost();
 
   // Wizard Steps: 1 = Paste, 2 = Review, 3 = Publish Success
@@ -115,7 +115,7 @@ export const CreatePost: React.FC = () => {
     setParsedItems([
       ...parsedItems,
       {
-        originalContent: 'Paste or write specific description text here...',
+        originalContent: '',
         postType: 'opportunity',
         companyName: 'New Company',
         opportunityTitle: 'Software Intern',
@@ -129,13 +129,36 @@ export const CreatePost: React.FC = () => {
     if (parsedItems.length === 0) return;
     setErrorMessage(null);
 
+    if (loading) {
+      setErrorMessage('User session is still loading. Please wait.');
+      return;
+    }
+
+    if (!profile?.id) {
+      setErrorMessage('Unauthorized: User session not found. Please log in again.');
+      return;
+    }
+
+    // Validate required fields
+    for (let i = 0; i < parsedItems.length; i++) {
+      const item = parsedItems[i];
+      if (!item.opportunityTitle?.trim()) {
+        setErrorMessage(`Title is required for item #${i + 1}`);
+        return;
+      }
+      if (item.postType === 'opportunity' && !item.companyName?.trim()) {
+        setErrorMessage(`Company Name is required for Opportunity #${i + 1}`);
+        return;
+      }
+    }
+
     const payload = parsedItems.map(item => ({
-      original_content: item.originalContent,
+      original_content: item.originalContent || '',
       post_type: item.postType,
       company_name: item.postType === 'opportunity' ? (item.companyName || null) : null,
       opportunity_title: item.opportunityTitle || null,
       is_top_priority: item.isTopPriority || false,
-      created_by: profile?.id || null,
+      created_by: profile.id,
       is_active: true,
       audience: item.audience || 'general'
     }));
@@ -356,10 +379,11 @@ https://example.com/sprinklr"
               <Button
                 variant="primary"
                 onClick={handlePublishAll}
-                isLoading={createPostMutation.isPending}
+                isLoading={createPostMutation.isPending || loading}
+                disabled={!profile}
                 className="flex-1 sm:flex-initial h-10 px-6 rounded-xl"
               >
-                Publish All
+                {loading ? 'Loading Session...' : 'Publish All'}
               </Button>
             </div>
           </div>

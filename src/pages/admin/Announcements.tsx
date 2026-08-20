@@ -14,7 +14,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const Announcements: React.FC = () => {
-  const { profile } = useAuth();
+  const { profile, loading } = useAuth();
   const { data: announcements = [], isLoading, error } = useAnnouncements();
   const createMutation = useCreateAnnouncement();
   const deleteMutation = useDeleteAnnouncement();
@@ -129,6 +129,10 @@ export const Announcements: React.FC = () => {
     }
     if (!imageFile) {
       triggerToast('Please upload an announcement poster flyer or PDF.');
+      return;
+    }
+    if (loading) {
+      triggerToast('User session is still loading. Please wait.');
       return;
     }
     if (!profile?.id) {
@@ -455,6 +459,14 @@ export const Announcements: React.FC = () => {
 
               <form onSubmit={handlePublish} className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-none">
                 
+                {/* Form Error Banner */}
+                {createMutation.error && (
+                  <div className="p-4 bg-red-50 border border-red-150 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2.5">
+                    <AlertCircle className="h-4 w-4 shrink-0 text-red-500 mt-0.5" />
+                    <span>{(createMutation.error as any).message || 'Failed to publish notice. Please check file type/size and try again.'}</span>
+                  </div>
+                )}
+
                 {/* Title */}
                 <div>
                   <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 leading-none">
@@ -587,10 +599,11 @@ export const Announcements: React.FC = () => {
                   <Button
                     type="submit"
                     variant="primary"
-                    isLoading={createMutation.isPending || isCompressing}
+                    isLoading={createMutation.isPending || isCompressing || loading}
+                    disabled={!profile}
                     className="h-10 px-6 rounded-xl"
                   >
-                    {isCompressing ? 'Compressing...' : createMutation.isPending ? 'Publishing...' : 'Publish Notice'}
+                    {loading ? 'Loading Session...' : isCompressing ? 'Compressing...' : createMutation.isPending ? 'Publishing...' : 'Publish Notice'}
                   </Button>
                 </div>
 

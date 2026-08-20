@@ -93,7 +93,7 @@ export const Announcements: React.FC = () => {
             const isPdf = ann.image_url.toLowerCase().split('?')[0].endsWith('.pdf');
             const initials = ann.profiles?.full_name 
               ? ann.profiles.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-              : 'N';
+              : 'PC';
 
             return (
               <div
@@ -108,7 +108,7 @@ export const Announcements: React.FC = () => {
                     </div>
                     <div>
                       <div className="font-extrabold text-slate-800 text-xs sm:text-sm">
-                        {ann.profiles?.full_name || 'N Navaneetha'}
+                        {ann.profiles?.full_name || 'Placement Cell'}
                         <span className="text-slate-400 font-semibold"> | {ann.profiles?.role === 'super_admin' ? 'Placement Head' : 'Placement Coordinator'}</span>
                       </div>
                       <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
