@@ -18,7 +18,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       </div>
       <input
         type="text"
-        className="au-input pl-10 h-10 text-xs sm:text-sm font-semibold text-slate-700"
+        className="au-input !pl-10 h-10 text-xs sm:text-sm font-semibold text-slate-700"
         placeholder={placeholder}
         onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
         {...props}

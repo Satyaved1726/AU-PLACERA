@@ -168,27 +168,27 @@ export const CreatePost: React.FC = () => {
             <span className={`h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-black transition-all ${
               step >= 1 ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400'
             }`}>01</span>
-            <span className={step === 1 ? 'text-primary' : 'text-slate-400'}>Paste Notice</span>
+            <span className={`hidden sm:inline ${step === 1 ? 'text-primary' : 'text-slate-400'}`}>Paste Notice</span>
           </div>
 
-          <ChevronRight className="h-4.5 w-4.5 text-slate-350" />
+          <ChevronRight className="h-4.5 w-4.5 text-slate-355" />
 
           {/* Step 2 */}
           <div className="flex items-center gap-2">
             <span className={`h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-black transition-all ${
               step >= 2 ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400'
             }`}>02</span>
-            <span className={step === 2 ? 'text-primary' : 'text-slate-400'}>Review Info</span>
+            <span className={`hidden sm:inline ${step === 2 ? 'text-primary' : 'text-slate-400'}`}>Review Info</span>
           </div>
 
-          <ChevronRight className="h-4.5 w-4.5 text-slate-350" />
+          <ChevronRight className="h-4.5 w-4.5 text-slate-355" />
 
           {/* Step 3 */}
           <div className="flex items-center gap-2">
             <span className={`h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-black transition-all ${
               step === 3 ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400'
             }`}>03</span>
-            <span className={step === 3 ? 'text-primary' : 'text-slate-400'}>Publish Live</span>
+            <span className={`hidden sm:inline ${step === 3 ? 'text-primary' : 'text-slate-400'}`}>Publish Live</span>
           </div>
         </div>
       </div>
@@ -228,13 +228,13 @@ export const CreatePost: React.FC = () => {
                 Paste copy text block
               </label>
 
-              <div className="flex items-center gap-1.5 bg-slate-100/80 border border-slate-200/50 p-1 rounded-xl self-start sm:self-auto select-none">
+              <div className="flex items-center gap-1.5 bg-slate-100/80 border border-slate-200/50 p-1 rounded-xl self-start sm:self-auto select-none overflow-x-auto scrollbar-none max-w-full shrink-0">
                 {(['auto', 'opportunity', 'announcement'] as const).map((mode) => (
                   <button
                     key={mode}
                     type="button"
                     onClick={() => setDetectionMode(mode)}
-                    className={`px-3 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all ${
+                    className={`px-3 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all shrink-0 ${
                       detectionMode === mode
                         ? 'bg-white text-slate-800 shadow-sm'
                         : 'text-slate-400 hover:text-slate-700'

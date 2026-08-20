@@ -129,12 +129,12 @@ export const Profile: React.FC = () => {
         <Card elevation={2} className="border border-slate-205 shadow-sm overflow-hidden">
           <CardBody className="p-0 divide-y divide-slate-100">
             {adminDetails.map((item, idx) => (
-              <div key={idx} className="flex py-3 px-5 items-center justify-between text-xs">
+              <div key={idx} className="flex flex-col sm:flex-row py-3.5 px-5 sm:items-center justify-between gap-1 sm:gap-4 text-xs">
                 <div className="flex items-center gap-2.5 text-slate-500 font-semibold">
                   <item.icon className="h-4 w-4 text-slate-400 shrink-0" />
                   <span>{item.label}</span>
                 </div>
-                <span className="font-bold text-slate-800 text-right truncate pl-4 max-w-[200px] sm:max-w-xs">{item.value}</span>
+                <span className="font-bold text-slate-800 text-left sm:text-right break-all pl-0 sm:pl-4 max-w-none sm:max-w-[240px] md:max-w-xs">{item.value}</span>
               </div>
             ))}
           </CardBody>
