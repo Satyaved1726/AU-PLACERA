@@ -2,7 +2,7 @@ import React from 'react';
 import { Menu, School } from 'lucide-react';
 import { useAuth } from '../features/auth/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { AnuragLogo } from '../components/common/AnuragLogo';
+import anuragIconLogo from '../assets/anurag_icon_logo.png';
 import type { UserRole } from '../types';
 
 interface HeaderProps {
@@ -59,8 +59,8 @@ export const Header: React.FC<HeaderProps> = ({ role, onMenuClick, title }) => {
       </div>
 
       {/* Middle logo (visible on mobile only) */}
-      <div className="lg:hidden absolute left-1/2 -translate-x-1/2 pointer-events-none">
-        <AnuragLogo height={22} showText={false} />
+      <div className="lg:hidden absolute left-1/2 -translate-x-1/2 pointer-events-none flex items-center">
+        <img src={anuragIconLogo} alt="Anurag University Logo" className="h-6 w-auto select-none pointer-events-none" />
       </div>
 
       {/* Right side university branding / avatar */}

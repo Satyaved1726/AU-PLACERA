@@ -22,7 +22,8 @@ import {
   ClipboardCheck
 } from 'lucide-react';
 import { useAuth } from '../features/auth/useAuth';
-import { AnuragLogo } from '../components/common/AnuragLogo';
+import anuragIconLogo from '../assets/anurag_icon_logo.png';
+import anuragFullLogo from '../assets/anurag_full_logo.png';
 import type { UserRole } from '../types';
 
 interface SidebarProps {
@@ -198,7 +199,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, collapsed, onCol
   const getSidebarHeader = (isDrawer = false) => {
     const isCollapsed = !isDrawer && collapsed;
     return (
-      <div className={`p-4.5 border-b border-white/10 flex items-center justify-between bg-primary-dark/30 ${isCollapsed ? 'justify-center' : ''}`}>
+      <div className={`p-4 border-b border-white/10 flex items-center justify-between bg-primary-dark/30 ${isCollapsed ? 'justify-center' : ''}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={isCollapsed ? 'collapsed' : 'expanded'}
@@ -206,8 +207,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, collapsed, onCol
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
+            className="flex items-center justify-center"
           >
-            <AnuragLogo height={32} showText={!isCollapsed} light />
+            {isCollapsed ? (
+              <img src={anuragIconLogo} alt="Logo" className="h-8 w-auto filter brightness-0 invert select-none pointer-events-none" />
+            ) : (
+              <img src={anuragFullLogo} alt="Anurag University Logo" className="h-9 w-auto filter brightness-0 invert select-none pointer-events-none" />
+            )}
           </motion.div>
         </AnimatePresence>
         
@@ -310,15 +316,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, collapsed, onCol
               animate={{ opacity: 0.4 }}
               exit={{ opacity: 0 }}
               onClick={onClose}
-              className="lg:hidden fixed inset-0 z-30 bg-slate-900"
+              className="lg:hidden fixed inset-0 z-50 bg-slate-900"
             />
             {/* Slide out drawer panel */}
             <motion.div
-              initial={{ x: '-100%' }}
+              initial={{ x: '-105%' }}
               animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
+              exit={{ x: '-105%' }}
               transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-              className="lg:hidden fixed inset-y-0 left-0 w-64 z-40 shadow-2xl"
+              className="lg:hidden fixed inset-y-0 left-0 w-64 z-50 shadow-2xl"
             >
               {sidebarContent(true)}
             </motion.div>
