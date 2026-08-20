@@ -31,8 +31,22 @@ export const registrationsService = {
         post_id,
         registered_at,
         posts (
+          id,
+          original_content,
+          post_type,
           company_name,
-          opportunity_title
+          opportunity_title,
+          is_top_priority,
+          created_by,
+          created_at,
+          updated_at,
+          is_active,
+          audience,
+          profiles:created_by (
+            full_name,
+            role,
+            email
+          )
         )
       `)
       .eq('student_id', studentId)
@@ -47,7 +61,21 @@ export const registrationsService = {
       post_id: row.post_id,
       registered_at: row.registered_at,
       company_name: row.posts?.company_name || undefined,
-      opportunity_title: row.posts?.opportunity_title || undefined
+      opportunity_title: row.posts?.opportunity_title || undefined,
+      post: row.posts ? {
+        id: row.posts.id,
+        original_content: row.posts.original_content,
+        post_type: row.posts.post_type,
+        company_name: row.posts.company_name,
+        opportunity_title: row.posts.opportunity_title,
+        is_top_priority: row.posts.is_top_priority,
+        created_by: row.posts.created_by,
+        created_at: row.posts.created_at,
+        updated_at: row.posts.updated_at,
+        is_active: row.posts.is_active,
+        audience: row.posts.audience,
+        profiles: row.posts.profiles
+      } : undefined
     }));
   },
 

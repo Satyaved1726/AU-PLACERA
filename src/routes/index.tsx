@@ -14,6 +14,7 @@ import { Oia as StudentOia } from '../pages/student/Oia';
 import { Materials as StudentMaterials } from '../pages/student/Materials';
 import { Announcements as StudentAnnouncements } from '../pages/student/Announcements';
 import { Profile as StudentProfile } from '../pages/student/Profile';
+import { Registered as StudentRegistered } from '../pages/student/Registered';
 
 // Admin Pages
 import { Dashboard as AdminDashboard } from '../pages/admin/Dashboard';
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
       { path: '', element: <Navigate to="notice-board" replace /> },
       { path: 'notice-board', element: <StudentNoticeBoard /> },
       { path: 'saved', element: <StudentSaved /> },
+      { path: 'registered', element: <StudentRegistered /> },
       { path: 'oia', element: <OiaGuard><StudentOia /></OiaGuard> },
       { path: 'materials', element: <StudentMaterials /> },
       { path: 'announcements', element: <StudentAnnouncements /> },

@@ -56,6 +56,7 @@ export interface Registration {
   department?: string;
   branch?: string;
   batch?: string;
+  post?: Post;
 }
 
 export interface SavedPost {

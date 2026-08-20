@@ -174,14 +174,27 @@ export const PostDetail: React.FC<PostDetailProps> = ({ post, onClose }) => {
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="w-full h-[92vh] md:h-auto md:max-w-2xl bg-white rounded-t-3xl md:rounded-2xl shadow-2xl border-0 md:border border-slate-200/80 overflow-hidden relative z-10 max-h-[92vh] md:max-h-[90vh] flex flex-col pb-[calc(12px+env(safe-area-inset-bottom))] md:pb-0"
+          drag={window.innerWidth < 768 ? "y" : false}
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={{ top: 0.1, bottom: 0.8 }}
+          onDragEnd={(_, info) => {
+            if (info.offset.y > 120) {
+              onClose();
+            }
+          }}
+          className="w-full h-[92vh] md:h-auto md:max-w-2xl bg-white rounded-t-3xl md:rounded-2xl shadow-2xl border-0 md:border border-slate-200/80 overflow-hidden relative z-10 max-h-[92vh] md:max-h-[90vh] flex flex-col pb-[calc(12px+env(safe-area-inset-bottom))] md:pb-0 touch-pan-y"
         >
+          {/* Mobile swipe-down drag indicator */}
+          <div className="md:hidden flex justify-center pt-3 pb-1.5 shrink-0 bg-white select-none cursor-grab active:cursor-grabbing">
+            <div className="w-12 h-1 bg-slate-250 rounded-full" />
+          </div>
+
           {/* Header */}
-          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/40 flex items-center justify-between">
+          <div className="px-6 py-4 border-b border-slate-100 bg-white flex items-center justify-between z-10 relative shrink-0">
             <div className="flex items-center gap-2">
               <button
                 onClick={onClose}
-                className="md:hidden flex items-center gap-1.5 text-slate-650 hover:text-slate-800 font-black transition-all text-xs uppercase"
+                className="md:hidden flex items-center gap-1.5 text-slate-600 hover:text-slate-800 font-black transition-all text-xs uppercase"
                 aria-label="Back to notice board"
               >
                 <ArrowLeft className="h-4 w-4 shrink-0" />
@@ -248,14 +261,24 @@ export const PostDetail: React.FC<PostDetailProps> = ({ post, onClose }) => {
               </div>
             </div>
 
-            {/* Preserved Raw Content Block (Mono Font) */}
+            {/* Preserved Raw Content Block */}
             {post.original_content && post.original_content.trim() !== '' && (
               <div className="space-y-1.5">
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-1">
                   Original Notice
                 </span>
-                <div className="p-4 bg-slate-900 text-slate-100 border border-slate-950 rounded-2xl font-mono text-xs sm:text-sm whitespace-pre-wrap leading-relaxed select-text shadow-inner break-words">
-                  {post.original_content}
+                <div className="p-5 bg-slate-50/70 text-slate-700 border border-slate-200/80 rounded-2xl font-sans text-xs sm:text-sm whitespace-pre-wrap leading-relaxed select-text break-words shadow-sm">
+                  {post.original_content.split(/(\*[^*]+\*)/g).map((part, idx) => {
+                    if (part.startsWith('*') && part.endsWith('*')) {
+                      const cleanText = part.slice(1, -1);
+                      return (
+                        <strong key={idx} className="font-extrabold text-[#0B3C5D] bg-[#0B3C5D]/5 px-1.5 py-0.5 rounded border border-[#0B3C5D]/10">
+                          {cleanText}
+                        </strong>
+                      );
+                    }
+                    return part;
+                  })}
                 </div>
               </div>
             )}

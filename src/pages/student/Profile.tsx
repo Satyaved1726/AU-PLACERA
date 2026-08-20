@@ -2,15 +2,10 @@ import React from 'react';
 import { Card, CardBody } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { useAuth } from '../../features/auth/useAuth';
-import { useMyRegistrations } from '../../features/registrations/hooks/useMyRegistrations';
-import { User, ShieldCheck, Mail, Hash, Book, Calendar, ShieldAlert, GraduationCap, ClipboardCheck } from 'lucide-react';
+import { User, ShieldCheck, Mail, Hash, Book, Calendar, ShieldAlert, GraduationCap, LogOut } from 'lucide-react';
 
 export const Profile: React.FC = () => {
-  const { profile } = useAuth();
-  const studentId = profile?.id;
-
-  // Load registration history
-  const { data: myRegistrations = [], isLoading: loadingRegs } = useMyRegistrations(studentId);
+  const { profile, signOut } = useAuth();
 
   const getInitials = (name?: string) => {
     if (!name) return 'AU';
@@ -130,45 +125,15 @@ export const Profile: React.FC = () => {
         </Card>
       </div>
 
-      {/* Section 3: My Registrations */}
-      <div className="space-y-2">
-        <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">
-          Registration Log History
-        </h3>
-        
-        {loadingRegs ? (
-          <div className="h-20 bg-slate-100 rounded-2xl animate-pulse" />
-        ) : myRegistrations.length === 0 ? (
-          <Card elevation={2} className="border border-slate-200 shadow-sm p-6 text-center">
-            <span className="text-xs text-slate-400 font-semibold block">No registrations logged yet.</span>
-          </Card>
-        ) : (
-          <Card elevation={2} className="border border-slate-205 shadow-sm overflow-hidden">
-            <CardBody className="p-0 divide-y divide-slate-100">
-              {myRegistrations.map(reg => (
-                <div key={reg.id} className="flex py-3 px-5 items-center justify-between text-xs">
-                  <div className="flex items-start gap-2.5">
-                    <div className="p-1.5 bg-emerald-50 rounded-lg text-emerald-600 mt-0.5 shrink-0 border border-emerald-100">
-                      <ClipboardCheck className="h-3.5 w-3.5" />
-                    </div>
-                    <div>
-                      <span className="font-bold text-slate-800 block leading-tight">{reg.company_name || 'Notice Announcement'}</span>
-                      <span className="text-[10px] text-slate-400 mt-0.5 block truncate max-w-[150px] sm:max-w-xs">{reg.opportunity_title || 'General Instructions'}</span>
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 border border-emerald-100 text-[8px] text-emerald-600 font-black uppercase tracking-wider">
-                      Registered
-                    </span>
-                    <span className="text-[9px] text-slate-400 font-bold block mt-1 leading-none">
-                      {new Date(reg.registered_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </CardBody>
-          </Card>
-        )}
+      {/* Section 3: Sign Out */}
+      <div className="pt-2">
+        <button
+          onClick={() => signOut()}
+          className="w-full py-3.5 border border-red-250 hover:bg-red-50 text-red-650 hover:text-red-700 text-xs font-black uppercase tracking-wider rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 select-none"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Sign Out</span>
+        </button>
       </div>
       
     </div>

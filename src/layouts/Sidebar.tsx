@@ -18,7 +18,8 @@ import {
   ChevronRight,
   Shield,
   Settings,
-  GraduationCap
+  GraduationCap,
+  ClipboardCheck
 } from 'lucide-react';
 import { useAuth } from '../features/auth/useAuth';
 import { AnuragLogo } from '../components/common/AnuragLogo';
@@ -66,6 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, collapsed, onCol
   const studentItems = [
     { name: 'Notice Board', path: '/student/notice-board', icon: ClipboardList },
     { name: 'Digital Notice Board', path: '/student/announcements', icon: Megaphone },
+    { name: 'Registered', path: '/student/registered', icon: ClipboardCheck },
     { name: 'Saved', path: '/student/saved', icon: Bookmark },
     { name: 'OIA', path: '/student/oia', icon: Building2 },
     { name: 'Materials', path: '/student/materials', icon: BookOpen },
