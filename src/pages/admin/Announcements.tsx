@@ -1,3 +1,4 @@
+// Digital Notice Board Management Screen - Supporting file and image uploader controls
 import React, { useState, useRef } from 'react';
 import { Button } from '../../components/common/Button';
 import { SearchBar } from '../../components/common/SearchBar';
