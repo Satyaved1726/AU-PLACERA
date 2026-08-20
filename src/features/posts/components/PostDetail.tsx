@@ -267,12 +267,12 @@ export const PostDetail: React.FC<PostDetailProps> = ({ post, onClose }) => {
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-1">
                   Original Notice
                 </span>
-                <div className="p-5 bg-slate-50/70 text-slate-700 border border-slate-200/80 rounded-2xl font-sans text-xs sm:text-sm whitespace-pre-wrap leading-relaxed select-text break-words shadow-sm">
+                <div className="p-5 bg-slate-50/50 text-slate-800 border border-slate-150 rounded-2xl font-sans text-xs sm:text-[13px] whitespace-pre-wrap leading-relaxed select-text break-words shadow-sm">
                   {post.original_content.split(/(\*[^*]+\*)/g).map((part, idx) => {
                     if (part.startsWith('*') && part.endsWith('*')) {
                       const cleanText = part.slice(1, -1);
                       return (
-                        <strong key={idx} className="font-extrabold text-[#0B3C5D] bg-[#0B3C5D]/5 px-1.5 py-0.5 rounded border border-[#0B3C5D]/10">
+                        <strong key={idx} className="font-black text-slate-950">
                           {cleanText}
                         </strong>
                       );

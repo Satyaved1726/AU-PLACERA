@@ -4,9 +4,13 @@ import { useAuth } from '../../features/auth/useAuth';
 import { useMyRegistrations } from '../../features/registrations/hooks/useMyRegistrations';
 import { PostDetail } from '../../features/posts/components/PostDetail';
 import { PostSkeleton } from '../../components/common/LoadingSkeleton';
-import { ClipboardCheck, Sparkles, AlertCircle, ExternalLink, Calendar } from 'lucide-react';
+import { 
+  ClipboardCheck, Sparkles, AlertCircle, ExternalLink, Calendar, 
+  Building2, Briefcase, Award 
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Post } from '../../types';
+import registeredIllustration from '../../assets/registered_illustration.jpg';
 
 export const Registered: React.FC = () => {
   const navigate = useNavigate();
@@ -30,16 +34,34 @@ export const Registered: React.FC = () => {
     visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } }
   };
 
+  const getDriveType = (post?: Post) => {
+    if (!post) return 'Drive Drive';
+    if (post.post_type === 'oia') return 'OIA Drive';
+    if (post.post_type === 'opportunity') return 'Placement Drive';
+    return 'General Announcement';
+  };
+
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12 select-none px-4 sm:px-0">
+    <div className="space-y-6 max-w-4xl mx-auto pb-16 select-none px-4 sm:px-0">
       
-      {/* Header segment */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
-        <div>
-          <h1 className="text-base font-black text-slate-800 tracking-tight uppercase tracking-wide">Registered Opportunities</h1>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+      {/* Header Banner Section */}
+      <div className="flex items-center justify-between gap-6 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm relative overflow-hidden">
+        <div className="space-y-1 z-10 flex-1">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight uppercase">
+            Registered Opportunities
+          </h1>
+          <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider leading-relaxed">
             View the drives and placement posts you have registered for.
           </p>
+        </div>
+        
+        <div className="relative shrink-0 select-none pointer-events-none">
+          <div className="absolute -inset-2 bg-emerald-500/10 rounded-full blur-xl animate-pulse" />
+          <img 
+            src={registeredIllustration} 
+            alt="Registered Checklist Illustration" 
+            className="h-20 w-20 sm:h-24 sm:w-24 object-contain relative z-10 rounded-2xl"
+          />
         </div>
       </div>
 
@@ -59,13 +81,13 @@ export const Registered: React.FC = () => {
         <motion.div 
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-center py-16 bg-white border border-slate-200/80 rounded-2xl p-8 max-w-sm mx-auto shadow-sm"
+          className="text-center py-16 bg-white border border-slate-200/85 rounded-3xl p-8 max-w-sm mx-auto shadow-sm"
         >
-          <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-full inline-block mb-3 text-emerald-600">
-            <ClipboardCheck className="h-5 w-5" />
+          <div className="p-3.5 bg-emerald-50 border border-emerald-100 rounded-2xl inline-block mb-3 text-emerald-600">
+            <ClipboardCheck className="h-6 w-6" />
           </div>
           <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider">No registrations yet</h3>
-          <p className="text-[10px] text-slate-400 mt-1 max-w-xs mx-auto leading-relaxed">
+          <p className="text-[10px] text-slate-400 mt-1.5 max-w-xs mx-auto leading-relaxed">
             Click 'Mark as Registered' on any placement notice to log your participation here.
           </p>
           <button
@@ -90,40 +112,85 @@ export const Registered: React.FC = () => {
           {registrations.map(reg => (
             <motion.div key={reg.id} variants={cardVariants}>
               <div 
-                onClick={() => reg.post && setSelectedPost(reg.post)}
-                className="border border-slate-200 shadow-sm overflow-hidden hover:border-slate-300 cursor-pointer active:scale-[0.99] transition-all bg-white rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 select-none"
+                className="bg-white border border-slate-150 rounded-3xl p-6 shadow-sm flex flex-col space-y-4 hover:border-slate-300 transition-all duration-200"
               >
-                <div className="flex items-start gap-3">
-                  <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600 border border-emerald-100/50 shrink-0">
-                    <ClipboardCheck className="h-5 w-5" />
+                {/* Top Section */}
+                <div className="flex items-start gap-4">
+                  {/* Green Clipboard icon wrapper */}
+                  <div className="p-3.5 bg-emerald-50 text-emerald-600 border border-emerald-100/50 shrink-0 rounded-2xl flex items-center justify-center">
+                    <ClipboardCheck className="h-6 w-6" />
                   </div>
-                  <div>
+                  
+                  {/* Badge Row & Title */}
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[9px] font-black uppercase tracking-wider bg-slate-100 border border-slate-200 text-slate-500 px-2 py-0.5 rounded flex items-center gap-1">
+                      <span className="inline-flex items-center gap-1.5 py-1 px-3 bg-blue-50 border border-blue-100 text-blue-600 rounded-lg text-[9px] font-black uppercase tracking-wider">
                         <Calendar className="h-3 w-3" />
                         <span>{new Date(reg.registered_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                       </span>
-                      <span className="text-[8px] font-black uppercase tracking-wider bg-emerald-50 border border-emerald-150 text-emerald-650 px-2 py-0.5 rounded">
-                        Registered
+                      <span className="inline-flex items-center gap-1 py-1 px-3 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-lg text-[9px] font-black uppercase tracking-wider">
+                        <ClipboardCheck className="h-3 w-3" />
+                        <span>Registered</span>
                       </span>
                     </div>
                     
-                    <h3 className="text-sm font-black text-slate-800 tracking-tight leading-tight mt-2">
-                      {reg.company_name || 'Placement Drive Announcement'}
-                    </h3>
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1 truncate max-w-xs sm:max-w-md">
-                      {reg.opportunity_title || 'Registered Notice'}
+                    <h2 className="text-base sm:text-lg font-black text-slate-800 tracking-tight leading-tight mt-2.5">
+                      {reg.company_name || 'Placement drive Announcement'}
+                    </h2>
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1 truncate max-w-xs sm:max-w-md">
+                      {reg.opportunity_title || 'Registered Drive'}
                     </p>
                   </div>
                 </div>
 
+                {/* Separator Divider */}
+                <div className="border-t border-slate-100 w-full" />
+
+                {/* Split Metadata Row */}
+                <div className="grid grid-cols-3 gap-2 py-1 text-center sm:text-left">
+                  {/* Company */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-center sm:justify-start gap-1 text-slate-400 font-bold text-[9px] uppercase tracking-wider">
+                      <Building2 className="h-3.5 w-3.5 shrink-0" />
+                      <span className="hidden sm:inline">Company</span>
+                    </div>
+                    <p className="text-[11px] font-black text-slate-800 truncate">
+                      {reg.company_name || 'N/A'}
+                    </p>
+                  </div>
+
+                  {/* Role */}
+                  <div className="space-y-1 border-l border-slate-100 pl-3">
+                    <div className="flex items-center justify-center sm:justify-start gap-1 text-slate-400 font-bold text-[9px] uppercase tracking-wider">
+                      <Briefcase className="h-3.5 w-3.5 shrink-0" />
+                      <span className="hidden sm:inline">Role</span>
+                    </div>
+                    <p className="text-[11px] font-black text-slate-800 truncate">
+                      {reg.opportunity_title || 'Applicant'}
+                    </p>
+                  </div>
+
+                  {/* Drive Type */}
+                  <div className="space-y-1 border-l border-slate-100 pl-3">
+                    <div className="flex items-center justify-center sm:justify-start gap-1 text-slate-400 font-bold text-[9px] uppercase tracking-wider">
+                      <Award className="h-3.5 w-3.5 shrink-0" />
+                      <span className="hidden sm:inline">Drive Type</span>
+                    </div>
+                    <p className="text-[11px] font-black text-slate-800 truncate">
+                      {getDriveType(reg.post)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* View Details Button */}
                 {reg.post && (
                   <button
                     type="button"
-                    className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-1 shrink-0 self-end sm:self-center"
+                    onClick={() => setSelectedPost(reg.post || null)}
+                    className="w-full mt-2 py-3 bg-[#F4F9FF]/20 hover:bg-[#F4F9FF]/60 text-blue-600 hover:text-blue-700 border border-blue-100 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all select-none active:scale-[0.98] shadow-sm"
                   >
                     <span>View Details</span>
-                    <ExternalLink className="h-3 w-3" />
+                    <ExternalLink className="h-3.5 w-3.5" />
                   </button>
                 )}
               </div>
