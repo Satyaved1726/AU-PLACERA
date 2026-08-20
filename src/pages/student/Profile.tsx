@@ -150,12 +150,12 @@ export const Profile: React.FC = () => {
       </div>
 
       {/* Section 3: Sign Out */}
-      <div className="pt-2">
+      <div className="bg-white border border-slate-150 shadow-sm rounded-3xl p-4.5">
         <button
           onClick={() => signOut()}
-          className="w-full py-3.5 border border-red-200 hover:bg-red-50 text-red-600 hover:text-red-700 text-xs font-black uppercase tracking-wider rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-sm"
+          className="w-full py-3.5 bg-red-50 hover:bg-red-100/75 border border-red-100 text-red-650 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="h-4 w-4 shrink-0" />
           <span>Sign Out</span>
         </button>
       </div>
