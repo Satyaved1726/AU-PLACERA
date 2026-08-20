@@ -96,7 +96,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
           { name: 'Students', path: '/admin/students', icon: Users },
           { name: 'OIA', path: '/admin/oia', icon: Building2 },
           { name: 'Materials', path: '/admin/materials', icon: BookOpen },
-          { name: 'Announce', path: '/admin/announcements', icon: Megaphone }
+          { name: 'Digital Board', path: '/admin/announcements', icon: Megaphone }
         ]
       };
     }
@@ -110,7 +110,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
     ];
     
     const drawerItems = [
-      { name: 'Announcements', path: '/student/announcements', icon: Megaphone },
+      { name: 'Digital Board', path: '/student/announcements', icon: Megaphone },
       { name: 'Saved Notices', path: '/student/saved', icon: Bookmark }
     ];
     if (hasOia) {

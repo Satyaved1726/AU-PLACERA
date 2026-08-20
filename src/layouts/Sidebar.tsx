@@ -57,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, collapsed, onCol
       items: [
         { name: 'OIA', path: '/admin/oia', icon: Building2 },
         { name: 'Materials', path: '/admin/materials', icon: BookOpen },
-        { name: 'Announcements', path: '/admin/announcements', icon: Megaphone }
+        { name: 'Digital Notice Board', path: '/admin/announcements', icon: Megaphone }
       ]
     }
   ];
@@ -65,7 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, collapsed, onCol
   // Student list structure
   const studentItems = [
     { name: 'Notice Board', path: '/student/notice-board', icon: ClipboardList },
-    { name: 'Announcements', path: '/student/announcements', icon: Megaphone },
+    { name: 'Digital Notice Board', path: '/student/announcements', icon: Megaphone },
     { name: 'Saved', path: '/student/saved', icon: Bookmark },
     { name: 'OIA', path: '/student/oia', icon: Building2 },
     { name: 'Materials', path: '/student/materials', icon: BookOpen },
