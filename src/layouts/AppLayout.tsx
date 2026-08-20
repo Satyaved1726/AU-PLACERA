@@ -18,7 +18,8 @@ import {
   MoreHorizontal,
   Megaphone,
   Shield,
-  X
+  X,
+  ClipboardCheck
 } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { UserRole } from '../types';
@@ -110,6 +111,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
     ];
     
     const drawerItems = [
+      { name: 'Registered', path: '/student/registered', icon: ClipboardCheck },
       { name: 'Digital Board', path: '/student/announcements', icon: Megaphone },
       { name: 'Saved Notices', path: '/student/saved', icon: Bookmark }
     ];

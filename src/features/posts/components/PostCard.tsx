@@ -175,8 +175,18 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onViewDetail }) => {
           {post.original_content && post.original_content.trim() !== '' && (
             <div className="bg-[#F4F9FF]/70 border-l-[3.5px] border-[#2563EB] rounded-r-2xl p-4.5 relative overflow-hidden">
               <Quote className="h-8 w-8 text-blue-100 absolute -top-1 -left-1 rotate-180 pointer-events-none opacity-30" />
-              <p className="text-xs text-slate-600 font-semibold leading-relaxed font-mono whitespace-pre-wrap select-text relative z-10">
-                {post.original_content}
+              <p className="text-xs text-slate-600 font-semibold leading-relaxed font-sans whitespace-pre-wrap select-text relative z-10">
+                {post.original_content.split(/(\*[^*]+\*)/g).map((part, idx) => {
+                  if (part.startsWith('*') && part.endsWith('*')) {
+                    const cleanText = part.slice(1, -1);
+                    return (
+                      <strong key={idx} className="font-extrabold text-[#0B3C5D] bg-[#0B3C5D]/5 px-1.5 py-0.5 rounded border border-[#0B3C5D]/10">
+                        {cleanText}
+                      </strong>
+                    );
+                  }
+                  return part;
+                })}
               </p>
             </div>
           )}
