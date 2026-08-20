@@ -40,7 +40,11 @@ export const PostDetail: React.FC<PostDetailProps> = ({ post, onClose }) => {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  if (!post) return null;
+  // Safeguard: Block non-OIA-eligible students from seeing OIA post details
+  const isOiaPost = post?.post_type === 'oia' || post?.audience === 'oia';
+  if (!post || (isOiaPost && profile?.role === 'student' && !profile?.oia_eligible)) {
+    return null;
+  }
 
   const isOpportunity = post.post_type === 'opportunity';
 
@@ -59,6 +63,13 @@ export const PostDetail: React.FC<PostDetailProps> = ({ post, onClose }) => {
   // Mark student registered on click
   const handleRegisterClick = async () => {
     if (!studentId) return;
+    
+    // Safeguard check
+    if (isOiaPost && profile?.role === 'student' && !profile?.oia_eligible) {
+      triggerToast('Access Denied: You are not eligible for OIA opportunities.', true);
+      return;
+    }
+
     try {
       await registerMutation.mutateAsync({
         postId: post.id,
