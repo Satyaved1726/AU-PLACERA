@@ -33,6 +33,48 @@ export const Announcements: React.FC = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    const isImage = file.type.startsWith('image/');
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+
+    if (!isImage && !isPdf) {
+      triggerToast('Please select a valid image or PDF file.');
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      triggerToast('File size is too large (max 15MB).');
+      return;
+    }
+
+    setImageFile(file);
+    if (isImage) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setImagePreview('pdf-placeholder');
+    }
+  };
   
   // Delete Dialog state
   const [deletingAnnouncement, setDeletingAnnouncement] = useState<DigitalAnnouncement | null>(null);
@@ -497,15 +539,21 @@ export const Announcements: React.FC = () => {
                       </button>
                     </div>
                   ) : (
-                    <button
-                      type="button"
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-full h-32 border-2 border-dashed border-slate-250 hover:border-primary rounded-xl flex flex-col items-center justify-center gap-2 text-slate-450 hover:text-primary transition-all bg-slate-50/30"
+                      className={`w-full h-32 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-2 transition-all cursor-pointer bg-slate-50/30 ${
+                        isDragging 
+                          ? 'border-primary bg-primary/5 text-primary scale-[1.01]' 
+                          : 'border-slate-250 hover:border-primary text-slate-450 hover:text-primary'
+                      }`}
                     >
                       <Upload className="h-6 w-6" />
                       <span className="text-[10px] font-bold uppercase tracking-wider">Drag & drop or click to upload</span>
                       <span className="text-[8px] text-slate-400 font-semibold">Supports Images & PDF Bulletins (max 15MB)</span>
-                    </button>
+                    </div>
                   )}
                 </div>
 
