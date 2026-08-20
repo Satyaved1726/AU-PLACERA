@@ -34,7 +34,7 @@ export const Header: React.FC<HeaderProps> = ({ role, onMenuClick, title }) => {
   };
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 w-full items-center justify-between border-b border-slate-200/80 bg-white/80 px-4 sm:px-6 shadow-[0_1px_3px_rgba(0,0,0,0.01)] backdrop-blur-md select-none">
+    <header className="sticky top-0 z-40 flex h-14 w-full items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6 shadow-[0_1px_3px_rgba(0,0,0,0.01)] select-none">
       
       {/* Left side actions */}
       <div className="flex items-center gap-3">

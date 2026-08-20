@@ -172,7 +172,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
       </div>
 
       {/* Mobile Bottom Navigation Bar (lg:hidden) */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-200/80 px-1 py-1 shadow-[0_-4px_12px_rgba(0,0,0,0.03)] flex justify-around items-center select-none pb-[calc(4px+env(safe-area-inset-bottom))]">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 px-1 py-1 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] flex justify-around items-center select-none pb-[calc(4px+env(safe-area-inset-bottom))]">
         {mobileMainItems.map((item) => (
           <NavLink
             key={item.name}
