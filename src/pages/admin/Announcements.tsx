@@ -8,7 +8,7 @@ import { useDeleteAnnouncement } from '../../features/announcements/hooks/useDel
 import type { DigitalAnnouncement } from '../../types';
 import { 
   Megaphone, Plus, Trash2, Upload, X, 
-  ExternalLink, CheckCircle2, AlertCircle, Calendar, ShieldCheck 
+  ExternalLink, CheckCircle2, AlertCircle, ShieldCheck, FileText 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -29,7 +29,7 @@ export const Announcements: React.FC = () => {
   const [externalUrl, setExternalUrl] = useState('');
   const [isOia, setIsOia] = useState(false);
   
-  // Image uploading states
+  // Image/file uploading states
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
@@ -47,28 +47,34 @@ export const Announcements: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Image Selection Handler
+  // Selection Handler for Image or PDF
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      triggerToast('Please select a valid image file.');
+    const isImage = file.type.startsWith('image/');
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+
+    if (!isImage && !isPdf) {
+      triggerToast('Please select a valid image or PDF file.');
       return;
     }
 
-    // Limit to 10MB raw size (compression will shrink it)
-    if (file.size > 10 * 1024 * 1024) {
-      triggerToast('File size is too large (max 10MB).');
+    if (file.size > 15 * 1024 * 1024) {
+      triggerToast('File size is too large (max 15MB).');
       return;
     }
 
     setImageFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    if (isImage) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setImagePreview('pdf-placeholder');
+    }
   };
 
   // Create Submit Handler
@@ -79,7 +85,7 @@ export const Announcements: React.FC = () => {
       return;
     }
     if (!imageFile) {
-      triggerToast('Please upload an announcement poster flyer.');
+      triggerToast('Please upload an announcement poster flyer or PDF.');
       return;
     }
     if (!profile?.id) {
@@ -106,9 +112,9 @@ export const Announcements: React.FC = () => {
       setImageFile(null);
       setImagePreview(null);
       setIsCreateOpen(false);
-      triggerToast('Visual announcement published successfully.');
+      triggerToast('Notice published successfully to Digital Notice Board.');
     } catch (err: any) {
-      triggerToast(err.message || 'Failed to publish announcement.');
+      triggerToast(err.message || 'Failed to publish notice.');
     } finally {
       setIsCompressing(false);
     }
@@ -124,9 +130,9 @@ export const Announcements: React.FC = () => {
         imageUrl: deletingAnnouncement.image_url
       });
       setDeletingAnnouncement(null);
-      triggerToast('Announcement removed permanently.');
+      triggerToast('Notice removed permanently from Digital Notice Board.');
     } catch {
-      triggerToast('Failed to delete announcement.');
+      triggerToast('Failed to delete notice.');
     }
   };
 
@@ -144,7 +150,7 @@ export const Announcements: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12 select-none px-4 sm:px-0">
+    <div className="space-y-6 max-w-xl mx-auto pb-12 select-none px-4 sm:px-0">
       
       {/* Global Toast */}
       <AnimatePresence>
@@ -164,9 +170,9 @@ export const Announcements: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
         <div>
-          <h1 className="text-base font-black text-slate-800 tracking-tight uppercase tracking-wide">Digital Announcements</h1>
+          <h1 className="text-base font-black text-slate-800 tracking-tight uppercase tracking-wide">Digital Notice Board</h1>
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-            Publish recruitment poster flyers, campus notices, and program banners.
+            Publish recruitment poster flyers, campus notices, and program PDF bulletins.
           </p>
         </div>
         <Button
@@ -176,7 +182,7 @@ export const Announcements: React.FC = () => {
           className="flex items-center gap-1.5 self-start sm:self-auto rounded-xl"
         >
           <Plus className="h-3.5 w-3.5" />
-          <span>Publish Poster</span>
+          <span>Publish Notice</span>
         </Button>
       </div>
 
@@ -195,7 +201,7 @@ export const Announcements: React.FC = () => {
                   : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
               }`}
             >
-              All Flyers
+              All Notice Board
             </button>
             <button
               onClick={() => setOiaFilter('general')}
@@ -205,18 +211,18 @@ export const Announcements: React.FC = () => {
                   : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
               }`}
             >
-              General Only
+              General
             </button>
             <button
               onClick={() => setOiaFilter('oia')}
               className={`px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider shrink-0 flex items-center gap-1 transition-all ${
                 oiaFilter === 'oia'
-                  ? 'bg-amber-50 border-amber-250 text-amber-700 shadow-sm shadow-amber-600/5'
+                  ? 'bg-purple-50 border-purple-250 text-purple-700 shadow-sm'
                   : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
               }`}
             >
-              <ShieldCheck className={`h-3 w-3 ${oiaFilter === 'oia' ? 'text-amber-500' : 'text-slate-400'}`} />
-              <span>OIA Eligible</span>
+              <ShieldCheck className={`h-3 w-3 ${oiaFilter === 'oia' ? 'text-purple-500' : 'text-slate-400'}`} />
+              <span>OIA Only</span>
             </button>
           </div>
         </div>
@@ -226,7 +232,7 @@ export const Announcements: React.FC = () => {
       {error && (
         <div className="p-4 bg-red-50 border border-red-150 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2.5">
           <AlertCircle className="h-4 w-4 shrink-0 text-red-500 mt-0.5" />
-          <span>Failed to load digital announcements. Check connection and reload.</span>
+          <span>Failed to load digital notice board. Check connection and reload.</span>
         </div>
       )}
 
@@ -238,99 +244,139 @@ export const Announcements: React.FC = () => {
           </div>
           <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider">No flyers uploaded</h3>
           <p className="text-[10px] text-slate-400 mt-1 max-w-xs mx-auto leading-relaxed">
-            Click "Publish Poster" to upload visual flyers or adjust your search filter.
+            Click "Publish Notice" to upload visual flyers or adjust your search filter.
           </p>
         </div>
       )}
 
       {/* Skeletons */}
       {isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden h-72 animate-pulse">
-              <div className="h-44 bg-slate-100" />
-              <div className="p-4 space-y-2">
-                <div className="h-3 bg-slate-100 rounded-md w-2/3" />
-                <div className="h-2.5 bg-slate-100 rounded-md w-1/2" />
+        <div className="space-y-6">
+          {[1, 2].map(i => (
+            <div key={i} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 animate-pulse">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-slate-200 rounded-full shrink-0" />
+                <div className="space-y-2 flex-grow">
+                  <div className="h-3.5 bg-slate-200 rounded w-1/3" />
+                  <div className="h-2.5 bg-slate-200 rounded w-1/4" />
+                </div>
               </div>
+              <div className="h-64 bg-slate-200 rounded-xl w-full" />
             </div>
           ))}
         </div>
       )}
 
-      {/* Visual Flyers Grid */}
+      {/* Visual Flyers Feed */}
       {!isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {filteredAnnouncements.map(ann => (
-            <div 
-              key={ann.id}
-              className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col group relative"
-            >
-              {/* Image Frame */}
-              <div className="h-48 bg-slate-50 relative overflow-hidden border-b border-slate-100 shrink-0">
-                <img 
-                  src={ann.image_url} 
-                  alt={ann.title} 
-                  className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
-                  loading="lazy"
-                />
-                
-                {/* OIA Banner */}
-                {ann.is_oia && (
-                  <div className="absolute top-3 left-3 px-2 py-0.5 bg-amber-500 border border-amber-400 text-white rounded text-[8px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1 select-none">
-                    <ShieldCheck className="h-3 w-3" />
-                    <span>OIA Excl.</span>
-                  </div>
-                )}
+        <div className="space-y-6">
+          {filteredAnnouncements.map(ann => {
+            const isPdf = ann.image_url.toLowerCase().split('?')[0].endsWith('.pdf');
+            const initials = ann.profiles?.full_name 
+              ? ann.profiles.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+              : 'P';
 
-                {/* Hover overlay delete action */}
-                <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <button
-                    onClick={() => setDeletingAnnouncement(ann)}
-                    className="p-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-lg border border-red-500/20 active:scale-90 transition-transform"
-                    title="Delete Poster"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                  {ann.external_url && (
-                    <a
-                      href={ann.external_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2.5 bg-white hover:bg-slate-50 text-slate-700 rounded-xl shadow-lg border border-slate-200 active:scale-90 transition-transform"
-                      title="Open Link"
+            return (
+              <div 
+                key={ann.id}
+                className="bg-white border border-slate-100/80 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] p-5 space-y-4 hover:shadow-soft transition-all"
+              >
+                {/* 1. Header with Publisher info & action buttons */}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 bg-slate-100 text-slate-700 rounded-full flex items-center justify-center font-black text-xs shrink-0 uppercase select-none border border-slate-200">
+                      {initials}
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-slate-800 text-xs sm:text-sm">
+                        {ann.profiles?.full_name || 'Placement Coordinator'}
+                        <span className="text-slate-400 font-semibold"> | {ann.profiles?.role === 'super_admin' ? 'Head' : 'Coordinator'}</span>
+                      </div>
+                      <div className="text-[9px] text-slate-450 font-bold uppercase tracking-wider mt-0.5">
+                        {new Date(ann.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        <span className="normal-case"> at </span>
+                        {new Date(ann.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {ann.is_oia && (
+                      <span className="text-[8px] font-black tracking-wider text-purple-700 bg-purple-50 border border-purple-100 px-2 py-0.5 rounded-full uppercase">
+                        OIA
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setDeletingAnnouncement(ann)}
+                      className="h-8 w-8 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg flex items-center justify-center border border-red-100 transition-colors"
+                      title="Delete Notice"
                     >
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Visual Document (original size image or PDF placeholder) */}
+                <div className="overflow-hidden rounded-xl border border-slate-100/50 bg-slate-50">
+                  {isPdf ? (
+                    <div className="p-8 flex flex-col items-center justify-center gap-3 select-none text-center">
+                      <FileText className="h-14 w-14 text-red-500" />
+                      <div>
+                        <span className="text-xs font-black text-slate-800 block uppercase tracking-wider">{ann.title}</span>
+                        <span className="text-[9px] text-slate-450 font-bold uppercase tracking-widest mt-1 block">PDF Notice Attachment</span>
+                      </div>
+                      <a 
+                        href={ann.image_url}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="mt-2 h-9 px-4.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 text-[9px] font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 transition-all"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        <span>Open PDF</span>
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center max-h-[600px] relative group overflow-hidden">
+                      <img 
+                        src={ann.image_url} 
+                        alt={ann.title} 
+                        className="w-full h-auto object-contain animate-fade-in"
+                        loading="lazy"
+                      />
+                    </div>
                   )}
                 </div>
-              </div>
 
-              {/* Text info */}
-              <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                <div className="space-y-1">
-                  <h3 className="text-xs font-black text-slate-800 line-clamp-1 uppercase tracking-wide">
+                {/* 3. Text Info */}
+                <div className="space-y-2 pt-1">
+                  <h3 className="text-sm font-black text-slate-800 leading-snug uppercase tracking-wide">
                     {ann.title}
                   </h3>
                   {ann.description && (
-                    <p className="text-[10px] text-slate-500 font-semibold line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-slate-555 font-semibold leading-relaxed whitespace-pre-wrap select-text">
                       {ann.description}
                     </p>
                   )}
-                </div>
 
-                <div className="flex items-center justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest border-t border-slate-50 pt-2.5 select-none">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3 text-slate-400" />
-                    <span>{new Date(ann.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-50 text-[9px] font-black uppercase tracking-widest text-slate-400 select-none">
+                    <span>Anurag University CSE Department</span>
+                    {ann.external_url && (
+                      <a
+                        href={ann.external_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:text-primary-dark flex items-center gap-1"
+                      >
+                        <span>External Link</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
                   </div>
-                  <span className={ann.is_oia ? 'text-amber-600' : 'text-slate-400'}>
-                    {ann.is_oia ? 'OIA Eligible' : 'General Drive'}
-                  </span>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -355,10 +401,10 @@ export const Announcements: React.FC = () => {
               className="w-full md:max-w-xl bg-white rounded-t-2xl md:rounded-2xl shadow-2xl border border-slate-200/80 overflow-hidden relative z-10 flex flex-col max-h-[85vh] md:max-h-[90vh] pb-[calc(12px+env(safe-area-inset-bottom))] md:pb-0"
             >
               <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/40 flex items-center justify-between">
-                <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">Publish Visual Poster</h3>
+                <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">Publish Notice Board Post</h3>
                 <button
                   onClick={() => setIsCreateOpen(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-650 h-9 w-9 flex items-center justify-center transition-colors"
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-655 h-9 w-9 flex items-center justify-center transition-colors"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -369,14 +415,14 @@ export const Announcements: React.FC = () => {
                 {/* Title */}
                 <div>
                   <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 leading-none">
-                    Poster Title / Heading
+                    Title / Heading
                   </label>
                   <input
                     type="text"
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. Amazon Web Services Recruitment Drive 2026"
+                    placeholder="e.g. AWS Recruitment Drive 2026 Poster"
                     className="au-input"
                   />
                 </div>
@@ -384,13 +430,13 @@ export const Announcements: React.FC = () => {
                 {/* Description */}
                 <div>
                   <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 leading-none">
-                    Brief description
+                    Highlights / Description
                   </label>
                   <textarea
                     rows={3}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Brief highlights of the flyer notice details..."
+                    placeholder="Notice highlights, eligibility, salary, test instructions..."
                     className="block w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:bg-white focus:border-secondary focus:ring-4 focus:ring-secondary/5 text-xs font-semibold leading-relaxed transition-all"
                   />
                 </div>
@@ -409,27 +455,36 @@ export const Announcements: React.FC = () => {
                   />
                 </div>
 
-                {/* Image Picker Dropzone */}
+                {/* Document Picker Dropzone */}
                 <div>
                   <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 leading-none">
-                    Announcement Flyer Image
+                    Flyer Image or PDF Bulletin Document
                   </label>
                   
                   <input 
                     type="file" 
                     ref={fileInputRef}
-                    accept="image/*"
+                    accept="image/*,application/pdf"
                     onChange={handleImageChange}
                     className="hidden"
                   />
 
                   {imagePreview ? (
-                    <div className="relative border border-slate-200 rounded-xl overflow-hidden bg-slate-50 h-44 flex items-center justify-center">
-                      <img 
-                        src={imagePreview} 
-                        alt="Preview" 
-                        className="w-full h-full object-contain"
-                      />
+                    <div className="relative border border-slate-200 rounded-xl overflow-hidden bg-slate-50 h-44 flex items-center justify-center p-4">
+                      {imagePreview === 'pdf-placeholder' ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <FileText className="h-10 w-10 text-red-500" />
+                          <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide">
+                            {imageFile?.name || 'Selected PDF Notice'}
+                          </span>
+                        </div>
+                      ) : (
+                        <img 
+                          src={imagePreview} 
+                          alt="Preview" 
+                          className="w-full h-full object-contain"
+                        />
+                      )}
                       <button
                         type="button"
                         onClick={() => {
@@ -449,7 +504,7 @@ export const Announcements: React.FC = () => {
                     >
                       <Upload className="h-6 w-6" />
                       <span className="text-[10px] font-bold uppercase tracking-wider">Drag & drop or click to upload</span>
-                      <span className="text-[8px] text-slate-400 font-semibold">Supports JPEG, PNG (max 10MB)</span>
+                      <span className="text-[8px] text-slate-400 font-semibold">Supports Images & PDF Bulletins (max 15MB)</span>
                     </button>
                   )}
                 </div>
@@ -457,7 +512,7 @@ export const Announcements: React.FC = () => {
                 {/* OIA Toggle Option */}
                 <div className="flex items-center justify-between py-2 border-t border-slate-100 select-none">
                   <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-slate-500">
-                    <ShieldCheck className="h-4 w-4 text-amber-500" />
+                    <ShieldCheck className="h-4 w-4 text-purple-500" />
                     <span>Target OIA Eligible Students Only</span>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer select-none">
@@ -467,7 +522,7 @@ export const Announcements: React.FC = () => {
                       onChange={(e) => setIsOia(e.target.checked)}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                   </label>
                 </div>
 
@@ -486,7 +541,7 @@ export const Announcements: React.FC = () => {
                     isLoading={createMutation.isPending || isCompressing}
                     className="h-10 px-6 rounded-xl"
                   >
-                    {isCompressing ? 'Compressing...' : createMutation.isPending ? 'Publishing...' : 'Publish Poster'}
+                    {isCompressing ? 'Compressing...' : createMutation.isPending ? 'Publishing...' : 'Publish Notice'}
                   </Button>
                 </div>
 
@@ -519,9 +574,9 @@ export const Announcements: React.FC = () => {
                 <div className="p-3 bg-red-50 border border-red-100 rounded-full inline-block text-red-600">
                   <AlertCircle className="h-6 w-6" />
                 </div>
-                <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">Remove Announcement?</h3>
+                <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">Remove Notice?</h3>
                 <p className="text-[10px] text-slate-400 font-bold tracking-normal leading-relaxed">
-                  This action is permanent. The visual flyer poster image will be deleted from Supabase Storage and all records will be destroyed.
+                  This action is permanent. The visual file poster/PDF will be deleted from Supabase Storage and all records will be destroyed.
                 </p>
               </div>
 

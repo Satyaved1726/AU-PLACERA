@@ -6,7 +6,7 @@ export const announcementsService = {
   async getAnnouncements(): Promise<DigitalAnnouncement[]> {
     const { data, error } = await supabase
       .from('digital_announcements')
-      .select('*')
+      .select('*, profiles:created_by (full_name, role)')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -75,17 +75,20 @@ export const announcementsService = {
     isOia: boolean;
     createdBy: string;
   }): Promise<DigitalAnnouncement> {
-    // 1. Compress the image
-    let uploadBlob: Blob;
-    try {
-      uploadBlob = await this.compressImage(params.imageFile);
-    } catch (err) {
-      console.warn('Image compression failed, using original file:', err);
-      uploadBlob = params.imageFile;
+    // 1. Compress only if it's an image
+    let uploadBlob: Blob = params.imageFile;
+    const isImage = params.imageFile.type.startsWith('image/');
+    const fileExt = params.imageFile.name.split('.').pop() || 'jpg';
+    
+    if (isImage) {
+      try {
+        uploadBlob = await this.compressImage(params.imageFile);
+      } catch (err) {
+        console.warn('Image compression failed, using original file:', err);
+      }
     }
 
     // 2. Generate a unique filename and path in the storage bucket
-    const fileExt = 'jpg'; // We compress to JPEG in our helper
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
     const filePath = `${fileName}`;
 
@@ -93,7 +96,7 @@ export const announcementsService = {
     const { error: uploadError } = await supabase.storage
       .from('announcements')
       .upload(filePath, uploadBlob, {
-        contentType: 'image/jpeg',
+        contentType: params.imageFile.type,
         cacheControl: '3600',
         upsert: false
       });

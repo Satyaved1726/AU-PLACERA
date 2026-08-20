@@ -81,6 +81,10 @@ export interface DigitalAnnouncement {
   is_oia: boolean;
   created_by: string;
   created_at: string;
+  profiles?: {
+    full_name: string;
+    role: string;
+  } | null;
 }
 
 export interface MaterialsConfig {
