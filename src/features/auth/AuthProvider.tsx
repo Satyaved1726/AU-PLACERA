@@ -16,6 +16,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(false);
   const queryClient = useQueryClient();
 
+  const profileRef = React.useRef<UserProfile | null>(null);
+  useEffect(() => {
+    profileRef.current = profile;
+  }, [profile]);
+
   // Load profile details from database
   const fetchProfile = async (userId: string) => {
     try {
@@ -97,10 +102,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('🔔 [Auth State Event]:', event);
 
       if (session) {
-        setLoading(true);
         setUser(session.user);
-        await fetchProfile(session.user.id);
-        setLoading(false);
+        if (!profileRef.current || profileRef.current.id !== session.user.id) {
+          setLoading(true);
+          await fetchProfile(session.user.id);
+          setLoading(false);
+        }
       } else {
         setUser(null);
         setProfile(null);
