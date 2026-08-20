@@ -172,12 +172,14 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onViewDetail }) => {
           </div>
 
           {/* Light-blue Quotation Box */}
-          <div className="bg-[#F4F9FF]/70 border-l-[3.5px] border-[#2563EB] rounded-r-2xl p-4.5 relative overflow-hidden">
-            <Quote className="h-8 w-8 text-blue-100 absolute -top-1 -left-1 rotate-180 pointer-events-none opacity-30" />
-            <p className="text-xs text-slate-600 font-semibold leading-relaxed font-mono whitespace-pre-wrap select-text relative z-10">
-              {post.original_content}
-            </p>
-          </div>
+          {post.original_content && post.original_content.trim() !== '' && (
+            <div className="bg-[#F4F9FF]/70 border-l-[3.5px] border-[#2563EB] rounded-r-2xl p-4.5 relative overflow-hidden">
+              <Quote className="h-8 w-8 text-blue-100 absolute -top-1 -left-1 rotate-180 pointer-events-none opacity-30" />
+              <p className="text-xs text-slate-600 font-semibold leading-relaxed font-mono whitespace-pre-wrap select-text relative z-10">
+                {post.original_content}
+              </p>
+            </div>
+          )}
 
           {/* Footer Area */}
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-4">
@@ -186,8 +188,12 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onViewDetail }) => {
                 <Building2 className="h-3.5 w-3.5" />
               </div>
               <div>
-                <span className="text-[9px] font-black text-slate-800 uppercase tracking-wider block">AIML Department</span>
-                <span className="text-[8px] font-semibold text-slate-450 block leading-none mt-0.5">Anurag University</span>
+                <span className="text-[9px] font-black text-slate-800 uppercase tracking-wider block">
+                  Posted by: {post.profiles?.full_name || 'Placement Cell'}
+                </span>
+                <span className="text-[8px] font-semibold text-slate-450 block leading-none mt-0.5">
+                  {post.profiles?.role === 'super_admin' ? 'Placement Head' : 'Placement Coordinator'}
+                </span>
               </div>
             </div>
 

@@ -6,7 +6,7 @@ export const postService = {
   async getActivePosts(oiaEligible: boolean = false): Promise<Post[]> {
     let query = supabase
       .from('posts')
-      .select('*')
+      .select('*, profiles:created_by (full_name, role, email)')
       .eq('is_active', true)
       .in('post_type', ['opportunity', 'announcement']);
 
@@ -27,7 +27,7 @@ export const postService = {
   async getOiaPosts(): Promise<Post[]> {
     const { data, error } = await supabase
       .from('posts')
-      .select('*')
+      .select('*, profiles:created_by (full_name, role, email)')
       .eq('is_active', true)
       .or('post_type.eq.oia,audience.eq.oia')
       .order('is_top_priority', { ascending: false })
@@ -41,7 +41,7 @@ export const postService = {
   async getAdminPosts(): Promise<Post[]> {
     const { data, error } = await supabase
       .from('posts')
-      .select('*')
+      .select('*, profiles:created_by (full_name, role, email)')
       .order('created_at', { ascending: false });
 
     if (error) throw error;

@@ -244,18 +244,21 @@ export const PostDetail: React.FC<PostDetailProps> = ({ post, onClose }) => {
               <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-2.5">
                 <Calendar className="h-3.5 w-3.5" />
                 <span>Published {new Date(post.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
+                <span> • Posted by: {post.profiles?.full_name || 'Placement Cell'}</span>
               </div>
             </div>
 
             {/* Preserved Raw Content Block (Mono Font) */}
-            <div className="space-y-1.5">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-1">
-                Original Notice
-              </span>
-              <div className="p-4 bg-slate-900 text-slate-100 border border-slate-950 rounded-2xl font-mono text-xs sm:text-sm whitespace-pre-wrap leading-relaxed select-text shadow-inner break-words">
-                {post.original_content}
+            {post.original_content && post.original_content.trim() !== '' && (
+              <div className="space-y-1.5">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-1">
+                  Original Notice
+                </span>
+                <div className="p-4 bg-slate-900 text-slate-100 border border-slate-950 rounded-2xl font-mono text-xs sm:text-sm whitespace-pre-wrap leading-relaxed select-text shadow-inner break-words">
+                  {post.original_content}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Application and external links block */}
             {urls.length > 0 && (

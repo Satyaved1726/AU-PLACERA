@@ -32,6 +32,11 @@ export interface Post {
   updated_at?: string;
   is_active: boolean;
   audience: 'general' | 'oia';
+  profiles?: {
+    full_name: string;
+    role: string;
+    email?: string;
+  } | null;
 }
 
 export interface Registration {
