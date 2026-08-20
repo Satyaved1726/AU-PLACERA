@@ -210,9 +210,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, collapsed, onCol
             className="flex items-center justify-center"
           >
             {isCollapsed ? (
-              <img src={anuragIconLogo} alt="Logo" className="h-6 w-auto select-none pointer-events-none" />
+              <img src={anuragIconLogo} alt="Logo" className="h-7 w-auto select-none pointer-events-none" />
             ) : (
-              <img src={anuragFullLogo} alt="Anurag University Logo" className="h-7 w-auto select-none pointer-events-none" />
+              <img src={anuragFullLogo} alt="Anurag University Logo" className="h-8 w-auto select-none pointer-events-none" />
             )}
           </motion.div>
         </AnimatePresence>

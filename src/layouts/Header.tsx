@@ -60,7 +60,7 @@ export const Header: React.FC<HeaderProps> = ({ role, onMenuClick, title }) => {
 
       {/* Middle logo (visible on mobile only) */}
       <div className="lg:hidden absolute left-1/2 -translate-x-1/2 pointer-events-none flex items-center">
-        <img src={anuragIconLogo} alt="Anurag University Logo" className="h-6 w-auto select-none pointer-events-none" />
+        <img src={anuragIconLogo} alt="Anurag University Logo" className="h-7 w-auto select-none pointer-events-none" />
       </div>
 
       {/* Right side university branding / avatar */}
