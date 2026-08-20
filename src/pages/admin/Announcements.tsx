@@ -417,7 +417,7 @@ export const Announcements: React.FC = () => {
                   )}
 
                   <div className="flex items-center justify-between pt-3 border-t border-slate-50 text-[9px] font-black uppercase tracking-widest text-slate-400 select-none">
-                    <span>Anurag University CSE Department</span>
+                    <span />
                     {ann.external_url && (
                       <a
                         href={ann.external_url}
