@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { PostSkeleton } from '../../components/common/LoadingSkeleton';
 import { RegistrationListDialog } from '../../features/registrations/components/RegistrationListDialog';
+import { PostDetail } from '../../features/posts/components/PostDetail';
 import { motion, AnimatePresence } from 'framer-motion';
 import noticeBoardManagerIllustration from '../../assets/notice_board_manager_illustration.jpg';
 
@@ -38,6 +39,7 @@ export const Posts: React.FC = () => {
 
   // Registrations dialog state
   const [viewingRegistrationsPost, setViewingRegistrationsPost] = useState<Post | null>(null);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
 
   // Toast notifications
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -276,6 +278,7 @@ export const Posts: React.FC = () => {
               onTogglePriority={handleTogglePriority}
               onToggleArchive={handleToggleArchive}
               onViewRegistrations={setViewingRegistrationsPost}
+              onViewDetails={setSelectedPost}
             />
           ))}
         </div>
@@ -495,6 +498,12 @@ export const Posts: React.FC = () => {
         post={viewingRegistrationsPost}
         isOpen={viewingRegistrationsPost !== null}
         onClose={() => setViewingRegistrationsPost(null)}
+      />
+
+      {/* POST DETAIL VIEW DRAWER */}
+      <PostDetail
+        post={selectedPost}
+        onClose={() => setSelectedPost(null)}
       />
 
     </div>
