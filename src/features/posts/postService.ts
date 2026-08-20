@@ -3,12 +3,19 @@ import type { Post } from '../../types';
 
 export const postService = {
   // Fetch active posts for Student noticeboard (ordered by priority, then date)
-  async getActivePosts(): Promise<Post[]> {
-    const { data, error } = await supabase
+  async getActivePosts(oiaEligible: boolean = false): Promise<Post[]> {
+    let query = supabase
       .from('posts')
       .select('*')
       .eq('is_active', true)
-      .in('post_type', ['opportunity', 'announcement'])
+      .in('post_type', ['opportunity', 'announcement']);
+
+    if (!oiaEligible) {
+      // Exclude OIA-only posts for non-eligible students
+      query = query.or('audience.is.null,audience.eq.general');
+    }
+
+    const { data, error } = await query
       .order('is_top_priority', { ascending: false })
       .order('created_at', { ascending: false });
 
