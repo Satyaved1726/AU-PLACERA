@@ -4,7 +4,7 @@ import {
   User, Mail, Hash, Book, Calendar, GraduationCap, 
   ShieldCheck, LogOut, CheckCircle2 
 } from 'lucide-react';
-import profileIllustration from '../../assets/profile_illustration.jpg';
+import profileAvatarEmoji from '../../assets/profile_avatar_emoji.jpg';
 
 export const Profile: React.FC = () => {
   const { profile, signOut } = useAuth();
@@ -27,14 +27,14 @@ export const Profile: React.FC = () => {
     return `${year}th Year`;
   };
 
-  // Academic details list with custom icon wrappers
+  // Academic details list with slightly tighter padding
   const academicDetails = [
-    { label: 'Official Email', value: profile?.email || 'N/A', icon: Mail, iconColor: 'text-blue-500 bg-blue-50/50' },
-    { label: 'Roll Number', value: profile?.roll_number || 'N/A', icon: Hash, iconColor: 'text-indigo-500 bg-indigo-50/50' },
-    { label: 'Branch / Specialization', value: profile?.branch || 'AIML', icon: Book, iconColor: 'text-emerald-500 bg-emerald-50/50' },
-    { label: 'Class Section', value: profile?.section || 'N/A', icon: User, iconColor: 'text-amber-500 bg-amber-50/50' },
-    { label: 'Academic Year', value: getYearLabel(profile?.year), icon: GraduationCap, iconColor: 'text-purple-500 bg-purple-50/50' },
-    { label: 'Batch Period', value: profile?.batch || 'N/A', icon: Calendar, iconColor: 'text-rose-500 bg-rose-50/50' }
+    { label: 'Official Email', value: profile?.email || 'N/A', icon: Mail, iconColor: 'text-blue-500 bg-blue-50' },
+    { label: 'Roll Number', value: profile?.roll_number || 'N/A', icon: Hash, iconColor: 'text-indigo-500 bg-indigo-50' },
+    { label: 'Branch / Specialization', value: profile?.branch || 'AIML', icon: Book, iconColor: 'text-emerald-500 bg-emerald-50' },
+    { label: 'Class Section', value: profile?.section || 'N/A', icon: User, iconColor: 'text-amber-500 bg-amber-50' },
+    { label: 'Academic Year', value: getYearLabel(profile?.year), icon: GraduationCap, iconColor: 'text-purple-500 bg-purple-50' },
+    { label: 'Batch Period', value: profile?.batch || 'N/A', icon: Calendar, iconColor: 'text-rose-500 bg-rose-50' }
   ];
 
   return (
@@ -55,25 +55,25 @@ export const Profile: React.FC = () => {
         <div className="relative shrink-0 select-none pointer-events-none">
           <div className="absolute -inset-2 bg-blue-500/10 rounded-full blur-xl animate-pulse" />
           <img 
-            src={profileIllustration} 
-            alt="Profile 3D Illustration" 
-            className="h-20 w-20 sm:h-24 sm:w-24 object-contain relative z-10 rounded-2xl"
+            src={profileAvatarEmoji} 
+            alt="Profile Avatar Emoji" 
+            className="h-16 w-16 sm:h-20 sm:w-20 object-contain relative z-10 rounded-2xl bg-white shadow-sm border border-slate-100 p-0.5"
           />
         </div>
       </div>
 
       {/* Main Student Header Card */}
-      <div className="bg-white rounded-3xl border border-slate-150 shadow-sm overflow-hidden flex flex-col items-center">
-        {/* Curved blue mesh banner */}
-        <div className="w-full h-28 bg-gradient-to-r from-blue-600 to-indigo-650 relative" />
-        
-        {/* Overlapping Avatar */}
-        <div className="h-24 w-24 rounded-full border-4 border-white bg-[#0B3C5D] flex items-center justify-center font-black text-2xl text-white shadow-md select-none -mt-12 z-10">
-          {getInitials(profile?.full_name)}
+      <div className="bg-white rounded-3xl border border-slate-150 shadow-sm overflow-hidden flex flex-col items-center w-full">
+        {/* Banner with absolute positioned avatar container */}
+        <div className="w-full h-32 bg-gradient-to-r from-blue-600 to-indigo-650 relative flex justify-center">
+          {/* Avatar positioned absolutely */}
+          <div className="absolute -bottom-10 h-20 w-20 sm:h-24 sm:w-24 rounded-full border-4 border-white bg-[#0B3C5D] flex items-center justify-center font-black text-xl sm:text-2xl text-white shadow-md select-none z-10">
+            {getInitials(profile?.full_name)}
+          </div>
         </div>
         
-        {/* Profile metadata info */}
-        <div className="text-center p-6 pt-3 space-y-2.5">
+        {/* Profile metadata info with top padding to clear the avatar */}
+        <div className="text-center px-6 pb-6 pt-12 space-y-2.5 w-full">
           <h2 className="text-lg sm:text-xl font-black text-slate-800 tracking-tight leading-tight">
             {profile?.full_name || 'Loading Name...'}
           </h2>
@@ -96,10 +96,10 @@ export const Profile: React.FC = () => {
 
         <div className="bg-white border border-slate-150 shadow-sm rounded-3xl overflow-hidden divide-y divide-slate-100/80">
           {academicDetails.map((item, idx) => (
-            <div key={idx} className="flex flex-col sm:flex-row py-3.5 px-5 sm:items-center justify-between gap-1 sm:gap-4 text-xs">
-              <div className="flex items-center gap-3 text-slate-500 font-semibold">
-                <div className={`p-2 rounded-xl border border-slate-100/50 shrink-0 ${item.iconColor}`}>
-                  <item.icon className="h-4 w-4 shrink-0" />
+            <div key={idx} className="flex flex-col sm:flex-row py-2.5 px-4.5 sm:items-center justify-between gap-1 sm:gap-4 text-[11px] sm:text-xs">
+              <div className="flex items-center gap-2.5 text-slate-500 font-semibold">
+                <div className={`p-1.5 rounded-lg border border-slate-100/50 shrink-0 ${item.iconColor}`}>
+                  <item.icon className="h-3.5 w-3.5 shrink-0" />
                 </div>
                 <span className="font-bold text-slate-500">{item.label}</span>
               </div>
