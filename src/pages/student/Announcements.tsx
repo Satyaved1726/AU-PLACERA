@@ -252,7 +252,7 @@ export const Announcements: React.FC = () => {
               </div>
 
               {/* Document display panel */}
-              <div className="w-full h-full bg-slate-950 flex items-center justify-center p-4 overflow-auto scrollbar-none">
+              <div className="w-full h-full bg-slate-950 flex items-center justify-center p-4">
                 {selectedAnnouncement.image_url.toLowerCase().split('?')[0].endsWith('.pdf') ? (
                   <iframe
                     src={selectedAnnouncement.image_url}
@@ -263,7 +263,7 @@ export const Announcements: React.FC = () => {
                   <img
                     src={selectedAnnouncement.image_url}
                     alt={selectedAnnouncement.title}
-                    className="max-w-none max-h-none rounded shadow-2xl border border-white/5 my-auto"
+                    className="max-w-full max-h-[72vh] object-contain rounded-lg shadow-2xl border border-white/5 my-auto"
                   />
                 )}
               </div>
