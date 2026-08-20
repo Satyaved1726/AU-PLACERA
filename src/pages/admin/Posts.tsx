@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { Button } from '../../components/common/Button';
-import { SearchBar } from '../../components/common/SearchBar';
 import { useAdminPosts } from '../../features/posts/hooks/useAdminPosts';
 import { useUpdatePost } from '../../features/posts/hooks/useUpdatePost';
 import { useDeletePost } from '../../features/posts/hooks/useDeletePost';
 import { AdminPostCard } from '../../features/posts/components/AdminPostCard';
 import { DeletePostDialog } from '../../features/posts/components/DeletePostDialog';
 import type { Post, PostType } from '../../types';
-import { ClipboardList, X, Star, CheckCircle2, AlertCircle } from 'lucide-react';
+import { 
+  X, Star, CheckCircle2, AlertCircle, 
+  Search, Filter, ClipboardList 
+} from 'lucide-react';
 import { PostSkeleton } from '../../components/common/LoadingSkeleton';
 import { RegistrationListDialog } from '../../features/registrations/components/RegistrationListDialog';
 import { motion, AnimatePresence } from 'framer-motion';
+import noticeBoardManagerIllustration from '../../assets/notice_board_manager_illustration.jpg';
 
 export const Posts: React.FC = () => {
   const { data: posts, isLoading, error } = useAdminPosts();
@@ -19,9 +21,7 @@ export const Posts: React.FC = () => {
 
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'opportunity' | 'announcement'>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'archived'>('all');
-  const [priorityFilter, setPriorityFilter] = useState<'all' | 'priority'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'opportunity' | 'announcement' | 'archived'>('all');
 
   // Edit Modal state
   const [editingPost, setEditingPost] = useState<Post | null>(null);
@@ -128,17 +128,17 @@ export const Posts: React.FC = () => {
       post.original_content
     ).toLowerCase().includes(searchQuery.toLowerCase());
 
-    const typeMatch = typeFilter === 'all' || post.post_type === typeFilter;
-    const statusMatch = statusFilter === 'all' || 
-      (statusFilter === 'active' && post.is_active) || 
-      (statusFilter === 'archived' && !post.is_active);
-    const priorityMatch = priorityFilter === 'all' || post.is_top_priority;
+    if (!textMatch) return false;
 
-    return textMatch && typeMatch && statusMatch && priorityMatch;
+    if (typeFilter === 'all') return true;
+    if (typeFilter === 'archived') return !post.is_active;
+    
+    // Default: only show active items for specific types
+    return post.post_type === typeFilter && post.is_active;
   });
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12 select-none px-4 sm:px-0">
+    <div className="space-y-6 max-w-xl mx-auto pb-16 select-none px-4 sm:px-0">
       
       {/* Global Toast */}
       <AnimatePresence>
@@ -155,30 +155,51 @@ export const Posts: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
-        <div>
-          <h1 className="text-base font-black text-slate-800 tracking-tight uppercase tracking-wide">Notice Board Manager</h1>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+      {/* Header Banner Section */}
+      <div className="flex items-center justify-between gap-6 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm relative overflow-hidden">
+        <div className="space-y-1 z-10 flex-1">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-1.5 uppercase">
+            <span>Notice Board Manager</span>
+          </h1>
+          <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider leading-relaxed">
             Modify details, toggle priority status, and archive placement opportunities.
           </p>
         </div>
+        
+        <div className="relative shrink-0 select-none pointer-events-none">
+          <div className="absolute -inset-2 bg-blue-500/10 rounded-full blur-xl animate-pulse" />
+          <img 
+            src={noticeBoardManagerIllustration} 
+            alt="Megaphone Speaker 3D Illustration" 
+            className="h-20 w-20 sm:h-24 sm:w-24 object-contain relative z-10 rounded-2xl"
+          />
+        </div>
       </div>
 
-      {/* Controls: Search & Horizontal Swipeable Filters */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm space-y-4">
-        <SearchBar onSearchChange={setSearchQuery} className="w-full sm:max-w-xs" />
+      {/* Controls Card: Search & Horizontal Pill Tabs */}
+      <div className="bg-white border border-slate-150 rounded-3xl p-4.5 shadow-sm space-y-4">
+        {/* Search bar inside styled box */}
+        <div className="bg-slate-50/50 border border-slate-200 rounded-2xl px-4 py-1.5 flex items-center gap-3 focus-within:border-secondary focus-within:bg-white transition-all shadow-sm">
+          <Search className="h-4 w-4 text-slate-400 shrink-0" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search opportunities, notice, or keywords..."
+            className="w-full bg-transparent focus:outline-none text-xs font-semibold text-slate-800 h-8"
+          />
+          <Filter className="h-4 w-4 text-slate-450 shrink-0" />
+        </div>
 
-        {/* Horizontal Swipeable Filters Bar */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0 select-none">
-          {/* Post Type filter group */}
+        {/* Tab row */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none select-none">
           <button
             type="button"
             onClick={() => setTypeFilter('all')}
-            className={`px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider shrink-0 transition-all ${
+            className={`px-4.5 py-2.5 rounded-2xl border text-[9px] font-black uppercase tracking-widest shrink-0 transition-all ${
               typeFilter === 'all' 
-                ? 'bg-primary border-primary text-white shadow-sm shadow-primary/10'
-                : 'bg-slate-50 border-slate-200 text-slate-555 hover:bg-slate-100'
+                ? 'bg-[#0B3C5D] border-[#0B3C5D] text-white shadow-sm'
+                : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
             }`}
           >
             All Types
@@ -186,10 +207,10 @@ export const Posts: React.FC = () => {
           <button
             type="button"
             onClick={() => setTypeFilter('opportunity')}
-            className={`px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider shrink-0 transition-all ${
+            className={`px-4.5 py-2.5 rounded-2xl border text-[9px] font-black uppercase tracking-widest shrink-0 transition-all ${
               typeFilter === 'opportunity' 
-                ? 'bg-primary border-primary text-white shadow-sm shadow-primary/10'
-                : 'bg-slate-50 border-slate-200 text-slate-555 hover:bg-slate-100'
+                ? 'bg-[#0B3C5D] border-[#0B3C5D] text-white shadow-sm'
+                : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
             }`}
           >
             Opportunities
@@ -197,66 +218,24 @@ export const Posts: React.FC = () => {
           <button
             type="button"
             onClick={() => setTypeFilter('announcement')}
-            className={`px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider shrink-0 transition-all ${
+            className={`px-4.5 py-2.5 rounded-2xl border text-[9px] font-black uppercase tracking-widest shrink-0 transition-all ${
               typeFilter === 'announcement' 
-                ? 'bg-primary border-primary text-white shadow-sm shadow-primary/10'
-                : 'bg-slate-50 border-slate-200 text-slate-555 hover:bg-slate-100'
+                ? 'bg-[#0B3C5D] border-[#0B3C5D] text-white shadow-sm'
+                : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
             }`}
           >
             Announcements
           </button>
-
-          <div className="w-px h-6 bg-slate-200 shrink-0 mx-1" />
-
-          {/* Status filter group */}
           <button
             type="button"
-            onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider shrink-0 transition-all ${
-              statusFilter === 'all' 
-                ? 'bg-primary border-primary text-white shadow-sm shadow-primary/10'
-                : 'bg-slate-50 border-slate-200 text-slate-555 hover:bg-slate-100'
-            }`}
-          >
-            Active & Archived
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('active')}
-            className={`px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider shrink-0 transition-all ${
-              statusFilter === 'active' 
-                ? 'bg-primary border-primary text-white shadow-sm shadow-primary/10'
-                : 'bg-slate-50 border-slate-200 text-slate-555 hover:bg-slate-100'
-            }`}
-          >
-            Active
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('archived')}
-            className={`px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider shrink-0 transition-all ${
-              statusFilter === 'archived' 
-                ? 'bg-primary border-primary text-white shadow-sm shadow-primary/10'
-                : 'bg-slate-50 border-slate-200 text-slate-555 hover:bg-slate-100'
+            onClick={() => setTypeFilter('archived')}
+            className={`px-4.5 py-2.5 rounded-2xl border text-[9px] font-black uppercase tracking-widest shrink-0 transition-all ${
+              typeFilter === 'archived' 
+                ? 'bg-[#0B3C5D] border-[#0B3C5D] text-white shadow-sm'
+                : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
             }`}
           >
             Archived
-          </button>
-
-          <div className="w-px h-6 bg-slate-200 shrink-0 mx-1" />
-
-          {/* Priority filter trigger */}
-          <button
-            type="button"
-            onClick={() => setPriorityFilter(priorityFilter === 'all' ? 'priority' : 'all')}
-            className={`px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider shrink-0 flex items-center gap-1 transition-all ${
-              priorityFilter === 'priority' 
-                ? 'bg-amber-50 border-amber-250 text-amber-700 shadow-sm shadow-amber-600/5'
-                : 'bg-slate-50 border-slate-200 text-slate-555 hover:bg-slate-100'
-            }`}
-          >
-            <Star className={`h-3 w-3 ${priorityFilter === 'priority' ? 'fill-current text-amber-500' : 'text-slate-400'}`} />
-            <span>Priority</span>
           </button>
         </div>
       </div>
@@ -265,19 +244,19 @@ export const Posts: React.FC = () => {
       {error && (
         <div className="p-4 bg-red-50 border border-red-150 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2.5">
           <AlertCircle className="h-4 w-4 shrink-0 text-red-500 mt-0.5" />
-          <span>Failed to load notices from Supabase. Please check connection and try again.</span>
+          <span>Failed to load notices. Please check connection and try again.</span>
         </div>
       )}
 
       {/* EMPTY STATE */}
       {!isLoading && filteredPosts.length === 0 && (
-        <div className="text-center py-16 bg-white border border-slate-200 rounded-2xl p-8 max-w-sm mx-auto shadow-sm">
+        <div className="text-center py-16 bg-white border border-slate-200 rounded-3xl p-8 max-w-sm mx-auto shadow-sm">
           <div className="p-3 bg-slate-50 border border-slate-100 rounded-full inline-block mb-3 text-slate-400">
             <ClipboardList className="h-5 w-5 text-slate-400" />
           </div>
           <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider">No notices found</h3>
           <p className="text-[10px] text-slate-400 mt-1 max-w-xs mx-auto leading-relaxed">
-            Try adjusting filters or search string parameters.
+            Try adjusting filters or search query parameters.
           </p>
         </div>
       )}
@@ -287,7 +266,7 @@ export const Posts: React.FC = () => {
 
       {/* CARDS LISTING GRID */}
       {!isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {filteredPosts.map(post => (
             <AdminPostCard
               key={post.id}
@@ -488,14 +467,13 @@ export const Posts: React.FC = () => {
                   >
                     Cancel
                   </button>
-                  <Button
+                  <button
                     type="submit"
-                    variant="primary"
-                    isLoading={updatePostMutation.isPending}
-                    className="h-10 px-6 rounded-xl"
+                    disabled={updatePostMutation.isPending}
+                    className="h-10 px-6 rounded-xl bg-[#0B3C5D] hover:bg-[#0B3C5D]/90 text-white text-[10px] font-black uppercase tracking-wider transition-all select-none active:scale-[0.98]"
                   >
                     Save Changes
-                  </Button>
+                  </button>
                 </div>
 
               </form>
@@ -522,4 +500,5 @@ export const Posts: React.FC = () => {
     </div>
   );
 };
+
 export default Posts;

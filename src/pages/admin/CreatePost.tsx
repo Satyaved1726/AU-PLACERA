@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardBody } from '../../components/common/Card';
-import { Button } from '../../components/common/Button';
 import { useCreatePost } from '../../features/posts/hooks/useCreatePost';
 import { postParser } from '../../features/posts/postParser';
 import type { ParsedPost } from '../../features/posts/post.types';
 import { PostReviewCard } from '../../features/posts/components/PostReviewCard';
 import { useAuth } from '../../features/auth/useAuth';
-import { Sparkles, CheckCircle2, ChevronRight, AlertCircle, Plus, Loader2 } from 'lucide-react';
+import { 
+  Sparkles, CheckCircle2, ChevronRight, AlertCircle, 
+  Plus, Loader2, ClipboardCheck, Info, Briefcase, Megaphone, ArrowRight 
+} from 'lucide-react';
+import createPostIllustration from '../../assets/create_post_illustration.jpg';
 
 export const CreatePost: React.FC = () => {
   const navigate = useNavigate();
@@ -167,51 +169,64 @@ export const CreatePost: React.FC = () => {
       await createPostMutation.mutateAsync(payload);
       setStep(3);
     } catch (err: any) {
-      console.error('[POSTS] Publishing failed:', err);
       setErrorMessage(`Publishing failed: ${err?.message || err || 'Unknown database error.'}`);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 select-none pb-12 px-4 sm:px-0">
+    <div className="max-w-xl mx-auto space-y-6 select-none pb-16 px-4 sm:px-0">
       
-      {/* Page Header */}
-      <div className="border-b border-slate-200/80 pb-4">
-        <h1 className="text-base font-black text-slate-800 tracking-tight uppercase tracking-wide">Create Placement Post</h1>
-        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-          Paste the original WhatsApp message and prepare it for publishing.
-        </p>
+      {/* Header Banner Section */}
+      <div className="flex items-center justify-between gap-6 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm relative overflow-hidden">
+        <div className="space-y-1 z-10 flex-1">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-1.5 uppercase">
+            <span>Create Placement Post</span>
+          </h1>
+          <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider leading-relaxed">
+            Paste the original WhatsApp message and prepare it for publishing.
+          </p>
+        </div>
+        
+        <div className="relative shrink-0 select-none pointer-events-none">
+          <div className="absolute -inset-2 bg-blue-500/10 rounded-full blur-xl animate-pulse" />
+          <img 
+            src={createPostIllustration} 
+            alt="Create Post 3D Illustration" 
+            className="h-20 w-20 sm:h-24 sm:w-24 object-contain relative z-10 rounded-2xl"
+          />
+        </div>
       </div>
 
       {/* Progress Wizard Indication */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl py-4 px-6 shadow-sm flex justify-center items-center">
-        <div className="flex items-center gap-3 sm:gap-8 text-[10px] font-black uppercase tracking-wider">
+      <div className="bg-white border border-slate-150 rounded-3xl py-4 px-6 shadow-sm flex justify-center items-center">
+        <div className="flex items-center gap-3 sm:gap-6 text-[9px] font-black uppercase tracking-wider text-slate-400">
+          
           {/* Step 1 */}
-          <div className="flex items-center gap-2">
-            <span className={`h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-black transition-all ${
-              step >= 1 ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400'
+          <div className="flex flex-col items-center gap-1.5">
+            <span className={`h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${
+              step >= 1 ? 'bg-[#0B3C5D] text-white shadow-sm' : 'bg-slate-100 text-slate-400 border border-slate-200'
             }`}>01</span>
-            <span className={`hidden sm:inline ${step === 1 ? 'text-primary' : 'text-slate-400'}`}>Paste Notice</span>
+            <span className={step === 1 ? 'text-[#0B3C5D]' : 'text-slate-450'}>Paste Content</span>
           </div>
 
-          <ChevronRight className="h-4.5 w-4.5 text-slate-355" />
+          <ChevronRight className="h-4.5 w-4.5 text-slate-300 mx-1.5 mt-[-16px] sm:mt-[-18px]" />
 
           {/* Step 2 */}
-          <div className="flex items-center gap-2">
-            <span className={`h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-black transition-all ${
-              step >= 2 ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400'
+          <div className="flex flex-col items-center gap-1.5">
+            <span className={`h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${
+              step >= 2 ? 'bg-[#0B3C5D] text-white shadow-sm' : 'bg-slate-50 text-slate-400 border border-slate-200'
             }`}>02</span>
-            <span className={`hidden sm:inline ${step === 2 ? 'text-primary' : 'text-slate-400'}`}>Review Info</span>
+            <span className={step === 2 ? 'text-[#0B3C5D]' : 'text-slate-450'}>Review</span>
           </div>
 
-          <ChevronRight className="h-4.5 w-4.5 text-slate-355" />
+          <ChevronRight className="h-4.5 w-4.5 text-slate-300 mx-1.5 mt-[-16px] sm:mt-[-18px]" />
 
           {/* Step 3 */}
-          <div className="flex items-center gap-2">
-            <span className={`h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-black transition-all ${
-              step === 3 ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400'
+          <div className="flex flex-col items-center gap-1.5">
+            <span className={`h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${
+              step === 3 ? 'bg-[#0B3C5D] text-white shadow-sm' : 'bg-slate-50 text-slate-400 border border-slate-200'
             }`}>03</span>
-            <span className={`hidden sm:inline ${step === 3 ? 'text-primary' : 'text-slate-400'}`}>Publish Live</span>
+            <span className={step === 3 ? 'text-[#0B3C5D]' : 'text-slate-450'}>Publish</span>
           </div>
         </div>
       </div>
@@ -226,7 +241,7 @@ export const CreatePost: React.FC = () => {
 
       {/* Auto split results indicator */}
       {step === 2 && detectionBanner && (
-        <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-800 text-xs font-bold flex items-center gap-2">
+        <div className="p-3.5 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-800 text-xs font-bold flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
           <span>{detectionBanner}</span>
         </div>
@@ -242,98 +257,123 @@ export const CreatePost: React.FC = () => {
         </div>
       )}
 
-      {/* STEP 1: PASTE */}
+      {/* STEP 1: PASTE CONTENT */}
       {step === 1 && (
-        <Card elevation={2} className="border border-slate-200/80 shadow-sm rounded-2xl">
-          <CardBody className="p-6 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <label htmlFor="whatsapp-input" className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">
-                Paste copy text block
-              </label>
-
-              <div className="flex items-center gap-1.5 bg-slate-100/80 border border-slate-200/50 p-1 rounded-xl self-start sm:self-auto select-none overflow-x-auto scrollbar-none max-w-full shrink-0">
-                {(['auto', 'opportunity', 'announcement'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => setDetectionMode(mode)}
-                    className={`px-3 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all shrink-0 ${
-                      detectionMode === mode
-                        ? 'bg-white text-slate-800 shadow-sm'
-                        : 'text-slate-400 hover:text-slate-700'
-                    }`}
-                  >
-                    {mode === 'auto' ? 'Auto Detect' : mode}
-                  </button>
-                ))}
-              </div>
+        <div className="bg-white border border-slate-150 shadow-sm rounded-3xl p-6 space-y-5">
+          
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <ClipboardCheck className="h-4.5 w-4.5 text-[#0B3C5D]" />
+              <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                Paste WhatsApp Content
+              </h2>
             </div>
 
-            <div className="relative">
-              <textarea
-                id="whatsapp-input"
-                rows={12}
-                value={rawText}
-                onChange={(e) => setRawText(e.target.value)}
-                placeholder="Paste original copy content. Example:
-                
-BNP Paribas - PRISM Internship
-https://example.com/bnp
-
-Sprinklr - Product Research Intern
-https://example.com/sprinklr"
-                className="w-full p-4 bg-slate-50/50 border border-slate-200 rounded-2xl focus:outline-none focus:bg-white focus:border-secondary focus:ring-4 focus:ring-secondary/5 font-mono text-xs sm:text-sm leading-relaxed transition-all"
-              />
-              {rawText && (
-                <button
-                  type="button"
-                  onClick={() => setRawText('')}
-                  className="absolute top-3 right-3 text-[9px] font-black uppercase tracking-wider text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg active:scale-95 transition-all"
-                >
-                  Clear
-                </button>
-              )}
+            {/* Mode selection tabs */}
+            <div className="flex items-center gap-1 bg-slate-100 border border-slate-200/50 p-1 rounded-xl overflow-x-auto scrollbar-none max-w-full shrink-0">
+              <button
+                type="button"
+                onClick={() => setDetectionMode('auto')}
+                className={`px-3.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all flex items-center gap-1 shrink-0 ${
+                  detectionMode === 'auto'
+                    ? 'bg-[#F0F7FF] text-[#2563EB] border border-blue-150/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-700'
+                }`}
+              >
+                <Sparkles className="h-3 w-3 shrink-0" />
+                <span>Auto Detect</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDetectionMode('opportunity')}
+                className={`px-3.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all flex items-center gap-1 shrink-0 ${
+                  detectionMode === 'opportunity'
+                    ? 'bg-[#F0F7FF] text-[#2563EB] border border-blue-150/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-700'
+                }`}
+              >
+                <Briefcase className="h-3 w-3 shrink-0" />
+                <span>Opportunity</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDetectionMode('announcement')}
+                className={`px-3.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all flex items-center gap-1 shrink-0 ${
+                  detectionMode === 'announcement'
+                    ? 'bg-[#F0F7FF] text-[#2563EB] border border-blue-150/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-700'
+                }`}
+              >
+                <Megaphone className="h-3 w-3 shrink-0" />
+                <span>Announcement</span>
+              </button>
             </div>
+          </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-              <span className="text-[10px] text-slate-450 font-semibold max-w-sm leading-relaxed">
-                Paste WhatsApp messages verbatim. AU Placera will parse the separate items.
-              </span>
-              <div className="flex items-center gap-3 justify-between sm:justify-end w-full sm:w-auto">
-                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{rawText.length} characters</span>
-                <Button
-                  variant="primary"
-                  onClick={handleDetect}
-                  isLoading={isDetecting}
-                  className="h-10 px-5 rounded-xl font-bold flex items-center gap-1.5"
-                >
-                  {isDetecting ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      <span>Detecting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-3.5 w-3.5" />
-                      <span>Detect & Separate</span>
-                    </>
-                  )}
-                </Button>
-              </div>
+          {/* Large text container */}
+          <div className="relative border border-slate-200 rounded-2xl overflow-hidden bg-slate-50/50 shadow-sm focus-within:border-secondary focus-within:bg-white transition-all">
+            <textarea
+              id="whatsapp-input"
+              rows={12}
+              value={rawText}
+              onChange={(e) => setRawText(e.target.value)}
+              placeholder="Paste WhatsApp message here..."
+              className="w-full p-4 bg-transparent focus:outline-none font-sans text-xs sm:text-sm leading-relaxed text-slate-800 resize-none"
+            />
+            {rawText && (
+              <button
+                type="button"
+                onClick={() => setRawText('')}
+                className="absolute top-3 right-3 text-[9px] font-black uppercase tracking-wider text-slate-500 hover:text-slate-850 bg-slate-200/60 hover:bg-slate-200 px-2.5 py-1 rounded-lg active:scale-95 transition-all"
+              >
+                Clear
+              </button>
+            )}
+            <div className="absolute bottom-2.5 right-3.5 text-[9px] text-slate-400 font-bold uppercase tracking-wider select-none pointer-events-none">
+              {rawText.length} / 5000
             </div>
-          </CardBody>
-        </Card>
+          </div>
+
+          {/* Info Banner Alert */}
+          <div className="bg-[#F4F9FF]/80 border border-blue-100/50 rounded-2xl p-4 flex items-start gap-2.5 select-text shadow-sm">
+            <Info className="h-4 w-4 text-[#2563EB] shrink-0 mt-0.5" />
+            <p className="text-[10px] sm:text-xs text-slate-500 font-bold leading-relaxed">
+              AU Placera will automatically detect and separate items for you.
+            </p>
+          </div>
+
+          {/* Submit Action button */}
+          <button
+            type="button"
+            onClick={handleDetect}
+            disabled={isDetecting || !rawText.trim()}
+            className="w-full py-3.5 bg-[#0B3C5D] hover:bg-[#0B3C5D]/90 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all select-none active:scale-[0.98] shadow-md shadow-slate-900/5 disabled:opacity-50"
+          >
+            {isDetecting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                <span>Separating Content...</span>
+              </>
+            ) : (
+              <>
+                <span>Continue</span>
+                <ArrowRight className="h-4 w-4 shrink-0" />
+              </>
+            )}
+          </button>
+        </div>
       )}
 
-      {/* STEP 2: REVIEW GRID */}
+      {/* STEP 2: REVIEW PANEL */}
       {step === 2 && (
         <div className="space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-3 px-1">
             <div>
-              <h3 className="text-xs font-black text-slate-800 tracking-widest uppercase">
+              <h3 className="text-xs font-black text-slate-800 tracking-wider uppercase">
                 Review Opportunities
               </h3>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
                 Confirm metadata before writing to Supabase.
               </p>
             </div>
@@ -358,7 +398,7 @@ https://example.com/sprinklr"
             ))}
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-200/80 pt-5 pb-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 pt-5 pb-8">
             <button
               onClick={() => setStep(1)}
               className="w-full sm:w-auto h-10 px-5 text-[10px] font-black uppercase tracking-wider text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 active:scale-95 transition-all select-none"
@@ -376,58 +416,55 @@ https://example.com/sprinklr"
               >
                 Discard All
               </button>
-              <Button
-                variant="primary"
+              <button
                 onClick={handlePublishAll}
-                isLoading={createPostMutation.isPending || loading}
-                disabled={!profile}
-                className="flex-1 sm:flex-initial h-10 px-6 rounded-xl"
+                disabled={createPostMutation.isPending || loading}
+                className="flex-1 sm:flex-initial h-10 px-6 rounded-xl bg-[#0B3C5D] hover:bg-[#0B3C5D]/90 text-white text-[10px] font-black uppercase tracking-wider transition-all select-none active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-sm"
               >
-                {loading ? 'Loading Session...' : 'Publish All'}
-              </Button>
+                {createPostMutation.isPending ? 'Publishing...' : 'Publish All'}
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* STEP 3: SUCCESS */}
+      {/* STEP 3: SUCCESS BLOCK */}
       {step === 3 && (
-        <Card elevation={3} className="border border-slate-200/85 shadow-lg max-w-md mx-auto py-8 rounded-2xl">
-          <CardBody className="p-6 text-center space-y-6">
-            <div className="mx-auto h-16 w-16 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 border border-emerald-100">
-              <CheckCircle2 className="h-9 w-9 animate-bounce" />
-            </div>
+        <div className="bg-white border border-slate-200 shadow-lg max-w-md mx-auto py-8 rounded-3xl p-6 text-center space-y-6">
+          <div className="mx-auto h-16 w-16 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 border border-emerald-100">
+            <CheckCircle2 className="h-9 w-9 animate-bounce" />
+          </div>
 
-            <div className="space-y-2">
-              <h2 className="text-lg font-black text-slate-800 tracking-tight uppercase tracking-wider font-sans">Published Successfully!</h2>
-              <p className="text-[10px] text-slate-400 font-bold leading-relaxed max-w-xs mx-auto uppercase tracking-wide">
-                {parsedItems.length} notices have been uploaded to Supabase and are now live for all students.
-              </p>
-            </div>
+          <div className="space-y-2">
+            <h2 className="text-lg font-black text-slate-800 tracking-tight uppercase tracking-wider">Published Successfully!</h2>
+            <p className="text-[10px] text-slate-400 font-bold leading-relaxed max-w-xs mx-auto uppercase tracking-wide">
+              {parsedItems.length} notices have been uploaded to Supabase and are now live for all students.
+            </p>
+          </div>
 
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                onClick={() => {
-                  setRawText('');
-                  setParsedItems([]);
-                  setStep(1);
-                }}
-                className="flex-1 h-10 text-[10px] font-black uppercase tracking-wider text-slate-650 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl active:scale-95 transition-all select-none"
-              >
-                Create Another
-              </button>
-              <button
-                onClick={() => navigate('/admin/posts')}
-                className="flex-1 h-10 text-[10px] font-black uppercase tracking-wider text-white bg-primary hover:bg-primary-dark rounded-xl shadow-md shadow-primary/5 active:scale-95 transition-all select-none"
-              >
-                View Notice Board
-              </button>
-            </div>
-          </CardBody>
-        </Card>
+          <div className="flex items-center gap-3 pt-2">
+            <button
+              onClick={() => {
+                setRawText('');
+                setParsedItems([]);
+                setStep(1);
+              }}
+              className="flex-1 h-10 text-[10px] font-black uppercase tracking-wider text-slate-650 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl active:scale-95 transition-all select-none"
+            >
+              Create Another
+            </button>
+            <button
+              onClick={() => navigate('/admin/posts')}
+              className="flex-1 h-10 text-[10px] font-black uppercase tracking-wider text-white bg-[#0B3C5D] hover:bg-[#0B3C5D]/90 rounded-xl shadow-md active:scale-95 transition-all select-none"
+            >
+              View Notice Board
+            </button>
+          </div>
+        </div>
       )}
 
     </div>
   );
 };
+
 export default CreatePost;
