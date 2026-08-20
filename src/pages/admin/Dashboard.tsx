@@ -72,43 +72,84 @@ export const Dashboard: React.FC = () => {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
       >
-        <motion.div variants={itemVariants}>
-          <StatCard
-            title="Total Students"
-            value={loadingStudents ? '...' : String(totalStudents)}
-            icon={<Users className="h-4 w-4 text-primary" />}
-            description="AIML branch"
-          />
-        </motion.div>
+        {/* Mobile Horizontal Swipe Slider */}
+        <div className="sm:hidden flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-4 -mx-4 px-4 pb-3 select-none">
+          <motion.div variants={itemVariants} className="w-[70vw] max-w-[240px] shrink-0 snap-start">
+            <StatCard
+              title="Total Students"
+              value={loadingStudents ? '...' : String(totalStudents)}
+              icon={<Users className="h-4 w-4 text-primary" />}
+              description="AIML branch"
+            />
+          </motion.div>
 
-        <motion.div variants={itemVariants}>
-          <StatCard
-            title="Active Opportunities"
-            value={loadingPosts ? '...' : String(activeOpportunities)}
-            icon={<ClipboardList className="h-4 w-4 text-primary" />}
-            description="Recruitment drives"
-          />
-        </motion.div>
+          <motion.div variants={itemVariants} className="w-[70vw] max-w-[240px] shrink-0 snap-start">
+            <StatCard
+              title="Active Opportunities"
+              value={loadingPosts ? '...' : String(activeOpportunities)}
+              icon={<ClipboardList className="h-4 w-4 text-primary" />}
+              description="Recruitment drives"
+            />
+          </motion.div>
 
-        <motion.div variants={itemVariants}>
-          <StatCard
-            title="Priority Alerts"
-            value={loadingPosts ? '...' : String(topPriorityCount)}
-            icon={<AlertCircle className="h-4 w-4 text-[#A91D22]" />}
-            description="Active urgent notices"
-          />
-        </motion.div>
+          <motion.div variants={itemVariants} className="w-[70vw] max-w-[240px] shrink-0 snap-start">
+            <StatCard
+              title="Priority Alerts"
+              value={loadingPosts ? '...' : String(topPriorityCount)}
+              icon={<AlertCircle className="h-4 w-4 text-[#A91D22]" />}
+              description="Active urgent notices"
+            />
+          </motion.div>
 
-        <motion.div variants={itemVariants}>
-          <StatCard
-            title="OIA Eligible Students"
-            value={loadingStudents ? '...' : String(oiaEligibleCount)}
-            icon={<ShieldCheck className="h-4 w-4 text-emerald-600" />}
-            description="Authorized OIA list"
-          />
-        </motion.div>
+          <motion.div variants={itemVariants} className="w-[70vw] max-w-[240px] shrink-0 snap-start">
+            <StatCard
+              title="OIA Eligible Students"
+              value={loadingStudents ? '...' : String(oiaEligibleCount)}
+              icon={<ShieldCheck className="h-4 w-4 text-emerald-600" />}
+              description="Authorized OIA list"
+            />
+          </motion.div>
+        </div>
+
+        {/* Desktop Grid Layout */}
+        <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-5">
+          <motion.div variants={itemVariants}>
+            <StatCard
+              title="Total Students"
+              value={loadingStudents ? '...' : String(totalStudents)}
+              icon={<Users className="h-4 w-4 text-primary" />}
+              description="AIML branch"
+            />
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <StatCard
+              title="Active Opportunities"
+              value={loadingPosts ? '...' : String(activeOpportunities)}
+              icon={<ClipboardList className="h-4 w-4 text-primary" />}
+              description="Recruitment drives"
+            />
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <StatCard
+              title="Priority Alerts"
+              value={loadingPosts ? '...' : String(topPriorityCount)}
+              icon={<AlertCircle className="h-4 w-4 text-[#A91D22]" />}
+              description="Active urgent notices"
+            />
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <StatCard
+              title="OIA Eligible Students"
+              value={loadingStudents ? '...' : String(oiaEligibleCount)}
+              icon={<ShieldCheck className="h-4 w-4 text-emerald-600" />}
+              description="Authorized OIA list"
+            />
+          </motion.div>
+        </div>
       </motion.div>
 
       {/* Double column grid for reviews and chart summaries */}

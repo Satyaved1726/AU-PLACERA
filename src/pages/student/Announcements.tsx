@@ -212,12 +212,13 @@ export const Announcements: React.FC = () => {
             {searchQuery ? `Search Results (${visibleAnnouncements.length})` : 'All Active Flyers'}
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {/* Mobile Horizontal Swipe Slider */}
+          <div className="sm:hidden flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-4 -mx-4 px-4 pb-3 select-none">
             {visibleAnnouncements.map(ann => (
               <div
                 key={ann.id}
                 onClick={() => setSelectedAnnouncement(ann)}
-                className="bg-white border border-slate-205 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition-all cursor-pointer flex flex-col group"
+                className="w-[75vw] max-w-[260px] shrink-0 snap-start bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col group"
               >
                 {/* Visual Cover */}
                 <div className="h-44 bg-slate-50 relative overflow-hidden border-b border-slate-100 shrink-0">
@@ -227,21 +228,12 @@ export const Announcements: React.FC = () => {
                     className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
                     loading="lazy"
                   />
-
-                  {/* OIA indicator badge */}
                   {ann.is_oia && (
                     <div className="absolute top-3 left-3 px-2 py-0.5 bg-amber-500 border border-amber-400 text-white rounded text-[8px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1">
                       <ShieldCheck className="h-3 w-3" />
                       <span>OIA</span>
                     </div>
                   )}
-
-                  {/* Hover icon Overlay indicator */}
-                  <div className="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="p-2 bg-white/95 rounded-full text-slate-800 shadow-md">
-                      <ZoomIn className="h-4 w-4" />
-                    </div>
-                  </div>
                 </div>
 
                 {/* Details */}
@@ -256,7 +248,53 @@ export const Announcements: React.FC = () => {
                       </p>
                     )}
                   </div>
+                  <div className="flex items-center justify-between text-[8px] font-black text-slate-450 uppercase tracking-widest pt-2 border-t border-slate-50 select-none">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3 text-slate-400" />
+                      <span>{new Date(ann.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
 
+          {/* Desktop Grid Layout */}
+          <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 gap-6">
+            {visibleAnnouncements.map(ann => (
+              <div
+                key={ann.id}
+                onClick={() => setSelectedAnnouncement(ann)}
+                className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition-all cursor-pointer flex flex-col group"
+              >
+                {/* Visual Cover */}
+                <div className="h-44 bg-slate-50 relative overflow-hidden border-b border-slate-100 shrink-0">
+                  <img
+                    src={ann.image_url}
+                    alt={ann.title}
+                    className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                    loading="lazy"
+                  />
+                  {ann.is_oia && (
+                    <div className="absolute top-3 left-3 px-2 py-0.5 bg-amber-500 border border-amber-400 text-white rounded text-[8px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1">
+                      <ShieldCheck className="h-3 w-3" />
+                      <span>OIA</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Details */}
+                <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                  <div className="space-y-1">
+                    <h3 className="text-xs font-black text-slate-800 line-clamp-1 group-hover:text-primary transition-colors uppercase tracking-wide">
+                      {ann.title}
+                    </h3>
+                    {ann.description && (
+                      <p className="text-[10px] text-slate-400 font-semibold line-clamp-2 leading-relaxed">
+                        {ann.description}
+                      </p>
+                    )}
+                  </div>
                   <div className="flex items-center justify-between text-[8px] font-black text-slate-450 uppercase tracking-widest pt-2 border-t border-slate-50 select-none">
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3 text-slate-400" />

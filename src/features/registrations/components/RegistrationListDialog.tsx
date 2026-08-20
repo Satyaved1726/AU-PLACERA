@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useRegistrations } from '../hooks/useRegistrations';
-import { X, Search, AlertCircle, Users } from 'lucide-react';
+import { X, Search, AlertCircle, Users, FileDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Post, Registration } from '../../../types';
 import * as XLSX from 'xlsx';
@@ -337,6 +337,8 @@ export const RegistrationListDialog: React.FC<RegistrationListDialogProps> = ({
     doc.save(`registrations_${cleanedTitle}${filterSuffix}.pdf`);
   };
 
+  const [exportOpen, setExportOpen] = useState(false);
+
   // Filter registrations list
   const filtered = registrations.filter(reg => {
     const searchString = (
@@ -454,9 +456,23 @@ export const RegistrationListDialog: React.FC<RegistrationListDialogProps> = ({
             </div>
           )}
 
-          {/* Export Ribbon Actions */}
+          {/* Mobile Export Action Trigger */}
           {!isLoading && !error && registrations.length > 0 && (
-            <div className="px-6 py-3.5 bg-slate-50 border-b border-slate-100 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+            <div className="md:hidden px-4 py-2.5 border-b border-slate-100 bg-slate-50 select-none">
+              <button
+                type="button"
+                onClick={() => setExportOpen(true)}
+                className="w-full h-10 px-4 bg-primary hover:bg-primary-dark text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98] transition-all"
+              >
+                <FileDown className="h-4 w-4" />
+                <span>Export Registration Logs</span>
+              </button>
+            </div>
+          )}
+
+          {/* Desktop Export Ribbon Actions */}
+          {!isLoading && !error && registrations.length > 0 && (
+            <div className="hidden md:flex px-6 py-3.5 bg-slate-50 border-b border-slate-100 justify-between items-stretch md:items-center gap-4 select-none">
               {/* EXPORT ALL REGISTRATIONS SECTION */}
               <div className="space-y-1.5 flex-1">
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Export All Registrations ({registrations.length})</span>
@@ -610,6 +626,92 @@ export const RegistrationListDialog: React.FC<RegistrationListDialogProps> = ({
 
         </motion.div>
       </div>
+
+      {/* Export Bottom Sheet Drawer */}
+      <AnimatePresence>
+        {exportOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setExportOpen(false)}
+              className="md:hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm"
+            />
+            {/* Slide up panel */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-slate-200 rounded-t-3xl shadow-2xl p-6 pb-[calc(24px+env(safe-area-inset-bottom))] space-y-5 max-h-[80vh] flex flex-col"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <span className="text-xs font-black text-slate-800 tracking-wider uppercase">Export Registrations</span>
+                <button
+                  onClick={() => setExportOpen(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-650 hover:bg-slate-50 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Export All */}
+                <div className="space-y-2">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Export All ({registrations.length} items)</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => { handleExportExcel(registrations, false); setExportOpen(false); }}
+                      className="py-2 px-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-black uppercase rounded-lg shadow-sm"
+                    >
+                      Excel
+                    </button>
+                    <button
+                      onClick={() => { handleExportCsv(registrations, false); setExportOpen(false); }}
+                      className="py-2 px-1 bg-blue-650 hover:bg-blue-700 text-white text-[9px] font-black uppercase rounded-lg shadow-sm"
+                    >
+                      CSV
+                    </button>
+                    <button
+                      onClick={() => { handleExportPdf(registrations, false); setExportOpen(false); }}
+                      className="py-2 px-1 bg-red-600 hover:bg-red-700 text-white text-[9px] font-black uppercase rounded-lg shadow-sm"
+                    >
+                      PDF
+                    </button>
+                  </div>
+                </div>
+
+                {/* Export Filtered */}
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Export Filtered ({filtered.length} items)</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => { handleExportExcel(filtered, true); setExportOpen(false); }}
+                      className="py-2 px-1 bg-emerald-50 border border-emerald-200 text-emerald-750 text-[9px] font-black uppercase rounded-lg shadow-sm"
+                    >
+                      Excel
+                    </button>
+                    <button
+                      onClick={() => { handleExportCsv(filtered, true); setExportOpen(false); }}
+                      className="py-2 px-1 bg-blue-50 border border-blue-200 text-blue-750 text-[9px] font-black uppercase rounded-lg shadow-sm"
+                    >
+                      CSV
+                    </button>
+                    <button
+                      onClick={() => { handleExportPdf(filtered, true); setExportOpen(false); }}
+                      className="py-2 px-1 bg-red-50 border border-red-200 text-red-750 text-[9px] font-black uppercase rounded-lg shadow-sm"
+                    >
+                      PDF
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   );
 };

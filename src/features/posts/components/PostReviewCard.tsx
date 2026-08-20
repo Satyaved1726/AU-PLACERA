@@ -110,7 +110,7 @@ export const PostReviewCard: React.FC<PostReviewCardProps> = ({
             <CardBody className="p-5 border-t border-slate-100/50 space-y-4">
               
               {/* Type Switcher */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                     Post Type
@@ -162,7 +162,7 @@ export const PostReviewCard: React.FC<PostReviewCardProps> = ({
               </div>
 
               {/* Title & Company inputs */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {isOpportunity && (
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
@@ -178,7 +178,7 @@ export const PostReviewCard: React.FC<PostReviewCardProps> = ({
                   </div>
                 )}
 
-                <div className={isOpportunity ? '' : 'col-span-2'}>
+                <div className={isOpportunity ? '' : 'col-span-1 sm:col-span-2'}>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                     Opportunity / Announcement Title
                   </label>
@@ -211,7 +211,7 @@ export const PostReviewCard: React.FC<PostReviewCardProps> = ({
                 <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">
                   Audience / Visibility
                 </label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => handleFieldChange('audience', 'general')}

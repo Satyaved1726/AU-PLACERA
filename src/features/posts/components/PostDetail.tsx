@@ -174,7 +174,7 @@ export const PostDetail: React.FC<PostDetailProps> = ({ post, onClose }) => {
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="w-full h-full md:h-auto md:max-w-2xl bg-white rounded-none md:rounded-2xl shadow-2xl border-0 md:border border-slate-200/80 overflow-hidden relative z-10 max-h-full md:max-h-[90vh] flex flex-col pb-[calc(12px+env(safe-area-inset-bottom))] md:pb-0"
+          className="w-full h-[92vh] md:h-auto md:max-w-2xl bg-white rounded-t-3xl md:rounded-2xl shadow-2xl border-0 md:border border-slate-200/80 overflow-hidden relative z-10 max-h-[92vh] md:max-h-[90vh] flex flex-col pb-[calc(12px+env(safe-area-inset-bottom))] md:pb-0"
         >
           {/* Header */}
           <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/40 flex items-center justify-between">
