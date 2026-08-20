@@ -4,7 +4,7 @@ import { useAuth } from '../../features/auth/useAuth';
 import { useAnnouncements } from '../../features/announcements/hooks/useAnnouncements';
 import type { DigitalAnnouncement } from '../../types';
 import {
-  Megaphone, ExternalLink, Calendar,
+  Megaphone, ExternalLink,
   X, ZoomIn, Download, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -212,80 +212,60 @@ export const Announcements: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-4xl bg-white rounded-t-2xl sm:rounded-2xl overflow-hidden relative z-10 flex flex-col md:flex-row h-[90vh] md:h-auto max-h-[100vh] sm:max-h-[85vh]"
+              className="w-full max-w-4xl bg-slate-950 sm:rounded-2xl overflow-hidden relative z-10 flex flex-col h-[90vh] sm:h-[85vh]"
             >
 
-              {/* Close Button */}
-              <button
-                onClick={() => setSelectedAnnouncement(null)}
-                className="absolute top-4 right-4 z-40 p-2 bg-slate-900/50 hover:bg-slate-900 text-white rounded-full backdrop-blur-sm transition-colors border border-white/10"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              {/* Floating Action Header */}
+              <div className="absolute top-4 right-4 z-40 flex items-center gap-3">
+                <a
+                  href={selectedAnnouncement.image_url}
+                  download={`notice-${selectedAnnouncement.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 bg-slate-900/60 hover:bg-slate-900 text-white rounded-full backdrop-blur-sm transition-colors border border-white/10 flex items-center justify-center shadow-md"
+                  title="Download Document"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Download className="h-5 w-5" />
+                </a>
+                
+                {selectedAnnouncement.external_url && (
+                  <a
+                    href={selectedAnnouncement.external_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors flex items-center justify-center shadow-md"
+                    title="Register / View Link"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <ExternalLink className="h-5 w-5" />
+                  </a>
+                )}
+
+                <button
+                  onClick={() => setSelectedAnnouncement(null)}
+                  className="p-2 bg-slate-900/60 hover:bg-slate-900 text-white rounded-full backdrop-blur-sm transition-colors border border-white/10 flex items-center justify-center shadow-md"
+                  aria-label="Close details"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
 
               {/* Document display panel */}
-              <div className="flex-1 bg-slate-950 overflow-y-auto p-4 relative flex items-center justify-center min-h-[50vh] md:min-h-0 scrollbar-none">
+              <div className="w-full h-full bg-slate-950 flex items-center justify-center p-4">
                 {selectedAnnouncement.image_url.toLowerCase().split('?')[0].endsWith('.pdf') ? (
                   <iframe
                     src={selectedAnnouncement.image_url}
-                    className="w-full h-full min-h-[450px] border-0 rounded-xl"
+                    className="w-full h-full border-0 rounded-xl"
                     title={selectedAnnouncement.title}
                   />
                 ) : (
                   <img
                     src={selectedAnnouncement.image_url}
                     alt={selectedAnnouncement.title}
-                    className="w-full max-w-full h-auto object-contain rounded shadow-2xl border border-white/5 my-auto"
+                    className="max-w-full max-h-full object-contain rounded shadow-2xl border border-white/5 my-auto"
                   />
                 )}
-              </div>
-
-              {/* Information Side Panel */}
-              <div className="w-full md:w-80 bg-white p-6 flex flex-col justify-between border-t md:border-t-0 md:border-l border-slate-100 overflow-y-auto max-h-[40vh] md:max-h-none shrink-0 scrollbar-none">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 select-none">
-                    <span className="text-[9px] font-black tracking-widest text-[#0B3C5D] uppercase bg-slate-100 border border-slate-200 px-2 py-0.5 rounded flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      <span>{new Date(selectedAnnouncement.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                    </span>
-                  </div>
-
-                  <h2 className="text-sm font-black text-slate-800 leading-snug uppercase tracking-wide">
-                    {selectedAnnouncement.title}
-                  </h2>
-
-                  {selectedAnnouncement.description && (
-                    <p className="text-[11px] text-slate-500 font-semibold leading-relaxed whitespace-pre-line bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                      {selectedAnnouncement.description}
-                    </p>
-                  )}
-                </div>
-
-                <div className="pt-6 space-y-3 border-t border-slate-100 mt-6 select-none">
-                  <a
-                    href={selectedAnnouncement.image_url}
-                    download={`notice-${selectedAnnouncement.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-2.5 px-4 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:scale-[0.98] active:scale-95 transition-all"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    <span>Download Document</span>
-                  </a>
-
-                  {selectedAnnouncement.external_url && (
-                    <a
-                      href={selectedAnnouncement.external_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-3 px-4 bg-[#0B3C5D] hover:bg-[#0B3C5D]/90 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[0.98] active:scale-95 transition-all shadow-md shadow-[#0B3C5D]/10"
-                    >
-                      <span>Register / View Link</span>
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  )}
-                </div>
-
               </div>
 
             </motion.div>
