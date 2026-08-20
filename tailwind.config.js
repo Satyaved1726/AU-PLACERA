@@ -37,6 +37,13 @@ export default {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
       },
+      spacing: {
+        '4.5': '1.125rem', // 18px
+        '5.5': '1.375rem', // 22px
+        '6.5': '1.625rem', // 26px
+        '7.5': '1.875rem', // 30px
+        '8.5': '2.125rem', // 34px
+      },
       borderRadius: {
         lg: '0.5rem',
         md: '0.375rem',
