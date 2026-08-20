@@ -41,10 +41,10 @@ export const Header: React.FC<HeaderProps> = ({ role, onMenuClick, title }) => {
         {/* Toggle burger drawer on mobile */}
         <button
           onClick={onMenuClick}
-          className="lg:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 active:scale-95 transition-all"
+          className="lg:hidden h-11 w-11 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 active:scale-90 transition-all cursor-pointer relative z-50 shrink-0"
           aria-label="Toggle navigation drawer"
         >
-          <Menu className="h-4.5 w-4.5" />
+          <Menu className="h-5.5 w-5.5 shrink-0" />
         </button>
 
         <div>
