@@ -472,51 +472,27 @@ export const RegistrationListDialog: React.FC<RegistrationListDialogProps> = ({
 
           {/* Desktop Export Ribbon Actions */}
           {!isLoading && !error && registrations.length > 0 && (
-            <div className="hidden md:flex px-6 py-3.5 bg-slate-50 border-b border-slate-100 justify-between items-stretch md:items-center gap-4 select-none">
-              {/* EXPORT ALL REGISTRATIONS SECTION */}
-              <div className="space-y-1.5 flex-1">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Export All Registrations ({registrations.length})</span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleExportExcel(registrations, false)}
-                    className="flex-1 py-1.5 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-black uppercase tracking-wider rounded-lg transition-all active:scale-95 flex items-center justify-center gap-1 shadow-sm"
-                  >
-                    Excel (.xlsx)
-                  </button>
-                  <button
-                    onClick={() => handleExportCsv(registrations, false)}
-                    className="flex-1 py-1.5 px-2.5 bg-blue-650 hover:bg-blue-700 text-white text-[9px] font-black uppercase tracking-wider rounded-lg transition-all active:scale-95 flex items-center justify-center gap-1 shadow-sm"
-                  >
-                    CSV (.csv)
-                  </button>
-                  <button
-                    onClick={() => handleExportPdf(registrations, false)}
-                    className="flex-1 py-1.5 px-2.5 bg-red-600 hover:bg-red-700 text-white text-[9px] font-black uppercase tracking-wider rounded-lg transition-all active:scale-95 flex items-center justify-center gap-1 shadow-sm"
-                  >
-                    PDF (.pdf)
-                  </button>
-                </div>
-              </div>
-
-              {/* EXPORT FILTERED REGISTRATIONS SECTION */}
-              <div className="space-y-1.5 flex-1 border-t md:border-t-0 md:border-l border-slate-200/80 pt-3 md:pt-0 md:pl-4">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Export Filtered Results ({filtered.length})</span>
-                <div className="flex gap-2">
+            <div className="hidden md:flex px-6 py-3.5 bg-slate-50 border-b border-slate-100 justify-center items-center select-none">
+              <div className="space-y-2 w-full max-w-md text-center">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                  Export Registration Logs ({filtered.length})
+                </span>
+                <div className="flex gap-3">
                   <button
                     onClick={() => handleExportExcel(filtered, true)}
-                    className="flex-1 py-1.5 px-2.5 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-750 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all active:scale-95 flex items-center justify-center gap-1 shadow-sm"
+                    className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-1 shadow-sm font-sans"
                   >
                     Excel (.xlsx)
                   </button>
                   <button
                     onClick={() => handleExportCsv(filtered, true)}
-                    className="flex-1 py-1.5 px-2.5 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-750 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all active:scale-95 flex items-center justify-center gap-1 shadow-sm"
+                    className="flex-1 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white text-[9px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-1 shadow-sm font-sans"
                   >
                     CSV (.csv)
                   </button>
                   <button
                     onClick={() => handleExportPdf(filtered, true)}
-                    className="flex-1 py-1.5 px-2.5 bg-red-50 border border-red-200 hover:bg-red-100 text-red-750 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all active:scale-95 flex items-center justify-center gap-1 shadow-sm"
+                    className="flex-1 py-2 px-3 bg-red-600 hover:bg-red-700 text-white text-[9px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-1 shadow-sm font-sans"
                   >
                     PDF (.pdf)
                   </button>
@@ -658,50 +634,24 @@ export const RegistrationListDialog: React.FC<RegistrationListDialogProps> = ({
               </div>
 
               <div className="space-y-4">
-                {/* Export All */}
                 <div className="space-y-2">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Export All ({registrations.length} items)</span>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      onClick={() => { handleExportExcel(registrations, false); setExportOpen(false); }}
-                      className="py-2 px-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-black uppercase rounded-lg shadow-sm"
-                    >
-                      Excel
-                    </button>
-                    <button
-                      onClick={() => { handleExportCsv(registrations, false); setExportOpen(false); }}
-                      className="py-2 px-1 bg-blue-650 hover:bg-blue-700 text-white text-[9px] font-black uppercase rounded-lg shadow-sm"
-                    >
-                      CSV
-                    </button>
-                    <button
-                      onClick={() => { handleExportPdf(registrations, false); setExportOpen(false); }}
-                      className="py-2 px-1 bg-red-600 hover:bg-red-700 text-white text-[9px] font-black uppercase rounded-lg shadow-sm"
-                    >
-                      PDF
-                    </button>
-                  </div>
-                </div>
-
-                {/* Export Filtered */}
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Export Filtered ({filtered.length} items)</span>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block text-center">Export Data ({filtered.length} items)</span>
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => { handleExportExcel(filtered, true); setExportOpen(false); }}
-                      className="py-2 px-1 bg-emerald-50 border border-emerald-200 text-emerald-750 text-[9px] font-black uppercase rounded-lg shadow-sm"
+                      className="py-2.5 px-1 bg-emerald-600 hover:bg-emerald-705 text-white text-[9px] font-black uppercase rounded-lg shadow-sm"
                     >
                       Excel
                     </button>
                     <button
                       onClick={() => { handleExportCsv(filtered, true); setExportOpen(false); }}
-                      className="py-2 px-1 bg-blue-50 border border-blue-200 text-blue-750 text-[9px] font-black uppercase rounded-lg shadow-sm"
+                      className="py-2.5 px-1 bg-blue-600 hover:bg-blue-705 text-white text-[9px] font-black uppercase rounded-lg shadow-sm"
                     >
                       CSV
                     </button>
                     <button
                       onClick={() => { handleExportPdf(filtered, true); setExportOpen(false); }}
-                      className="py-2 px-1 bg-red-50 border border-red-200 text-red-750 text-[9px] font-black uppercase rounded-lg shadow-sm"
+                      className="py-2.5 px-1 bg-red-600 hover:bg-red-705 text-white text-[9px] font-black uppercase rounded-lg shadow-sm"
                     >
                       PDF
                     </button>
