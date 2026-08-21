@@ -48,11 +48,11 @@ export const Registered: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm relative overflow-hidden select-none">
         <div className="flex flex-col sm:flex-row items-center gap-5 w-full">
           {/* Left illustration container */}
-          <div className="h-20 w-24 sm:h-24 sm:w-32 shrink-0 overflow-hidden relative select-none pointer-events-none flex items-center justify-center">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-50/70 border border-slate-200/60 rounded-2xl flex items-center justify-center shrink-0 p-1.5 shadow-sm">
             <img 
               src={registeredIllustration} 
               alt="Registered Placements Illustration" 
-              className="h-full w-full object-contain"
+              className="h-full w-full object-contain select-none pointer-events-none"
             />
           </div>
           
