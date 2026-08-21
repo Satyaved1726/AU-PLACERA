@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Post } from '../../types';
-import anuragIconLogo from '../../assets/anurag_icon_logo.png';
 
 export const Registered: React.FC = () => {
   const navigate = useNavigate();
@@ -48,12 +47,8 @@ export const Registered: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm relative overflow-hidden select-none">
         <div className="flex flex-col sm:flex-row items-center gap-5 w-full">
           {/* Left illustration container */}
-          <div className="w-20 h-20 sm:w-24 sm:h-24 bg-slate-50/50 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden border border-slate-150 p-3 bg-gradient-to-br from-white to-slate-50 shadow-sm">
-            <img 
-              src={anuragIconLogo} 
-              alt="Anurag University Logo" 
-              className="h-full w-auto object-contain"
-            />
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 to-indigo-650 rounded-2xl flex items-center justify-center shrink-0 shadow-md shadow-blue-500/10 border border-blue-400/20">
+            <Briefcase className="h-8 w-8 text-white shrink-0" />
           </div>
           
           {/* Text block */}
