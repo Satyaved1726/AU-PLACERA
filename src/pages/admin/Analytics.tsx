@@ -30,7 +30,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import anuragIconLogo from '../../assets/anurag_icon_logo.png';
+import registeredIllustration from '../../assets/registered_illustration.jpg';
 
 const Sparkline: React.FC<{ strokeColor: string; fillGradientId: string }> = ({ strokeColor, fillGradientId }) => (
   <div className="h-8 w-full mt-2 select-none pointer-events-none">
@@ -308,11 +308,11 @@ export const Analytics: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm relative overflow-hidden select-none">
         <div className="flex flex-col sm:flex-row items-center gap-5 w-full">
           {/* Left illustration container */}
-          <div className="w-20 h-20 sm:w-24 sm:h-24 bg-slate-50/50 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden border border-slate-150 p-3 bg-gradient-to-br from-white to-slate-50 shadow-sm">
+          <div className="h-20 w-24 sm:h-24 sm:w-32 shrink-0 overflow-hidden relative select-none pointer-events-none flex items-center justify-center">
             <img 
-              src={anuragIconLogo} 
-              alt="Anurag University Logo" 
-              className="h-full w-auto object-contain"
+              src={registeredIllustration} 
+              alt="Placements & Roster Illustration" 
+              className="h-full w-full object-contain"
             />
           </div>
           
