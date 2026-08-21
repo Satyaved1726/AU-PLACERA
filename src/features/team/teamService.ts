@@ -72,10 +72,12 @@ export const teamService = {
     params: {
       fullName: string;
       designation: string;
-      category: 'leadership' | 'ssra';
+      category: 'hod' | 'oia' | 'placement_coordinator' | 'ssra';
       department?: string | null;
       description?: string | null;
       photoFile: File;
+      email?: string | null;
+      phone?: string | null;
       linkedinUrl?: string | null;
       githubUrl?: string | null;
       displayOrder?: number;
@@ -133,6 +135,8 @@ export const teamService = {
         department: params.department || null,
         description: params.description || null,
         photo_path: publicUrl,
+        email: params.email || null,
+        phone: params.phone || null,
         linkedin_url: params.linkedinUrl || null,
         github_url: params.githubUrl || null,
         display_order: params.displayOrder ?? 0,
@@ -156,9 +160,11 @@ export const teamService = {
     params: {
       fullName: string;
       designation: string;
-      category: 'leadership' | 'ssra';
+      category: 'hod' | 'oia' | 'placement_coordinator' | 'ssra';
       department?: string | null;
       description?: string | null;
+      email?: string | null;
+      phone?: string | null;
       linkedinUrl?: string | null;
       githubUrl?: string | null;
       displayOrder?: number;
@@ -220,6 +226,8 @@ export const teamService = {
         department: params.department || null,
         description: params.description || null,
         photo_path: finalPhotoUrl,
+        email: params.email || null,
+        phone: params.phone || null,
         linkedin_url: params.linkedinUrl || null,
         github_url: params.githubUrl || null,
         display_order: params.displayOrder ?? 0,

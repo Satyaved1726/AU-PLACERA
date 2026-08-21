@@ -17,10 +17,12 @@ export const useCreateTeamMember = () => {
     {
       fullName: string;
       designation: string;
-      category: 'leadership' | 'ssra';
+      category: 'hod' | 'oia' | 'placement_coordinator' | 'ssra';
       department?: string | null;
       description?: string | null;
       photoFile: File;
+      email?: string | null;
+      phone?: string | null;
       linkedinUrl?: string | null;
       githubUrl?: string | null;
       displayOrder?: number;
@@ -44,9 +46,11 @@ export const useUpdateTeamMember = () => {
       params: {
         fullName: string;
         designation: string;
-        category: 'leadership' | 'ssra';
+        category: 'hod' | 'oia' | 'placement_coordinator' | 'ssra';
         department?: string | null;
         description?: string | null;
+        email?: string | null;
+        phone?: string | null;
         linkedinUrl?: string | null;
         githubUrl?: string | null;
         displayOrder?: number;

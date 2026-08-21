@@ -20,8 +20,8 @@ export const Login: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [rollNumber, setRollNumber] = useState('');
   const [section, setSection] = useState('AIML-A');
-  const [year, setYear] = useState(3);
-  const [batch, setBatch] = useState('2023-2027');
+  const year = 4;
+  const batch = '2023-2027';
 
   // Status states
   const [isLoading, setIsLoading] = useState(false);
@@ -129,6 +129,42 @@ export const Login: React.FC = () => {
     }
     if (password !== confirmPassword) {
       setErrorMsg('Passwords do not match.');
+      return;
+    }
+
+    const trimmedEmail = email.toLowerCase().trim();
+    const trimmedRoll = rollNumber.toUpperCase().trim();
+
+    // 1. Domain validation
+    if (!trimmedEmail.endsWith('@anurag.edu.in')) {
+      setErrorMsg('Access restricted. AU Placera is currently available only to eligible 4th-year students of the 23EG107 A–F sections using their official Anurag University email.');
+      return;
+    }
+
+    // 2. Validate roll number regex: 23EG107 followed by A-F and two alphanumeric characters
+    const rollRegex = /^23EG107[A-F][0-9A-Z]{2}$/;
+    if (!rollRegex.test(trimmedRoll)) {
+      setErrorMsg('Access restricted. AU Placera is currently available only to eligible 4th-year students of the 23EG107 A–F sections using their official Anurag University email.');
+      return;
+    }
+
+    // 3. Email prefix must match roll number
+    const emailPrefix = trimmedEmail.split('@')[0];
+    if (emailPrefix !== trimmedRoll.toLowerCase()) {
+      setErrorMsg('Access restricted. AU Placera is currently available only to eligible 4th-year students of the 23EG107 A–F sections using their official Anurag University email.');
+      return;
+    }
+
+    // 4. Section validation based on roll number character
+    const sectionChar = trimmedRoll.charAt(7); // Index 7 is the 8th character: 23EG107[A-F]
+    if (section !== `AIML-${sectionChar}`) {
+      setErrorMsg('Access restricted. AU Placera is currently available only to eligible 4th-year students of the 23EG107 A–F sections using their official Anurag University email.');
+      return;
+    }
+
+    // 5. Strict batch and year check
+    if (year !== 4 || batch.trim() !== '2023-2027') {
+      setErrorMsg('Access restricted. AU Placera is currently available only to eligible 4th-year students of the 23EG107 A–F sections using their official Anurag University email.');
       return;
     }
 
@@ -371,6 +407,7 @@ export const Login: React.FC = () => {
                     <option value="AIML-C">AIML-C</option>
                     <option value="AIML-D">AIML-D</option>
                     <option value="AIML-E">AIML-E</option>
+                    <option value="AIML-F">AIML-F</option>
                   </select>
                 </div>
 
@@ -381,13 +418,10 @@ export const Login: React.FC = () => {
                   <select
                     id="signup-year"
                     value={year}
-                    onChange={(e) => setYear(Number(e.target.value))}
-                    className="w-full h-10 px-2.5 border border-slate-350 rounded-lg text-xs focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/50 bg-white text-slate-800"
+                    disabled
+                    className="w-full h-10 px-2.5 border border-slate-350 rounded-lg text-xs focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/50 bg-slate-55 text-slate-800 cursor-not-allowed"
                   >
-                    <option value={1}>Year 1</option>
-                    <option value={2}>Year 2</option>
-                    <option value={3}>Year 3</option>
-                    <option value={4}>Year 4</option>
+                    <option value={4}>4th Year</option>
                   </select>
                 </div>
 
@@ -398,11 +432,10 @@ export const Login: React.FC = () => {
                   <input
                     id="signup-batch"
                     type="text"
-                    required
+                    readOnly
                     value={batch}
-                    onChange={(e) => setBatch(e.target.value)}
                     placeholder="2023-2027"
-                    className="w-full h-10 px-2.5 border border-slate-350 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/50 bg-white text-slate-800"
+                    className="w-full h-10 px-2.5 border border-slate-350 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/50 bg-slate-55 text-slate-800 cursor-not-allowed"
                   />
                 </div>
               </div>
