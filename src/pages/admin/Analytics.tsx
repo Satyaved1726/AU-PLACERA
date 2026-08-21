@@ -27,7 +27,8 @@ import {
   ListFilter,
   CheckCircle2,
   FileDown,
-  TrendingUp
+  TrendingUp,
+  Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -170,7 +171,7 @@ export const Analytics: React.FC = () => {
   // 6. Aggregate Chart Data
   // Section breakdown
   const sectionChartData = ['AIML-A', 'AIML-B', 'AIML-C', 'AIML-D', 'AIML-E', 'AIML-F'].map(sec => ({
-    name: sec.split('-')[1],
+    name: sec,
     Registrations: filteredRegs.filter(r => r.section === sec).length
   }));
 
@@ -781,7 +782,7 @@ export const Analytics: React.FC = () => {
 
           {/* TAB 2: DETAILED ROSTER LIST */}
           {activeTab === 'roster' && (
-            <div className="space-y-4">
+            <div className="space-y-6 animate-fade-in">
               
               {/* Roster Empty State */}
               {filteredRegs.length === 0 ? (
@@ -793,71 +794,89 @@ export const Analytics: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  {/* MOBILE LIST LAYOUT (md:hidden) */}
-                  <div className="grid grid-cols-1 gap-4 md:hidden select-none">
-                    {filteredRegs.map(reg => (
-                      <div 
-                        key={reg.id} 
-                        className="bg-white border border-slate-200/85 rounded-2xl p-4 shadow-sm hover:border-slate-350 transition-all space-y-3"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="text-xs font-black text-slate-800 leading-tight">
-                              {reg.studentName}
-                            </h4>
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mt-1">
-                              {reg.rollNumber} • {reg.section} • Year {reg.year}
+                  {/* GRID ROSTER VIEW */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 select-none">
+                    {filteredRegs.map(reg => {
+                      const company = reg.companyName || 'Anurag University';
+                      const firstLetter = company.charAt(0).toUpperCase();
+
+                      // Custom category styles
+                      let categoryStyle = 'bg-slate-50 text-slate-500 border border-slate-200/60';
+                      if (reg.postType === 'opportunity') {
+                        categoryStyle = 'bg-blue-50/70 text-blue-600 border border-blue-100/50';
+                      } else if (reg.postType === 'oia') {
+                        categoryStyle = 'bg-purple-50/70 text-purple-600 border border-purple-100/50';
+                      }
+
+                      // Section color coding matching charts
+                      const sectionLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
+                      const sectionColors = [
+                        'text-[#8B5CF6] bg-[#8B5CF6]/10 border-[#8B5CF6]/20', 
+                        'text-[#3B82F6] bg-[#3B82F6]/10 border-[#3B82F6]/20', 
+                        'text-[#10B981] bg-[#10B981]/10 border-[#10B981]/20', 
+                        'text-[#F59E0B] bg-[#F59E0B]/10 border-[#F59E0B]/20', 
+                        'text-[#EF4444] bg-[#EF4444]/10 border-[#EF4444]/20', 
+                        'text-[#A78BFA] bg-[#A78BFA]/10 border-[#A78BFA]/20'
+                      ];
+                      const letterIndex = sectionLetters.indexOf(reg.section.split('-')[1] || 'A');
+                      const badgeColorClass = sectionColors[letterIndex >= 0 ? letterIndex : 0];
+
+                      return (
+                        <div 
+                          key={reg.id} 
+                          className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-[0_8px_30px_rgba(0,0,0,0.02)] hover:border-slate-350 transition-all flex flex-col justify-between h-48 group hover:scale-[1.01] duration-200"
+                        >
+                          {/* Card Top: Monogram & Type Badge */}
+                          <div className="flex justify-between items-start w-full">
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 shadow-sm transition-transform group-hover:scale-105 duration-200 ${categoryStyle}`}>
+                                {firstLetter}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h4 className="text-xs sm:text-sm font-black text-slate-800 leading-tight truncate group-hover:text-primary transition-colors">
+                                  {reg.studentName}
+                                </h4>
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mt-1">
+                                  {reg.rollNumber}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg border leading-none shrink-0 ${categoryStyle}`}>
+                              {reg.postType === 'opportunity' ? 'Opportunity' : 'OIA Drive'}
                             </span>
                           </div>
-                          
-                          <span className="text-[9px] font-bold uppercase tracking-wider bg-slate-50 border border-slate-100 text-slate-455 py-0.5 px-2 rounded-lg shrink-0">
-                            {new Date(reg.registeredAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                        
-                        <div className="border-t border-slate-100/60 pt-2 flex items-center justify-between text-[10px]">
-                          <span className="text-slate-400 font-bold uppercase tracking-widest">Drive Details</span>
-                          <span className="font-extrabold text-primary truncate max-w-[200px]">
-                            {reg.companyName} — {reg.opportunityTitle}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
 
-                  {/* DESKTOP TABLE VIEW (md:block hidden) */}
-                  <div className="hidden md:block bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
-                    <table className="w-full text-left border-collapse select-none">
-                      <thead>
-                        <tr className="bg-slate-50/30 border-b border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                          <th className="px-5 py-3.5">Student</th>
-                          <th className="px-5 py-3.5">Roll No</th>
-                          <th className="px-5 py-3.5">Section</th>
-                          <th className="px-5 py-3.5">Year</th>
-                          <th className="px-5 py-3.5">Recruiter / Drive Info</th>
-                          <th className="px-5 py-3.5">Registration Time</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
-                        {filteredRegs.map(reg => (
-                          <tr key={reg.id} className="hover:bg-slate-50/30 transition-colors">
-                            <td className="px-5 py-3.5 text-slate-800 font-extrabold">{reg.studentName}</td>
-                            <td className="px-5 py-3.5 font-mono text-slate-500 font-bold">{reg.rollNumber}</td>
-                            <td className="px-5 py-3.5 text-slate-650">{reg.section}</td>
-                            <td className="px-5 py-3.5 text-slate-400">Yr {reg.year}</td>
-                            <td className="px-5 py-3.5 font-extrabold text-primary">
-                              {reg.companyName} — {reg.opportunityTitle}
-                            </td>
-                            <td className="px-5 py-3.5 text-slate-400 font-bold">
-                              {new Date(reg.registeredAt).toLocaleString(undefined, { 
-                                dateStyle: 'short', 
-                                timeStyle: 'short' 
-                              })}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                          {/* Card Middle: Roster Details */}
+                          <div className="border-t border-b border-slate-100/60 py-3 my-2 flex flex-col gap-1.5 text-left">
+                            <div className="flex justify-between items-center text-[10px]">
+                              <span className="text-slate-400 font-bold uppercase tracking-wider">Applied Notice</span>
+                              <span className="font-extrabold text-slate-700 truncate max-w-[150px]">
+                                {reg.companyName}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center text-[10px]">
+                              <span className="text-slate-400 font-bold uppercase tracking-wider">Job Profile</span>
+                              <span className="font-extrabold text-slate-700 truncate max-w-[150px]">
+                                {reg.opportunityTitle}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Card Bottom: Section Badge & Reg Date */}
+                          <div className="flex items-center justify-between w-full">
+                            <span className={`text-[9px] font-black px-2.5 py-0.5 rounded-lg uppercase tracking-wider border leading-none ${badgeColorClass}`}>
+                              {reg.section}
+                            </span>
+                            
+                            <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-extrabold uppercase tracking-wider leading-none">
+                              <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-350" />
+                              <span>{new Date(reg.registeredAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </>
               )}
