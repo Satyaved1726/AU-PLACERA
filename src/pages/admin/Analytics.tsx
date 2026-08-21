@@ -18,7 +18,6 @@ import {
 } from 'recharts';
 import * as XLSX from 'xlsx';
 import { 
-  BarChart3, 
   FileSpreadsheet, 
   Users, 
   ClipboardList, 
@@ -31,6 +30,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import registeredIllustration from '../../assets/registered_illustration.jpg';
 
 const Sparkline: React.FC<{ strokeColor: string; fillGradientId: string }> = ({ strokeColor, fillGradientId }) => (
   <div className="h-8 w-full mt-2 select-none pointer-events-none">
@@ -304,31 +304,43 @@ export const Analytics: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Header View */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
-        <div>
-          <h1 className="text-sm sm:text-base font-black text-[#0B3C5D] font-jakarta tracking-wider flex items-center gap-2 uppercase">
-            <BarChart3 className="h-4.5 w-4.5 text-primary" />
-            <span>Placement Analytics & Roster</span>
-          </h1>
-          <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-1 leading-relaxed">
-            Monitor real recruitment trends, review section-wise and year-wise participation, and export datasets.
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              refetch();
-              triggerToast('Database reloaded successfully.');
-            }}
-            disabled={isLoading || isRefetching}
-            className="h-9 px-3.5 border border-slate-200 bg-white rounded-xl text-slate-500 hover:bg-slate-50 active:scale-95 transition-all text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 select-none"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${isRefetching ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
+      {/* Header View: Welcome Card */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm relative overflow-hidden select-none">
+        <div className="flex flex-col sm:flex-row items-center gap-5 w-full">
+          {/* Left illustration container */}
+          <div className="w-20 h-20 sm:w-24 sm:h-24 bg-blue-50/50 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden border border-blue-100/30">
+            <img 
+              src={registeredIllustration} 
+              alt="Placements & Roster Illustration" 
+              className="h-full w-full object-cover"
+            />
+          </div>
+          
+          {/* Text block */}
+          <div className="space-y-1.5 text-center sm:text-left flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-800 font-jakarta tracking-tight uppercase">
+              Placements & Roster
+            </h1>
+            <p className="text-[9px] sm:text-[10px] text-slate-400 font-black uppercase tracking-widest leading-relaxed">
+              View registered students, manage roster data, and export placement reports.
+            </p>
+          </div>
+
+          {/* Right Action Circle Button */}
+          <div className="flex shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                refetch();
+                triggerToast('Database reloaded successfully.');
+              }}
+              disabled={isLoading || isRefetching}
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-blue-50/50 hover:bg-blue-100/70 text-blue-600 border border-blue-100/30 flex items-center justify-center shrink-0 transition-all active:scale-95 shadow-sm"
+              title="Refresh Data"
+            >
+              <RefreshCw className={`h-4.5 w-4.5 ${isRefetching ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
 
