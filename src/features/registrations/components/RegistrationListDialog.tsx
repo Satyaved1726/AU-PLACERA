@@ -28,7 +28,6 @@ export const RegistrationListDialog: React.FC<RegistrationListDialogProps> = ({
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [sectionFilter, setSectionFilter] = useState<string>('all');
-  const [yearFilter, setYearFilter] = useState<string>('all');
   const [exportOpen, setExportOpen] = useState(false);
 
   if (!isOpen || !post) return null;
@@ -350,9 +349,8 @@ export const RegistrationListDialog: React.FC<RegistrationListDialogProps> = ({
 
     const matchesSearch = searchString.includes(searchQuery.toLowerCase());
     const matchesSection = sectionFilter === 'all' || reg.section === sectionFilter;
-    const matchesYear = yearFilter === 'all' || String(reg.year) === yearFilter;
 
-    return matchesSearch && matchesSection && matchesYear;
+    return matchesSearch && matchesSection;
   });
 
   return (
@@ -411,7 +409,6 @@ export const RegistrationListDialog: React.FC<RegistrationListDialogProps> = ({
               />
             </div>
 
-            {/* Section/Year dropdown pills */}
             <div className="flex items-center gap-2 select-none">
               <select
                 value={sectionFilter}
@@ -424,18 +421,7 @@ export const RegistrationListDialog: React.FC<RegistrationListDialogProps> = ({
                 <option value="AIML-C">Section C</option>
                 <option value="AIML-D">Section D</option>
                 <option value="AIML-E">Section E</option>
-              </select>
-
-              <select
-                value={yearFilter}
-                onChange={(e) => setYearFilter(e.target.value)}
-                className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-md text-[11px] font-bold text-slate-500 focus:outline-none"
-              >
-                <option value="all">All Years</option>
-                <option value="1">1st Year</option>
-                <option value="2">2nd Year</option>
-                <option value="3">3rd Year</option>
-                <option value="4">4th Year</option>
+                <option value="AIML-F">Section F</option>
               </select>
             </div>
           </div>

@@ -42,7 +42,6 @@ export const Analytics: React.FC = () => {
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [sectionFilter, setSectionFilter] = useState<string>('All');
-  const [yearFilter, setYearFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'visuals' | 'roster'>('visuals');
 
@@ -96,10 +95,6 @@ export const Analytics: React.FC = () => {
       return false;
     }
 
-    // Year filter
-    if (yearFilter !== 'All' && String(reg.year) !== yearFilter) {
-      return false;
-    }
 
     // Text search filter (matches student name, roll number, company name, or opportunity title)
     if (searchQuery) {
@@ -120,7 +115,6 @@ export const Analytics: React.FC = () => {
   // Filter students based on section/year to determine local participation pool
   const filteredStudents = students.filter(student => {
     if (sectionFilter !== 'All' && student.section !== sectionFilter) return false;
-    if (yearFilter !== 'All' && String(student.year) !== yearFilter) return false;
     return true;
   });
 
@@ -194,7 +188,6 @@ export const Analytics: React.FC = () => {
     setStartDate('');
     setEndDate('');
     setSectionFilter('All');
-    setYearFilter('All');
     setSearchQuery('');
     triggerToast('All filters have been reset.');
   };
@@ -357,22 +350,7 @@ export const Analytics: React.FC = () => {
               <option value="AIML-C">AIML-C</option>
               <option value="AIML-D">AIML-D</option>
               <option value="AIML-E">AIML-E</option>
-            </select>
-          </div>
-
-          {/* Year Filter */}
-          <div className="flex flex-col gap-1">
-            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-0.5">Year</label>
-            <select
-              value={yearFilter}
-              onChange={(e) => setYearFilter(e.target.value)}
-              className="au-input h-9 px-3 py-0 text-xs font-semibold text-slate-700 bg-white"
-            >
-              <option value="All">All Years</option>
-              <option value="1">Year 1</option>
-              <option value="2">Year 2</option>
-              <option value="3">Year 3</option>
-              <option value="4">Year 4</option>
+              <option value="AIML-F">AIML-F</option>
             </select>
           </div>
 
