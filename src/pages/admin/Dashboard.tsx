@@ -162,72 +162,86 @@ export const Dashboard: React.FC = () => {
         {/* Left Column: Recent Postings list */}
         <Card elevation={2} className="lg:col-span-2 border border-slate-200/80 shadow-sm overflow-hidden rounded-2xl">
           <CardHeader className="bg-slate-50/20 px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-[10px] font-black text-slate-800 tracking-widest uppercase">
+            <h3 className="text-[10px] font-black text-slate-800 font-jakarta tracking-widest uppercase">
               Recent Placement Notices
             </h3>
             <button
               onClick={() => navigate('/admin/posts')}
-              className="text-[10px] font-black uppercase tracking-wider text-primary border border-slate-250 hover:bg-slate-50 rounded-lg px-2.5 py-1 transition-all active:scale-95 shadow-sm"
+              className="text-[10px] font-black uppercase tracking-wider text-primary border border-slate-250 hover:bg-slate-50 rounded-lg px-2.5 py-1 transition-all active:scale-95 shadow-sm font-jakarta"
             >
               View All
             </button>
           </CardHeader>
           <CardBody className="p-0">
             {loadingPosts ? (
-              <div className="p-8 space-y-4">
-                {[1, 2].map(idx => (
-                  <div key={idx} className="h-10 rounded-xl bg-slate-50 animate-pulse border border-slate-100" />
+              <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[1, 2, 3, 4].map(idx => (
+                  <div key={idx} className="h-40 rounded-2xl bg-slate-50 animate-pulse border border-slate-100" />
                 ))}
               </div>
             ) : !posts || posts.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-400 font-semibold">
-                No notices published yet. Click "Create Post" to publish.
+                No notices published yet. Click \"Create Post\" to publish.
               </div>
             ) : (
-              <div className="divide-y divide-slate-100/80">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 bg-slate-50/10">
                 {posts.slice(0, 4).map((notice) => {
                   const company = notice.company_name || 'Anurag University';
                   const firstLetter = company.charAt(0).toUpperCase();
                   
                   // Soft, premium monogram box colors based on post category
                   let monogramStyle = 'bg-slate-50 text-slate-500 border border-slate-200/60';
+                  let categoryLabel = 'Announcement';
                   if (notice.post_type === 'opportunity') {
                     monogramStyle = 'bg-blue-50/70 text-blue-600 border border-blue-100/50';
+                    categoryLabel = notice.audience === 'oia' ? 'OIA Opportunity' : 'Opportunity';
                   } else if (notice.post_type === 'oia') {
                     monogramStyle = 'bg-purple-50/70 text-purple-600 border border-purple-100/50';
+                    categoryLabel = 'OIA Notice';
                   }
 
                   return (
                     <div 
                       key={notice.id} 
                       onClick={() => navigate('/admin/posts')}
-                      className="group flex items-center justify-between p-4 hover:bg-slate-50/50 hover:shadow-[0_4px_12px_rgba(0,0,0,0.015)] transition-all cursor-pointer select-none"
+                      className="bg-white border border-slate-200/85 rounded-2xl p-4.5 shadow-sm hover:shadow-[0_8px_30px_rgba(0,0,0,0.02)] hover:border-slate-350 transition-all flex flex-col justify-between h-40 cursor-pointer group hover:scale-[1.01] duration-200 text-left"
                     >
-                      <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                        {/* Company Monogram Icon */}
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 shadow-sm transition-transform group-hover:scale-105 duration-200 ${monogramStyle}`}>
+                      {/* Card Top: Monogram & Priority Star / Type Badge */}
+                      <div className="flex justify-between items-start w-full">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs shrink-0 shadow-sm transition-transform group-hover:scale-105 duration-200 ${monogramStyle}`}>
                           {firstLetter}
                         </div>
-
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs sm:text-sm font-bold text-slate-800 truncate group-hover:text-primary transition-colors">
-                            {notice.company_name ? `${notice.company_name} — ${notice.opportunity_title}` : notice.opportunity_title}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1 text-[9px] text-slate-400 font-bold uppercase tracking-wider">
-                            <Calendar className="h-3 w-3 shrink-0" />
-                            <span>{new Date(notice.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                            <span>•</span>
-                            <span className="capitalize">{notice.post_type}</span>
-                            {notice.is_top_priority && (
-                              <>
-                                <span>•</span>
-                                <span className="text-amber-600 font-bold">Priority</span>
-                              </>
-                            )}
-                          </div>
+                        
+                        <div className="flex items-center gap-1.5">
+                          {notice.is_top_priority && (
+                            <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-lg bg-amber-50 text-amber-600 border border-amber-250 leading-none">
+                              Priority
+                            </span>
+                          )}
+                          <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg border leading-none shrink-0 ${monogramStyle}`}>
+                            {notice.post_type === 'opportunity' ? 'Drive' : 'Notice'}
+                          </span>
                         </div>
                       </div>
-                      <ArrowRight className="h-4 w-4 text-slate-300 ml-4 shrink-0 group-hover:translate-x-0.5 group-hover:text-primary transition-all" />
+
+                      {/* Card Middle: Title */}
+                      <div className="flex-1 flex flex-col justify-center min-w-0 py-2">
+                        <h4 className="text-xs font-black text-slate-800 leading-snug group-hover:text-primary transition-colors line-clamp-2">
+                          {notice.company_name ? `${notice.company_name} — ${notice.opportunity_title}` : notice.opportunity_title}
+                        </h4>
+                      </div>
+
+                      {/* Card Bottom: Label and Date */}
+                      <div className="flex items-center justify-between border-t border-slate-100/60 pt-2.5 w-full mt-1">
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                          {categoryLabel}
+                        </span>
+                        
+                        <div className="flex items-center gap-1 text-[9px] text-slate-400 font-extrabold uppercase tracking-wider leading-none">
+                          <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-350" />
+                          <span>{new Date(notice.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
@@ -238,7 +252,7 @@ export const Dashboard: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate('/admin/posts')}
-                className="text-[10px] font-black uppercase tracking-wider text-primary hover:text-primary-dark transition-colors inline-flex items-center gap-1 active:scale-95"
+                className="text-[10px] font-black uppercase tracking-wider text-primary hover:text-primary-dark transition-colors inline-flex items-center gap-1 active:scale-95 font-jakarta"
               >
                 <span>Notice board manager</span>
                 <ArrowRight className="h-3 w-3" />
