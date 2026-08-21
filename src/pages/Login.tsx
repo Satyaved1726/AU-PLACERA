@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/useAuth';
 import { authService } from '../features/auth/authService';
+import { AnuragLogo } from '../components/common/AnuragLogo';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -237,11 +238,7 @@ export const Login: React.FC = () => {
         
         {/* App Logo & Brand Header */}
         <div className="flex flex-col items-center justify-center space-y-3 pb-2 select-none">
-          <img 
-            src="/app_icon.png" 
-            alt="AU Placera Logo" 
-            className="h-16 w-auto object-contain rounded-2xl border border-slate-100 shadow-sm p-0.5 bg-white" 
-          />
+          <AnuragLogo height={56} showText={false} />
           <h1 className="text-xl font-black text-[#0B3C5D] tracking-wider uppercase">
             AU PLACERA
           </h1>
@@ -249,7 +246,7 @@ export const Login: React.FC = () => {
             Anurag University
           </span>
         </div>
-
+        
         {/* Alerts */}
         {errorMsg && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-semibold">

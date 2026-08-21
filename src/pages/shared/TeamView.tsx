@@ -100,6 +100,16 @@ export const TeamView: React.FC = () => {
         <>
           {/* SECTION 1: LEADERSHIP TEAM */}
           <div className="space-y-6">
+            {/* Section Header */}
+            <div className="border-b border-slate-200 pb-3 flex flex-col gap-1 text-center sm:text-left select-none">
+              <div className="flex items-center justify-center sm:justify-start gap-2">
+                <Users className="h-5 w-5 text-[#0B3C5D] shrink-0" />
+                <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider">
+                  PLACEMENT TEAM
+                </h2>
+              </div>
+            </div>
+
             {leadershipMembers.length === 0 ? (
               <div className="text-center py-10 bg-white border border-slate-150 rounded-2xl text-xs text-slate-400 font-semibold uppercase">
                 No active leadership profiles configured yet.
@@ -201,10 +211,13 @@ export const TeamView: React.FC = () => {
             
             {/* Header Block */}
             <div className="border-b border-slate-200 pb-3 flex flex-col gap-1 text-center sm:text-left select-none">
-              <div className="flex items-center justify-center sm:justify-start gap-2">
+              <span className="text-[10px] font-black text-slate-450 uppercase tracking-widest block leading-none">
+                Developed By
+              </span>
+              <div className="flex items-center justify-center sm:justify-start gap-2 mt-1">
                 <GraduationCap className="h-5 w-5 text-[#0B3C5D] shrink-0" />
                 <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider">
-                  Developed By — TEAM SSRA
+                  TEAM SSRA
                 </h2>
               </div>
               <p className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider leading-relaxed mt-0.5">
