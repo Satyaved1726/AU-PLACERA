@@ -137,7 +137,7 @@ export const TeamView: React.FC = () => {
                       {/* Photo + Detail Content block */}
                       <div className="flex-1 w-full flex flex-col sm:flex-row items-center sm:items-start gap-4.5 sm:gap-6 min-w-0">
                         {/* Circular Photograph (object-cover) */}
-                        <div className="h-24 w-24 sm:h-28 sm:w-28 rounded-full overflow-hidden shrink-0 border-2 border-slate-100 bg-slate-50 shadow-inner select-none relative">
+                        <div className="h-36 w-36 sm:h-40 sm:w-40 rounded-full overflow-hidden shrink-0 border-2 border-slate-100 bg-slate-50 shadow-inner select-none relative">
                           {member.photo_path ? (
                             <img 
                               src={member.photo_path} 
