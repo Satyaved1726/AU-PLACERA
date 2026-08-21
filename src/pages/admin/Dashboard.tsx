@@ -280,9 +280,10 @@ export const Dashboard: React.FC = () => {
                         <span>{letter}</span>
                         {isActive && (
                           <motion.div 
-                            layoutId="activeSectionLine"
-                            className="absolute bottom-0 inset-x-1.5 h-0.5 bg-primary rounded-full"
-                            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                            initial={{ scaleX: 0 }}
+                            animate={{ scaleX: 1 }}
+                            className="absolute bottom-0 inset-x-1.5 h-0.5 bg-primary rounded-full origin-center"
+                            transition={{ duration: 0.2 }}
                           />
                         )}
                       </button>
