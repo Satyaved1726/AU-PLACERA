@@ -232,9 +232,24 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans">
-      <div className="max-w-md w-full space-y-6">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans">
+      <div className="max-w-md w-full space-y-6 bg-white border border-slate-200 p-8 rounded-3xl shadow-sm">
         
+        {/* App Logo & Brand Header */}
+        <div className="flex flex-col items-center justify-center space-y-3 pb-2 select-none">
+          <img 
+            src="/app_icon.png" 
+            alt="AU Placera Logo" 
+            className="h-16 w-auto object-contain rounded-2xl border border-slate-100 shadow-sm p-0.5 bg-white" 
+          />
+          <h1 className="text-xl font-black text-[#0B3C5D] tracking-wider uppercase">
+            AU PLACERA
+          </h1>
+          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.25em] leading-none">
+            Anurag University
+          </span>
+        </div>
+
         {/* Alerts */}
         {errorMsg && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-semibold">
