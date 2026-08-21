@@ -307,11 +307,11 @@ export const Analytics: React.FC = () => {
       {/* Header View */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
         <div>
-          <h1 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2 uppercase tracking-wide">
-            <BarChart3 className="h-5 w-5 text-primary" />
+          <h1 className="text-sm sm:text-base font-black text-[#0B3C5D] font-jakarta tracking-wider flex items-center gap-2 uppercase">
+            <BarChart3 className="h-4.5 w-4.5 text-primary" />
             <span>Placement Analytics & Roster</span>
           </h1>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+          <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-1 leading-relaxed">
             Monitor real recruitment trends, review section-wise and year-wise participation, and export datasets.
           </p>
         </div>

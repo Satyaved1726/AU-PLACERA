@@ -36,6 +36,8 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
+        outfit: ['Outfit', 'sans-serif'],
+        jakarta: ['"Plus Jakarta Sans"', 'sans-serif'],
       },
       spacing: {
         '4.5': '1.125rem', // 18px
