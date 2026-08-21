@@ -36,6 +36,10 @@ import { SecurityPage as SuperAdminSecurity } from '../pages/super-admin/Securit
 import { ActivityPage as SuperAdminActivity } from '../pages/super-admin/Activity';
 import { StudentsPage as SuperAdminStudents } from '../pages/super-admin/Students';
 
+// Team Pages
+import { TeamView } from '../pages/shared/TeamView';
+import { TeamManagement } from '../pages/super-admin/TeamManagement';
+
 export const router = createBrowserRouter([
   // Public Login Route
   {
@@ -62,6 +66,7 @@ export const router = createBrowserRouter([
       { path: 'materials', element: <StudentMaterials /> },
       { path: 'announcements', element: <StudentAnnouncements /> },
       { path: 'profile', element: <StudentProfile /> },
+      { path: 'team', element: <TeamView /> },
     ],
   },
   
@@ -86,6 +91,7 @@ export const router = createBrowserRouter([
       { path: 'analytics', element: <AdminAnalytics /> },
       { path: 'students', element: <AdminStudents /> },
       { path: 'profile', element: <AdminProfile /> },
+      { path: 'team', element: <TeamView /> },
     ],
   },
 
@@ -109,6 +115,8 @@ export const router = createBrowserRouter([
       { path: 'students', element: <SuperAdminStudents /> },
       { path: 'oia', element: <AdminOia /> },
       { path: 'settings', element: <SuperAdminSettings /> },
+      { path: 'team', element: <TeamManagement /> },
+      { path: 'team-view', element: <TeamView /> },
     ],
   },
   
