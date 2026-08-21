@@ -50,28 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('[OIA] Current authenticated profile:', profile);
   }, [profile]);
 
-  // Realtime subscription for the authenticated user's own profile updates
-  useEffect(() => {
-    if (!user) return;
 
-    const channel = supabase
-      .channel(`profile-updates-${user.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
-        (payload) => {
-          console.log('[OIA] Realtime profile update received:', payload.new);
-          if (payload.new) {
-            setProfile(payload.new as UserProfile);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
 
   // Auth State change listener
   useEffect(() => {

@@ -1,7 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useTeamMembers } from '../../features/team/hooks/useTeamMembers';
-import { supabase } from '../../lib/supabase';
-import { useQueryClient } from '@tanstack/react-query';
 import { Users, GraduationCap, Building2, User, Mail, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardBody } from '../../components/common/Card';
 import { PostSkeleton } from '../../components/common/LoadingSkeleton';
@@ -10,27 +8,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 
 export const TeamView: React.FC = () => {
-  const queryClient = useQueryClient();
   const { data: members = [], isLoading, error } = useTeamMembers();
   const [activeSsraIndex, setActiveSsraIndex] = useState(0);
-
-  // Subscribe to real-time updates for auto-refetching
-  useEffect(() => {
-    const channel = supabase
-      .channel('public:team_members_realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'team_members' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['team-members'] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
 
   // Filter active members
   const activeMembers = members.filter(m => m.is_active);
