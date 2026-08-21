@@ -103,7 +103,7 @@ export interface MaterialsConfig {
   updated_at: string;
 }
 
-export type TeamMemberCategory = 'leadership' | 'ssra';
+export type TeamMemberCategory = 'hod' | 'oia' | 'placement_coordinator' | 'ssra';
 
 export interface TeamMember {
   id: string;
@@ -113,6 +113,8 @@ export interface TeamMember {
   department: string | null;
   description: string | null;
   photo_path: string;
+  email: string | null;
+  phone: string | null;
   linkedin_url: string | null;
   github_url: string | null;
   display_order: number;

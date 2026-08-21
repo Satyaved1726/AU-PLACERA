@@ -7,7 +7,7 @@ import {
 import type { TeamMember, TeamMemberCategory } from '../../types';
 import { 
   UserPlus, Edit, Trash2, CheckCircle2, AlertCircle, 
-  X, Image as ImageIcon, Loader2, Check, ArrowUp, ArrowDown 
+  X, Image as ImageIcon, Loader2, Check, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { Card, CardBody } from '../../components/common/Card';
 import { PostSkeleton } from '../../components/common/LoadingSkeleton';
@@ -36,8 +36,8 @@ export const TeamManagement: React.FC = () => {
   const toggleActiveMutation = useToggleMemberActive();
   const updateOrderMutation = useUpdateDisplayOrder();
 
-  // Filter state
-  const [activeTab, setActiveTab] = useState<TeamMemberCategory>('leadership');
+  // Filter tab: 'placement' | 'ssra'
+  const [activeTab, setActiveTab] = useState<'placement' | 'ssra'>('placement');
 
   // Form modals state
   const [formOpen, setFormOpen] = useState(false);
@@ -46,9 +46,10 @@ export const TeamManagement: React.FC = () => {
 
   // Form input states
   const [fullName, setFullName] = useState('');
-  const [category, setCategory] = useState<TeamMemberCategory>('leadership');
-  const [leadershipRole, setLeadershipRole] = useState('HOD');
-  const [ssraRole, setSsraRole] = useState('');
+  const [category, setCategory] = useState<TeamMemberCategory>('hod');
+  const [designation, setDesignation] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [department, setDepartment] = useState('');
   const [description, setDescription] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
@@ -70,13 +71,28 @@ export const TeamManagement: React.FC = () => {
     setTimeout(() => setSuccessToast(null), 3000);
   };
 
+  const handleCategoryChange = (val: TeamMemberCategory) => {
+    setCategory(val);
+    // Prefill designation default value based on category
+    if (val === 'hod') {
+      setDesignation('Head of the Department');
+    } else if (val === 'oia') {
+      setDesignation('Officer In-Charge (OIA)');
+    } else if (val === 'placement_coordinator') {
+      setDesignation('Placement Coordinator');
+    } else {
+      setDesignation('');
+    }
+  };
+
   const handleOpenAdd = () => {
     setEditingMember(null);
     setFullName('');
-    setCategory('leadership');
-    setLeadershipRole('HOD');
-    setSsraRole('');
-    setDepartment('');
+    setCategory('hod');
+    setDesignation('Head of the Department');
+    setEmail('');
+    setPhone('');
+    setDepartment('AIML Department');
     setDescription('');
     setLinkedinUrl('');
     setGithubUrl('');
@@ -92,11 +108,9 @@ export const TeamManagement: React.FC = () => {
     setEditingMember(member);
     setFullName(member.full_name);
     setCategory(member.category);
-    if (member.category === 'leadership') {
-      setLeadershipRole(member.designation);
-    } else {
-      setSsraRole(member.designation);
-    }
+    setDesignation(member.designation);
+    setEmail(member.email || '');
+    setPhone(member.phone || '');
     setDepartment(member.department || '');
     setDescription(member.description || '');
     setLinkedinUrl(member.linkedin_url || '');
@@ -113,13 +127,11 @@ export const TeamManagement: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate size (< 3MB)
     if (file.size > 3 * 1024 * 1024) {
       setFormError('Photo file size must be under 3MB.');
       return;
     }
 
-    // Validate type (JPG, JPEG, PNG, WEBP)
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!validTypes.includes(file.type)) {
       setFormError('Supported image formats: JPG, JPEG, PNG, WEBP.');
@@ -141,14 +153,14 @@ export const TeamManagement: React.FC = () => {
       return;
     }
 
-    const designation = category === 'leadership' ? leadershipRole : ssraRole.trim();
-    if (!designation) {
-      setFormError('Designation/Role is required.');
+    const trimmedDesignation = designation.trim();
+    if (!trimmedDesignation) {
+      setFormError('Designation is required.');
       return;
     }
 
     if (!editingMember && !photoFile) {
-      setFormError('Photo file is required for new team members.');
+      setFormError('Photo is required.');
       return;
     }
 
@@ -157,8 +169,10 @@ export const TeamManagement: React.FC = () => {
       
       const payload = {
         fullName: trimmedName,
-        designation,
+        designation: trimmedDesignation,
         category,
+        email: email.trim() || null,
+        phone: phone.trim() || null,
         department: department.trim() || null,
         description: description.trim() || null,
         linkedinUrl: linkedinUrl.trim() || null,
@@ -176,17 +190,17 @@ export const TeamManagement: React.FC = () => {
             oldPhotoUrl: editingMember.photo_path
           }
         });
-        triggerToast('Team member updated successfully!');
+        triggerToast('Profile updated successfully!');
       } else {
         await createMutation.mutateAsync({
           ...payload,
           photoFile: photoFile!
         });
-        triggerToast('Team member added successfully!');
+        triggerToast('Profile added successfully!');
       }
       setFormOpen(false);
     } catch (err: any) {
-      setFormError(err.message || 'An error occurred while saving the profile details.');
+      setFormError(err.message || 'Error occurred while saving profile.');
     } finally {
       setUploadProgress(false);
     }
@@ -199,10 +213,10 @@ export const TeamManagement: React.FC = () => {
         id: deletingMember.id,
         photoUrl: deletingMember.photo_path
       });
-      triggerToast('Team member deleted successfully!');
+      triggerToast('Member deleted successfully!');
       setDeletingMember(null);
     } catch (err: any) {
-      triggerToast('Failed to delete team member: ' + err.message);
+      triggerToast('Failed to delete member: ' + err.message);
     }
   };
 
@@ -212,7 +226,7 @@ export const TeamManagement: React.FC = () => {
         id: member.id,
         isActive: !member.is_active
       });
-      triggerToast(member.is_active ? 'Member deactivated successfully.' : 'Member activated successfully!');
+      triggerToast(member.is_active ? 'Member hidden from view.' : 'Member is now live!');
     } catch (err: any) {
       triggerToast('Failed to update active state.');
     }
@@ -227,17 +241,32 @@ export const TeamManagement: React.FC = () => {
         displayOrder: newOrder
       });
     } catch (err: any) {
-      triggerToast('Failed to adjust sort order.');
+      triggerToast('Failed to adjust display order.');
     }
   };
 
-  // Filter members list based on tab
-  const filteredList = members.filter(m => m.category === activeTab);
+  // Sort and filter members list based on tabs
+  const getFilteredList = () => {
+    const list = members.filter(m => {
+      if (activeTab === 'placement') return m.category !== 'ssra';
+      return m.category === 'ssra';
+    });
+    return [...list].sort((a, b) => a.display_order - b.display_order);
+  };
+
+  const filteredList = getFilteredList();
+
+  const categoryLabels: Record<string, string> = {
+    hod: 'HOD',
+    oia: 'OIA',
+    placement_coordinator: 'Placement Coordinator',
+    ssra: 'SSRA member'
+  };
 
   return (
-    <div className="max-w-xl mx-auto space-y-6 select-none pb-16 px-4 sm:px-0">
+    <div className="max-w-xl mx-auto space-y-6 select-none pb-24 px-4 sm:px-0">
       
-      {/* Toast Notification */}
+      {/* Toast Alert */}
       {successToast && (
         <div className="fixed top-6 right-6 z-50 p-4 bg-slate-900 text-white rounded-xl shadow-xl text-xs font-bold flex items-center gap-2 border border-white/5 animate-fade-in">
           <CheckCircle2 className="h-4 w-4 text-[#D9B310] shrink-0" />
@@ -245,38 +274,38 @@ export const TeamManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Header Banner */}
+      {/* Title block */}
       <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight uppercase">
+          <h1 className="text-xl sm:text-2xl font-black text-[#0B3C5D] tracking-tight uppercase">
             Team Management
           </h1>
           <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider leading-relaxed">
-            Manage administrative profiles and developers visible in the public team section.
+            Manage Placement Team & SSRA directory cards
           </p>
         </div>
         
         <button
           onClick={handleOpenAdd}
           className="h-10 w-10 sm:h-11 sm:w-11 bg-[#0B3C5D] hover:bg-[#0B3C5D]/95 text-white rounded-2xl flex items-center justify-center transition-all select-none shrink-0 shadow-sm active:scale-95 cursor-pointer"
-          title="Add Team Member"
+          title="Add Person"
         >
           <UserPlus className="h-5 w-5" />
         </button>
       </div>
 
-      {/* Tabs segment */}
-      <div className="bg-white border border-slate-150 rounded-3xl p-2.5 flex gap-2 shadow-sm select-none">
+      {/* Tabs */}
+      <div className="bg-white border border-slate-150 rounded-3xl p-2 flex gap-2 shadow-sm select-none">
         <button
           type="button"
-          onClick={() => setActiveTab('leadership')}
+          onClick={() => setActiveTab('placement')}
           className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-2xl transition-all ${
-            activeTab === 'leadership'
+            activeTab === 'placement'
               ? 'bg-[#F0F7FF] text-[#2563EB] border border-blue-100/50'
               : 'text-slate-450 hover:bg-slate-50'
           }`}
         >
-          Leadership
+          Placement Team
         </button>
         <button
           type="button"
@@ -287,11 +316,10 @@ export const TeamManagement: React.FC = () => {
               : 'text-slate-455 hover:bg-slate-50'
           }`}
         >
-          SSRA Team
+          Team SSRA
         </button>
       </div>
 
-      {/* LOADING / ERRORFallback */}
       {isLoading ? (
         <PostSkeleton />
       ) : error ? (
@@ -303,19 +331,19 @@ export const TeamManagement: React.FC = () => {
           <ImageIcon className="h-10 w-10 text-slate-300 mx-auto mb-2" />
           <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider">No Profiles Found</h3>
           <p className="text-[10px] text-slate-400 mt-1 max-w-xs mx-auto leading-relaxed">
-            Click the "+" icon above to configure a team profile for this category.
+            Click the "+" icon above to configure a profile for this category.
           </p>
         </div>
       ) : (
-        /* Team Members List Card */
+        /* Team Members List */
         <div className="space-y-4">
           {filteredList.map(member => (
             <Card key={member.id} elevation={1} className="border border-slate-200 shadow-sm rounded-3xl overflow-hidden bg-white">
               <CardBody className="p-4 flex items-center justify-between gap-4">
                 
-                {/* Image Avatar Preview */}
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-14 w-12 rounded-xl bg-slate-100 overflow-hidden relative shrink-0 border border-slate-200">
+                {/* Image Circle Avatar Preview */}
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="h-12 w-12 rounded-full overflow-hidden shrink-0 border border-slate-200 relative select-none">
                     <img 
                       src={member.photo_path} 
                       alt={member.full_name} 
@@ -325,7 +353,7 @@ export const TeamManagement: React.FC = () => {
                   
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-black text-slate-850 truncate max-w-[150px] sm:max-w-xs block leading-tight">
+                      <span className="text-xs font-black text-slate-850 truncate max-w-[140px] sm:max-w-xs block leading-tight">
                         {member.full_name}
                       </span>
                       {member.is_active ? (
@@ -339,17 +367,16 @@ export const TeamManagement: React.FC = () => {
                       {member.designation}
                     </p>
                     
-                    {member.department && (
-                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wide leading-none pt-0.5 truncate max-w-[150px]">
-                        {member.department}
-                      </p>
-                    )}
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wide leading-none pt-0.5 truncate">
+                      Category: {categoryLabels[member.category]}
+                    </p>
                   </div>
                 </div>
 
                 {/* Operations Toolbar */}
                 <div className="flex items-center gap-1.5 shrink-0 select-none">
-                  {/* Reorder Up / Down */}
+                  
+                  {/* Reorder controls */}
                   <div className="flex flex-col gap-0.5 bg-slate-50 border border-slate-200 p-0.5 rounded-lg mr-1 shrink-0">
                     <button
                       onClick={() => handleAdjustOrder(member, 'up')}
@@ -367,7 +394,7 @@ export const TeamManagement: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Toggle Active Switch */}
+                  {/* Toggle Live Switch */}
                   <button
                     onClick={() => handleToggleActive(member)}
                     className={`px-2.5 py-1.5 rounded-lg border text-[8px] font-black uppercase tracking-wider transition-colors active:scale-95 ${
@@ -450,46 +477,32 @@ export const TeamManagement: React.FC = () => {
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Dr. Padmini"
+                    placeholder="e.g. Dr. Rajesh Kumar"
                     className="w-full pl-3.5 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:border-primary transition-all font-semibold text-slate-800"
                   />
                 </div>
 
-                {/* Category Switcher */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-0.5 mb-1.5">
+                {/* Category Selector */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-0.5">
                       Category *
                     </label>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setCategory('leadership')}
-                        className={`flex-1 py-2 px-3 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
-                          category === 'leadership'
-                            ? 'bg-[#0B3C5D] border-[#0B3C5D] text-white shadow-sm'
-                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        Leadership
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setCategory('ssra')}
-                        className={`flex-1 py-2 px-3 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
-                          category === 'ssra'
-                            ? 'bg-[#0B3C5D] border-[#0B3C5D] text-white shadow-sm'
-                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        SSRA Team
-                      </button>
-                    </div>
+                    <select
+                      value={category}
+                      onChange={(e) => handleCategoryChange(e.target.value as TeamMemberCategory)}
+                      className="w-full pl-3 pr-3 py-2.5 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:border-primary font-semibold text-slate-850 h-[38px]"
+                    >
+                      <option value="hod">HOD</option>
+                      <option value="oia">OIA</option>
+                      <option value="placement_coordinator">Placement Coordinator</option>
+                      <option value="ssra">SSRA (Developer/Designer/etc)</option>
+                    </select>
                   </div>
 
                   {/* Display Order */}
-                  <div>
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-0.5 mb-1.5">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-0.5">
                       Display Order (Sort)
                     </label>
                     <input
@@ -497,42 +510,53 @@ export const TeamManagement: React.FC = () => {
                       value={displayOrder}
                       onChange={(e) => setDisplayOrder(e.target.value)}
                       placeholder="e.g. 1"
-                      className="w-full pl-3.5 pr-3.5 py-2 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:border-primary transition-all font-semibold text-slate-800 h-9.5"
+                      className="w-full pl-3.5 pr-3.5 py-2 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:border-primary transition-all font-semibold text-slate-800 h-[38px]"
                     />
                   </div>
                 </div>
 
-                {/* Role/Designation Selector */}
-                {category === 'leadership' ? (
+                {/* Designation */}
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-0.5">
+                    Designation / Role *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={designation}
+                    onChange={(e) => setDesignation(e.target.value)}
+                    placeholder="e.g. Head of the Department"
+                    className="w-full pl-3.5 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:border-primary transition-all font-semibold text-slate-800"
+                  />
+                </div>
+
+                {/* Contact Email & Phone */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-0.5">
-                      Designation Role *
-                    </label>
-                    <select
-                      value={leadershipRole}
-                      onChange={(e) => setLeadershipRole(e.target.value)}
-                      className="w-full pl-3 pr-3 py-2.5 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:border-primary font-semibold text-slate-850"
-                    >
-                      <option value="HOD">HOD (Head of Department)</option>
-                      <option value="OIA Representative">OIA Representative</option>
-                      <option value="Placement Coordinator">Placement Coordinator</option>
-                    </select>
-                  </div>
-                ) : (
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-0.5">
-                      SSRA Role / Designation *
+                      Official Email
                     </label>
                     <input
-                      type="text"
-                      required
-                      value={ssraRole}
-                      onChange={(e) => setSsraRole(e.target.value)}
-                      placeholder="e.g. Student Lead Developer"
-                      className="w-full pl-3.5 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:border-primary transition-all font-semibold text-slate-800"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="e.g. name@anurag.edu.in"
+                      className="w-full pl-3.5 pr-3.5 py-2 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:border-primary transition-all font-semibold text-slate-800 h-[38px]"
                     />
                   </div>
-                )}
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-0.5">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="e.g. +91 98765 43210"
+                      className="w-full pl-3.5 pr-3.5 py-2 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:border-primary transition-all font-semibold text-slate-800 h-[38px]"
+                    />
+                  </div>
+                </div>
 
                 {/* Department */}
                 <div className="space-y-1.5">
@@ -548,10 +572,10 @@ export const TeamManagement: React.FC = () => {
                   />
                 </div>
 
-                {/* Short Bio / Description */}
+                {/* Bio / Description */}
                 <div className="space-y-1.5">
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-0.5">
-                    Bio Description
+                    Description Bio
                   </label>
                   <textarea
                     rows={3}
@@ -562,7 +586,7 @@ export const TeamManagement: React.FC = () => {
                   />
                 </div>
 
-                {/* Social URL inputs */}
+                {/* Social links */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-0.5 flex items-center gap-1">
@@ -574,7 +598,7 @@ export const TeamManagement: React.FC = () => {
                       value={linkedinUrl}
                       onChange={(e) => setLinkedinUrl(e.target.value)}
                       placeholder="https://linkedin.com/in/..."
-                      className="w-full pl-3.5 pr-3.5 py-2 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:border-primary transition-all font-semibold text-slate-800 h-9.5"
+                      className="w-full pl-3.5 pr-3.5 py-2 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:border-primary transition-all font-semibold text-slate-800 h-[38px]"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -587,7 +611,7 @@ export const TeamManagement: React.FC = () => {
                       value={githubUrl}
                       onChange={(e) => setGithubUrl(e.target.value)}
                       placeholder="https://github.com/..."
-                      className="w-full pl-3.5 pr-3.5 py-2 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:border-primary transition-all font-semibold text-slate-800 h-9.5"
+                      className="w-full pl-3.5 pr-3.5 py-2 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:border-primary transition-all font-semibold text-slate-800 h-[38px]"
                     />
                   </div>
                 </div>
@@ -598,7 +622,7 @@ export const TeamManagement: React.FC = () => {
                     Portrait Photograph File *
                   </label>
                   <div className="flex items-center gap-4 bg-slate-50 border border-slate-200 p-3 rounded-2xl">
-                    <div className="h-20 w-16 bg-slate-100 rounded-xl overflow-hidden relative shrink-0 border border-slate-200 flex items-center justify-center text-slate-350">
+                    <div className="h-16 w-16 bg-slate-100 rounded-full overflow-hidden relative shrink-0 border border-slate-200 flex items-center justify-center text-slate-350 select-none">
                       {photoPreview ? (
                         <img 
                           src={photoPreview} 
