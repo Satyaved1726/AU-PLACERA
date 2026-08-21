@@ -158,12 +158,12 @@ export const Posts: React.FC = () => {
       </AnimatePresence>
 
       {/* Header Banner Section */}
-      <div className="flex items-center justify-between gap-6 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm relative overflow-hidden">
+      <div className="flex items-center justify-between gap-6 bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm relative overflow-hidden">
         <div className="space-y-1 z-10 flex-1">
-          <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-1.5 uppercase">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-800 font-jakarta tracking-tight flex items-center gap-1.5 uppercase">
             <span>Notice Board Manager</span>
           </h1>
-          <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider leading-relaxed">
+          <p className="text-[9px] sm:text-[10px] text-slate-400 font-black uppercase tracking-widest leading-relaxed mt-1.5">
             Modify details, toggle priority status, and archive placement opportunities.
           </p>
         </div>
@@ -267,8 +267,14 @@ export const Posts: React.FC = () => {
       {isLoading && <PostSkeleton />}
 
       {/* CARDS LISTING GRID */}
-      {!isLoading && (
-        <div className="grid grid-cols-1 gap-4">
+      {!isLoading && filteredPosts.length > 0 && (
+        <div className="space-y-4">
+          <div className="border-t border-slate-200/60 pt-5 pb-1">
+            <h3 className="text-xs font-black text-slate-800 font-jakarta tracking-widest uppercase">
+              Posts
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 gap-4">
           {filteredPosts.map(post => (
             <AdminPostCard
               key={post.id}
@@ -281,6 +287,7 @@ export const Posts: React.FC = () => {
               onViewDetails={setSelectedPost}
             />
           ))}
+          </div>
         </div>
       )}
 

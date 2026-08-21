@@ -49,10 +49,10 @@ export const Header: React.FC<HeaderProps> = ({ role, onMenuClick, title }) => {
 
         <div>
           {/* Mobile compact title vs desktop spacing */}
-          <span className="lg:hidden text-xs font-black text-slate-800 tracking-tight">
+          <span className="lg:hidden text-xs font-black text-slate-800 font-jakarta tracking-wide uppercase">
             {title}
           </span>
-          <h2 className="hidden lg:block text-xs font-black text-slate-800 tracking-tight uppercase tracking-wider">
+          <h2 className="hidden lg:block text-[11px] font-black text-slate-800 font-jakarta tracking-widest uppercase">
             {title}
           </h2>
         </div>
