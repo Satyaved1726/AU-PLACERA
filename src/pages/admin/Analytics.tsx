@@ -2,18 +2,19 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { analyticsService } from '../../features/analytics/analyticsService';
 import { Card, CardHeader, CardBody } from '../../components/common/Card';
-import { StatCard } from '../../components/common/StatCard';
 import { SearchBar } from '../../components/common/SearchBar';
 import { 
   BarChart, 
   Bar, 
-  LineChart, 
-  Line, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer 
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  Cell,
+  LabelList
 } from 'recharts';
 import * as XLSX from 'xlsx';
 import { 
@@ -21,14 +22,38 @@ import {
   FileSpreadsheet, 
   Users, 
   ClipboardList, 
-  Calendar, 
   Percent, 
   RefreshCw, 
   ListFilter,
   CheckCircle2,
-  FileDown
+  FileDown,
+  TrendingUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const Sparkline: React.FC<{ strokeColor: string; fillGradientId: string }> = ({ strokeColor, fillGradientId }) => (
+  <div className="h-8 w-full mt-2 select-none pointer-events-none">
+    <svg className="w-full h-full" viewBox="0 0 100 20" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={fillGradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={strokeColor} stopOpacity="0.25" />
+          <stop offset="100%" stopColor={strokeColor} stopOpacity="0.0" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M0,15 C15,8 30,17 45,7 C60,2 75,13 90,6 L100,10"
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+      <path
+        d="M0,15 C15,8 30,17 45,7 C60,2 75,13 90,6 L100,10 L100,20 L0,20 Z"
+        fill={`url(#${fillGradientId})`}
+      />
+    </svg>
+  </div>
+);
 
 export const Analytics: React.FC = () => {
   // 1. Fetch live analytics payload via React Query
@@ -144,16 +169,16 @@ export const Analytics: React.FC = () => {
 
   // 6. Aggregate Chart Data
   // Section breakdown
-  const sectionChartData = ['AIML-A', 'AIML-B', 'AIML-C', 'AIML-D', 'AIML-E'].map(sec => ({
-    name: sec.replace('AIML-', 'Sec '),
+  const sectionChartData = ['AIML-A', 'AIML-B', 'AIML-C', 'AIML-D', 'AIML-E', 'AIML-F'].map(sec => ({
+    name: sec.split('-')[1],
     Registrations: filteredRegs.filter(r => r.section === sec).length
   }));
 
-  // Year breakdown
-  const yearChartData = [1, 2, 3, 4].map(yr => ({
-    name: `Year ${yr}`,
-    Registrations: filteredRegs.filter(r => r.year === yr).length
-  }));
+  // Drive Category Breakdown (Opportunity vs OIA)
+  const driveTypeChartData = [
+    { name: 'Opportunities', Registrations: filteredRegs.filter(r => r.postType === 'opportunity').length },
+    { name: 'OIA Notices', Registrations: filteredRegs.filter(r => r.postType === 'oia').length }
+  ];
 
   // Company performance
   const companyCountsMap: Record<string, number> = {};
@@ -432,49 +457,79 @@ export const Analytics: React.FC = () => {
             animate="visible"
             className="grid grid-cols-2 lg:grid-cols-5 gap-4"
           >
-            <motion.div variants={itemVariants}>
-              <StatCard
-                title="Active Drives"
-                value={totalDrives}
-                icon={<ClipboardList className="h-4 w-4 text-primary" />}
-                description="Total active options"
-              />
+            {/* Card 1: Active Drives */}
+            <motion.div variants={itemVariants} className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-sm relative overflow-hidden flex flex-col justify-between h-36">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Active Drives</span>
+                <div className="w-8 h-8 rounded-xl bg-violet-50 text-violet-600 border border-violet-100/60 flex items-center justify-center shrink-0">
+                  <ClipboardList className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="mt-1">
+                <span className="text-3xl font-black text-slate-800 leading-none">{totalDrives}</span>
+                <span className="block text-[8px] font-extrabold text-slate-400 uppercase tracking-wider mt-1.5">Total Active Options</span>
+              </div>
+              <Sparkline strokeColor="#8B5CF6" fillGradientId="active-drives-grad" />
             </motion.div>
 
-            <motion.div variants={itemVariants}>
-              <StatCard
-                title="Registrations"
-                value={totalRegistrations}
-                icon={<Users className="h-4 w-4 text-primary" />}
-                description="Filtered applications"
-              />
+            {/* Card 2: Registrations */}
+            <motion.div variants={itemVariants} className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-sm relative overflow-hidden flex flex-col justify-between h-36">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Registrations</span>
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 border border-blue-100/60 flex items-center justify-center shrink-0">
+                  <Users className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="mt-1">
+                <span className="text-3xl font-black text-slate-800 leading-none">{totalRegistrations.toLocaleString()}</span>
+                <span className="block text-[8px] font-extrabold text-slate-400 uppercase tracking-wider mt-1.5">Filtered Applications</span>
+              </div>
+              <Sparkline strokeColor="#3B82F6" fillGradientId="regs-grad" />
             </motion.div>
 
-            <motion.div variants={itemVariants}>
-              <StatCard
-                title="Avg per Drive"
-                value={avgRegsPerDrive}
-                icon={<Calendar className="h-4 w-4 text-primary" />}
-                description="Avg candidate turnout"
-              />
+            {/* Card 3: Avg Peers / Role */}
+            <motion.div variants={itemVariants} className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-sm relative overflow-hidden flex flex-col justify-between h-36">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Avg Peers / Role</span>
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100/60 flex items-center justify-center shrink-0">
+                  <RefreshCw className="h-4 w-4 animate-spin-slow" />
+                </div>
+              </div>
+              <div className="mt-1">
+                <span className="text-3xl font-black text-slate-800 leading-none">{avgRegsPerDrive}</span>
+                <span className="block text-[8px] font-extrabold text-slate-400 uppercase tracking-wider mt-1.5">Avg Candidates / Target</span>
+              </div>
+              <Sparkline strokeColor="#10B981" fillGradientId="avg-grad" />
             </motion.div>
 
-            <motion.div variants={itemVariants}>
-              <StatCard
-                title="Unique Students"
-                value={uniqueStudentsRegistered}
-                icon={<Users className="h-4 w-4 text-primary" />}
-                description="With at least 1 registration"
-              />
+            {/* Card 4: Unique Students */}
+            <motion.div variants={itemVariants} className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-sm relative overflow-hidden flex flex-col justify-between h-36">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Unique Students</span>
+                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 border border-amber-100/60 flex items-center justify-center shrink-0">
+                  <Users className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="mt-1">
+                <span className="text-3xl font-black text-slate-800 leading-none">{uniqueStudentsRegistered}</span>
+                <span className="block text-[8px] font-extrabold text-slate-400 uppercase tracking-wider mt-1.5">With At Least 1 Reg</span>
+              </div>
+              <Sparkline strokeColor="#F59E0B" fillGradientId="unique-grad" />
             </motion.div>
 
-            <motion.div variants={itemVariants} className="col-span-2 lg:col-span-1">
-              <StatCard
-                title="Participation"
-                value={`${participationRate}%`}
-                icon={<Percent className="h-4 w-4 text-emerald-600" />}
-                description="Of total student pool"
-              />
+            {/* Card 5: Participation */}
+            <motion.div variants={itemVariants} className="col-span-2 lg:col-span-1 bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-sm relative overflow-hidden flex flex-col justify-between h-36">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Participation</span>
+                <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 border border-rose-100/60 flex items-center justify-center shrink-0">
+                  <Percent className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="mt-1">
+                <span className="text-3xl font-black text-slate-800 leading-none">{participationRate}%</span>
+                <span className="block text-[8px] font-extrabold text-slate-400 uppercase tracking-wider mt-1.5">Of Total Student Pool</span>
+              </div>
+              <Sparkline strokeColor="#EF4444" fillGradientId="part-grad" />
             </motion.div>
           </motion.div>
 
@@ -509,11 +564,12 @@ export const Analytics: React.FC = () => {
               
               {/* Trend Chart (Full Width) */}
               <Card elevation={2} className="border border-slate-200/80 shadow-sm overflow-hidden rounded-2xl">
-                <CardHeader className="bg-slate-50/20 px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                  <h3 className="text-[10px] font-black text-slate-800 tracking-widest uppercase">
-                    Registration Trend Over Time
+                <CardHeader className="bg-slate-50/20 px-5 py-4 border-b border-slate-100 flex items-center justify-between animate-fade-in">
+                  <h3 className="text-[10px] font-black text-slate-800 tracking-widest uppercase flex items-center gap-1.5">
+                    <TrendingUp className="h-4 w-4 text-[#8B5CF6] shrink-0" />
+                    <span>Registration Trend Over Time</span>
                   </h3>
-                  <Badge variant="neutral">Timeline Analysis</Badge>
+                  <Badge variant="primary" className="text-[9px] py-0.5 bg-[#8B5CF6]/10 text-[#8B5CF6] border-none font-bold uppercase tracking-wider">Timeline: Daily</Badge>
                 </CardHeader>
                 <CardBody className="p-4 sm:p-6">
                   {trendChartData.length === 0 ? (
@@ -523,7 +579,13 @@ export const Analytics: React.FC = () => {
                   ) : (
                     <div className="h-64 w-full">
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={trendChartData}>
+                        <AreaChart data={trendChartData}>
+                          <defs>
+                            <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.25} />
+                              <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
                           <XAxis 
                             dataKey="date" 
@@ -545,21 +607,23 @@ export const Analytics: React.FC = () => {
                               fontWeight: '800'
                             }} 
                           />
-                          <Line 
+                          <Area 
                             type="monotone" 
                             dataKey="Registrations" 
-                            stroke="#0B3C5D" 
+                            stroke="#8B5CF6" 
                             strokeWidth={3} 
-                            dot={{ r: 4, stroke: '#328CC1', strokeWidth: 2, fill: 'white' }}
+                            fillOpacity={1}
+                            fill="url(#trendGradient)"
+                            dot={{ r: 4, stroke: '#A78BFA', strokeWidth: 2, fill: 'white' }}
                             activeDot={{ r: 6 }} 
                           />
-                        </LineChart>
+                        </AreaChart>
                       </ResponsiveContainer>
                     </div>
                   )}
                 </CardBody>
               </Card>
-
+ 
               {/* Multi-Column Charts Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
@@ -569,13 +633,13 @@ export const Analytics: React.FC = () => {
                     <h3 className="text-[10px] font-black text-slate-800 tracking-widest uppercase">
                       Section-wise Registrations
                     </h3>
-                    <Badge variant="neutral">AIML Sections</Badge>
+                    <Badge variant="neutral" className="text-[9px] py-0.5">Bar: Sections</Badge>
                   </CardHeader>
                   
                   <CardBody className="p-4">
-                    <div className="h-60 w-full">
+                    <div className="h-60 w-full mt-4">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={sectionChartData}>
+                        <BarChart data={sectionChartData} margin={{ top: 20 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
                           <XAxis 
                             dataKey="name" 
@@ -597,26 +661,32 @@ export const Analytics: React.FC = () => {
                               fontWeight: '800'
                             }} 
                           />
-                          <Bar dataKey="Registrations" fill="#328CC1" radius={[6, 6, 0, 0]} />
+                          <Bar dataKey="Registrations" radius={[6, 6, 0, 0]}>
+                            {sectionChartData.map((_, index) => {
+                              const sectionColors = ['#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#A78BFA'];
+                              return <Cell key={`cell-${index}`} fill={sectionColors[index % sectionColors.length]} />;
+                            })}
+                            <LabelList dataKey="Registrations" position="top" style={{ fill: '#475569', fontSize: 10, fontWeight: 800 }} />
+                          </Bar>
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
                   </CardBody>
                 </Card>
-
-                {/* Year wise Breakdown */}
+ 
+                {/* Drive category breakdown */}
                 <Card elevation={2} className="border border-slate-200/80 shadow-sm overflow-hidden rounded-2xl">
                   <CardHeader className="bg-slate-50/20 px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                     <h3 className="text-[10px] font-black text-slate-800 tracking-widest uppercase">
-                      Year-wise Registrations
+                      Drive Category Registrations
                     </h3>
-                    <Badge variant="neutral">Academic Year</Badge>
+                    <Badge variant="neutral" className="text-[9px] py-0.5">Column: Category</Badge>
                   </CardHeader>
                   
                   <CardBody className="p-4">
-                    <div className="h-60 w-full">
+                    <div className="h-60 w-full mt-4">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={yearChartData}>
+                        <BarChart data={driveTypeChartData} margin={{ top: 20 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
                           <XAxis 
                             dataKey="name" 
@@ -638,7 +708,11 @@ export const Analytics: React.FC = () => {
                               fontWeight: '800'
                             }} 
                           />
-                          <Bar dataKey="Registrations" fill="#0B3C5D" radius={[6, 6, 0, 0]} />
+                          <Bar dataKey="Registrations" radius={[6, 6, 0, 0]}>
+                            <Cell key="cell-0" fill="#3B82F6" />
+                            <Cell key="cell-1" fill="#8B5CF6" />
+                            <LabelList dataKey="Registrations" position="top" style={{ fill: '#475569', fontSize: 10, fontWeight: 800 }} />
+                          </Bar>
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -651,7 +725,7 @@ export const Analytics: React.FC = () => {
                     <h3 className="text-[10px] font-black text-slate-800 tracking-widest uppercase">
                       Top Recruitment Drives
                     </h3>
-                    <Badge variant="neutral">Ranked Drives</Badge>
+                    <Badge variant="neutral" className="text-[9px] py-0.5">Bar: By Drives</Badge>
                   </CardHeader>
                   
                   <CardBody className="p-4 sm:p-6">
@@ -662,7 +736,7 @@ export const Analytics: React.FC = () => {
                     ) : (
                       <div className="h-64 w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={companyChartData} layout="vertical" margin={{ left: 20 }}>
+                          <BarChart data={companyChartData} layout="vertical" margin={{ left: 20, right: 30 }}>
                             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F1F5F9" />
                             <XAxis 
                               type="number" 
@@ -675,7 +749,7 @@ export const Analytics: React.FC = () => {
                               dataKey="name" 
                               tick={{ fontSize: 9, fontWeight: 700, fill: '#475569' }} 
                               stroke="#E2E8F0" 
-                              width={80}
+                              width={100}
                             />
                             <Tooltip 
                               contentStyle={{ 
@@ -687,7 +761,13 @@ export const Analytics: React.FC = () => {
                                 fontWeight: '800'
                               }} 
                             />
-                            <Bar dataKey="Registrations" fill="#D9B310" radius={[0, 6, 6, 0]} />
+                            <Bar dataKey="Registrations" radius={[0, 6, 6, 0]}>
+                              {companyChartData.map((_, index) => {
+                                const sectionColors = ['#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#A78BFA'];
+                                return <Cell key={`cell-${index}`} fill={sectionColors[index % sectionColors.length]} />;
+                              })}
+                              <LabelList dataKey="Registrations" position="right" style={{ fill: '#475569', fontSize: 10, fontWeight: 800 }} />
+                            </Bar>
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
