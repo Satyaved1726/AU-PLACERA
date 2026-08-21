@@ -195,10 +195,10 @@ export const Analytics: React.FC = () => {
     return true;
   });
 
-  // Section breakdown (compares all sections together)
-  const sectionChartData = ['AIML-A', 'AIML-B', 'AIML-C', 'AIML-D', 'AIML-E', 'AIML-F'].map(sec => ({
-    name: sec,
-    Registrations: filteredRegsExceptSection.filter(r => r.section === sec).length
+  // Section breakdown (compares all sections together using short names A-F)
+  const sectionChartData = ['A', 'B', 'C', 'D', 'E', 'F'].map(letter => ({
+    name: letter,
+    Registrations: filteredRegsExceptSection.filter(r => r.section === `AIML-${letter}`).length
   }));
 
   // Drive Category Breakdown (Opportunity vs OIA)
