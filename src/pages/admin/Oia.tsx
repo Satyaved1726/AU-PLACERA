@@ -117,26 +117,6 @@ export const Oia: React.FC = () => {
 
   useEffect(() => {
     loadStudents();
-    
-    // Subscribe to real-time changes on profiles
-    const channel = supabase
-      .channel('public:profiles_oia_changes')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'profiles' },
-        (payload) => {
-          if (payload.new && payload.new.role === 'student') {
-            setStudents(current => 
-              current.map(s => s.id === payload.new.id ? { ...s, oia_eligible: payload.new.oia_eligible } : s)
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   // Filter evaluation
