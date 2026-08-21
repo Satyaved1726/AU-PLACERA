@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SearchBar } from '../../components/common/SearchBar';
 import { useAuth } from '../../features/auth/useAuth';
 import { usePosts } from '../../features/posts/hooks/usePosts';
@@ -8,10 +8,15 @@ import { Bell, AlertCircle, GraduationCap, Star } from 'lucide-react';
 import { PostSkeleton } from '../../components/common/LoadingSkeleton';
 import { motion } from 'framer-motion';
 import type { Post } from '../../types';
+import { supabase } from '../../lib/supabase';
+import { useQueryClient } from '@tanstack/react-query';
 
 export const NoticeBoard: React.FC = () => {
   const { profile } = useAuth();
-  const { data: posts, isLoading, error } = usePosts();
+  const [realtimeHealthy, setRealtimeHealthy] = useState(true);
+  const { data: posts, isLoading, error } = usePosts(realtimeHealthy ? false : 30000);
+  const queryClient = useQueryClient();
+  const oiaEligible = profile?.oia_eligible || false;
 
   // Search and filter tab states
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,6 +24,33 @@ export const NoticeBoard: React.FC = () => {
 
   // Selected post for detail modal view
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+
+  // Subscribe to real-time changes on public.posts to invalidate React Query cache
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:posts_notice_board')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'posts' },
+        (payload) => {
+          console.log('[OIA] Realtime posts change event received:', payload);
+          // Invalidate posts query to trigger background secure refetch
+          queryClient.invalidateQueries({ queryKey: ['posts', 'active', oiaEligible] });
+        }
+      )
+      .subscribe((status, err) => {
+        console.log('[OIA] Realtime posts channel status event:', status, err);
+        if (status === 'SUBSCRIBED') {
+          setRealtimeHealthy(true);
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          setRealtimeHealthy(false);
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient, oiaEligible]);
 
   // Filter listings based on search key and active tab
   const filteredNotices = (posts || []).filter(n => {
