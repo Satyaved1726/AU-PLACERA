@@ -1,28 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTeamMembers } from '../../features/team/hooks/useTeamMembers';
 import { supabase } from '../../lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
-import { Users, GraduationCap, Building2, User, Mail, Phone } from 'lucide-react';
+import { Users, GraduationCap, Building2, User, Mail, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardBody } from '../../components/common/Card';
 import { PostSkeleton } from '../../components/common/LoadingSkeleton';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const LinkedinIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-    <rect x="2" y="9" width="4" height="12" />
-    <circle cx="4" cy="4" r="2" />
-  </svg>
-);
 
-const GithubIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-  </svg>
-);
 
 export const TeamView: React.FC = () => {
   const queryClient = useQueryClient();
   const { data: members = [], isLoading, error } = useTeamMembers();
+  const [activeSsraIndex, setActiveSsraIndex] = useState(0);
 
   // Subscribe to real-time updates for auto-refetching
   useEffect(() => {
@@ -237,88 +227,91 @@ export const TeamView: React.FC = () => {
                 No active SSRA developer profiles configured yet.
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {ssraMembers.map(member => (
-                  <Card 
-                    key={member.id}
-                    elevation={2} 
-                    className="border border-slate-200 bg-white overflow-hidden rounded-2xl flex flex-col hover:border-slate-350 hover:shadow-md transition-all shadow-sm text-center"
+              <div className="relative max-w-sm mx-auto select-none">
+                <Card 
+                  elevation={2} 
+                  className="border border-slate-200 bg-white overflow-hidden rounded-3xl p-5 shadow-sm min-h-[280px] flex flex-col justify-between items-center relative"
+                >
+                  
+                  {/* Slider Controls (Previous / Next Arrows) */}
+                  <button
+                    type="button"
+                    onClick={() => setActiveSsraIndex((prev) => (prev > 0 ? prev - 1 : ssraMembers.length - 1))}
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-slate-600 active:scale-90 transition-all z-10 shadow-sm"
+                    aria-label="Previous slide"
                   >
-                    <CardBody className="p-4 flex-grow flex flex-col items-center justify-between space-y-3">
-                      
-                      {/* Avatar Circle Frame */}
-                      <div className="h-20 w-20 rounded-full overflow-hidden shrink-0 border-2 border-slate-100 bg-slate-50 shadow-inner select-none relative mx-auto">
-                        {member.photo_path ? (
-                          <img 
-                            src={member.photo_path} 
-                            alt={member.full_name} 
-                            className="w-full h-full object-cover filter brightness-[0.98]"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-300">
-                            <User className="h-8 w-8" />
-                          </div>
-                        )}
-                      </div>
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
 
-                      {/* Content block */}
-                      <div className="space-y-1 w-full">
-                        <h3 className="text-xs font-black text-slate-800 tracking-tight leading-tight uppercase line-clamp-1 truncate select-text">
-                          {member.full_name}
-                        </h3>
-                        <p className="text-[9px] font-extrabold text-blue-600 uppercase tracking-wider leading-none truncate">
-                          {member.designation}
-                        </p>
-                        
-                        {member.email && (
-                          <p className="text-[8.5px] font-bold text-slate-450 uppercase tracking-wide truncate mt-0.5 leading-none select-text" title={member.email}>
-                            {member.email}
-                          </p>
-                        )}
-                        {member.phone && (
-                          <p className="text-[8.5px] font-bold text-slate-450 uppercase tracking-wide truncate mt-0.5 leading-none select-text">
-                            {member.phone}
-                          </p>
-                        )}
-                      </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveSsraIndex((prev) => (prev < ssraMembers.length - 1 ? prev + 1 : 0))}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-slate-600 active:scale-90 transition-all z-10 shadow-sm"
+                    aria-label="Next slide"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
 
-                      {member.description && (
-                        <p className="text-[9px] text-slate-500 font-semibold leading-relaxed bg-[#F8FAFC] border border-slate-100 p-2 rounded-lg line-clamp-2 select-text w-full text-left">
-                          {member.description}
-                        </p>
-                      )}
-
-                      {/* Social handles */}
-                      {(member.linkedin_url || member.github_url) && (
-                        <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-100/60 justify-center w-full">
-                          {member.linkedin_url && (
-                            <a 
-                              href={member.linkedin_url}
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="p-1 hover:bg-blue-50 text-slate-450 hover:text-[#0077B5] rounded-md transition-colors"
-                              title="LinkedIn profile"
-                            >
-                              <LinkedinIcon className="h-3.5 w-3.5 shrink-0" />
-                            </a>
-                          )}
-                          {member.github_url && (
-                            <a 
-                              href={member.github_url}
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="p-1 hover:bg-slate-100 text-slate-455 hover:text-black rounded-md transition-colors"
-                              title="GitHub profile"
-                            >
-                              <GithubIcon className="h-3.5 w-3.5 shrink-0" />
-                            </a>
+                  <div className="w-full flex-grow flex items-center justify-center">
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={ssraMembers[activeSsraIndex].id}
+                        initial={{ opacity: 0, x: 15 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -15 }}
+                        transition={{ duration: 0.2, ease: 'easeOut' }}
+                        className="flex flex-col items-center text-center space-y-4 px-6 py-2 w-full"
+                      >
+                        {/* Avatar Circle Frame */}
+                        <div className={`rounded-full overflow-hidden shrink-0 border-2 border-slate-100 bg-slate-50 shadow-inner select-none relative mx-auto transition-all duration-300 ${
+                          ssraMembers[activeSsraIndex].full_name.includes('Satyaved')
+                            ? 'h-36 w-36 sm:h-40 sm:w-40 border-slate-350 shadow-md ring-4 ring-[#0b3c5d]/5'
+                            : 'h-24 w-24 sm:h-28 sm:w-28'
+                        }`}>
+                          {ssraMembers[activeSsraIndex].photo_path ? (
+                            <img 
+                              src={ssraMembers[activeSsraIndex].photo_path} 
+                              alt={ssraMembers[activeSsraIndex].full_name} 
+                              className="w-full h-full object-cover filter brightness-[0.98]"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-300">
+                              <User className="h-10 w-10" />
+                            </div>
                           )}
                         </div>
-                      )}
-                    </CardBody>
-                  </Card>
-                ))}
+
+                        {/* Content block */}
+                        <div className="space-y-0.5 w-full">
+                          <h3 className="text-sm font-black text-slate-800 tracking-tight leading-tight uppercase select-text">
+                            {ssraMembers[activeSsraIndex].full_name}
+                          </h3>
+                          {ssraMembers[activeSsraIndex].designation && (
+                            <p className="text-[10px] font-extrabold text-blue-600 uppercase tracking-wider leading-none truncate">
+                              {ssraMembers[activeSsraIndex].designation}
+                            </p>
+                          )}
+                        </div>
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+                  
+                  {/* Dot Indicators */}
+                  <div className="flex justify-center gap-1.5 pt-2 pb-1 shrink-0">
+                    {ssraMembers.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setActiveSsraIndex(idx)}
+                        className={`h-1.5 rounded-full transition-all duration-300 ${
+                          idx === activeSsraIndex ? 'w-4 bg-[#0b3c5d]' : 'w-1.5 bg-slate-200'
+                        }`}
+                        aria-label={`Go to slide ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+
+                </Card>
               </div>
             )}
           </div>
