@@ -26,7 +26,6 @@ export const StudentsPage: React.FC = () => {
   // Filters
   const [selectedBranch, setSelectedBranch] = useState('ALL');
   const [selectedSection, setSelectedSection] = useState('ALL');
-  const [selectedYear, setSelectedYear] = useState('ALL');
   const [selectedBatch, setSelectedBatch] = useState('ALL');
   const [selectedOia, setSelectedOia] = useState('ALL');
 
@@ -109,7 +108,6 @@ export const StudentsPage: React.FC = () => {
     // Category matching
     if (selectedBranch !== 'ALL' && student.branch !== selectedBranch) return false;
     if (selectedSection !== 'ALL' && student.section !== selectedSection) return false;
-    if (selectedYear !== 'ALL' && String(student.year) !== selectedYear) return false;
     if (selectedBatch !== 'ALL' && student.batch !== selectedBatch) return false;
     if (selectedOia !== 'ALL') {
       const isEligible = selectedOia === 'ELIGIBLE';
@@ -181,21 +179,6 @@ export const StudentsPage: React.FC = () => {
               </select>
             </div>
 
-            {/* Year */}
-            <div className="bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl">
-              <span className="block text-[8px] font-black text-slate-400 uppercase mb-0.5">Academic Year</span>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="bg-transparent text-xs font-bold text-slate-650 focus:outline-none w-full uppercase"
-              >
-                <option value="ALL">All Years</option>
-                <option value="1">1st Year</option>
-                <option value="2">2nd Year</option>
-                <option value="3">3rd Year</option>
-                <option value="4">4th Year</option>
-              </select>
-            </div>
 
             {/* Batch */}
             <div className="bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl">

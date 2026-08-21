@@ -5,7 +5,7 @@ import { Badge } from '../../components/common/Badge';
 import { useAuth } from '../../features/auth/useAuth';
 import { useStudents } from '../../features/auth/hooks/useStudents';
 import { useAdminPosts } from '../../features/posts/hooks/useAdminPosts';
-import { Users, ClipboardList, AlertCircle, ShieldCheck, TrendingUp, Calendar, ArrowRight } from 'lucide-react';
+import { Users, ClipboardList, AlertCircle, ShieldCheck, TrendingUp, Calendar, ArrowRight, GraduationCap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
@@ -15,13 +15,6 @@ export const Dashboard: React.FC = () => {
   const { data: students, isLoading: loadingStudents } = useStudents();
   const { data: posts, isLoading: loadingPosts } = useAdminPosts();
 
-  // Greeting helper based on time
-  const getGreeting = () => {
-    const hr = new Date().getHours();
-    if (hr < 12) return 'Good morning';
-    if (hr < 17) return 'Good afternoon';
-    return 'Good evening';
-  };
 
   // Compute metrics from real database state
   const totalStudents = students ? students.length : 0;
@@ -36,7 +29,7 @@ export const Dashboard: React.FC = () => {
     : 0;
 
   // Compile section counts dynamically
-  const sectionList = ['AIML-A', 'AIML-B', 'AIML-C', 'AIML-D', 'AIML-E'];
+  const sectionList = ['AIML-A', 'AIML-B', 'AIML-C', 'AIML-D', 'AIML-E', 'AIML-F'];
   const maxCount = students 
     ? Math.max(...sectionList.map(s => students.filter(student => student.section === s).length), 1)
     : 1;
@@ -55,16 +48,19 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="space-y-6 select-none max-w-6xl mx-auto pb-12 px-4 sm:px-0">
       
-      {/* Dynamic Header Greeting */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-4">
-        <div>
-          <h1 className="text-base font-black text-slate-800 tracking-tight uppercase tracking-wide">
-            {getGreeting()}, {profile?.full_name?.split(' ')[0] || 'Coordinator'} 👋
-          </h1>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-            Anurag University AIML placement metrics and notices summary.
-          </p>
+      {/* Welcome Banner */}
+      <div className="bg-[#0B3C5D] text-white p-6 rounded-2xl shadow-md border border-white/5 relative overflow-hidden">
+        <div className="absolute right-0 bottom-0 translate-x-1/4 translate-y-1/4 opacity-5 pointer-events-none">
+          <GraduationCap className="h-64 w-64 text-[#D9B310]" />
         </div>
+        <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full bg-secondary/10 blur-2xl pointer-events-none" />
+
+        <h1 className="text-xl sm:text-2xl font-black tracking-tight leading-tight">
+          Welcome, {profile?.full_name?.split(' ')[0] || 'Coordinator'} 👋
+        </h1>
+        <p className="text-slate-300 text-xs sm:text-sm mt-1.5 max-w-xl font-medium leading-relaxed">
+          Manage placement opportunity streams, registrations, resources, and track student eligibility metrics.
+        </p>
       </div>
 
       {/* KPI Cards Grid */}
