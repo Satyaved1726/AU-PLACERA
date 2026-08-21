@@ -18,11 +18,10 @@ export const RegistrationListDialog: React.FC<RegistrationListDialogProps> = ({
   isOpen,
   onClose
 }) => {
-  if (!isOpen || !post) return null;
-  const postId = post.id;
-  const postTitle = post.company_name
+  const postId = post?.id || '';
+  const postTitle = post?.company_name
     ? `${post.company_name} — ${post.opportunity_title}`
-    : (post.opportunity_title || 'Untitled Notice');
+    : (post?.opportunity_title || 'Untitled Notice');
 
   const { data: registrations = [], isLoading, error } = useRegistrations(postId);
 
@@ -30,6 +29,10 @@ export const RegistrationListDialog: React.FC<RegistrationListDialogProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [sectionFilter, setSectionFilter] = useState<string>('all');
   const [yearFilter, setYearFilter] = useState<string>('all');
+  const [exportOpen, setExportOpen] = useState(false);
+
+  if (!isOpen || !post) return null;
+
 
   // Dynamic section counts map
   const sectionCounts: { [key: string]: number } = {};
@@ -337,7 +340,6 @@ export const RegistrationListDialog: React.FC<RegistrationListDialogProps> = ({
     doc.save(`registrations_${cleanedTitle}${filterSuffix}.pdf`);
   };
 
-  const [exportOpen, setExportOpen] = useState(false);
 
   // Filter registrations list
   const filtered = registrations.filter(reg => {
