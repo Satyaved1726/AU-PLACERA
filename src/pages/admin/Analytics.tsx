@@ -27,10 +27,10 @@ import {
   CheckCircle2,
   FileDown,
   TrendingUp,
-  Calendar
+  Calendar,
+  Briefcase
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import anuragIconLogo from '../../assets/anurag_icon_logo.png';
 
 const Sparkline: React.FC<{ strokeColor: string; fillGradientId: string }> = ({ strokeColor, fillGradientId }) => (
   <div className="h-8 w-full mt-2 select-none pointer-events-none">
@@ -169,10 +169,36 @@ export const Analytics: React.FC = () => {
     : 0;
 
   // 6. Aggregate Chart Data
-  // Section breakdown
+  // Filter registrations ignoring section filter for section-wise graph comparison
+  const filteredRegsExceptSection = denormalizedRegs.filter(reg => {
+    if (startDate) {
+      const regTime = new Date(reg.registeredAt).getTime();
+      const startTime = new Date(startDate).getTime();
+      if (regTime < startTime) return false;
+    }
+    if (endDate) {
+      const regTime = new Date(reg.registeredAt).getTime();
+      const endTime = new Date(endDate + 'T23:59:59').getTime();
+      if (regTime > endTime) return false;
+    }
+    if (searchQuery) {
+      const sQuery = searchQuery.toLowerCase();
+      const matches = (
+        reg.studentName.toLowerCase().includes(sQuery) ||
+        reg.rollNumber.toLowerCase().includes(sQuery) ||
+        reg.studentEmail.toLowerCase().includes(sQuery) ||
+        reg.companyName.toLowerCase().includes(sQuery) ||
+        reg.opportunityTitle.toLowerCase().includes(sQuery)
+      );
+      if (!matches) return false;
+    }
+    return true;
+  });
+
+  // Section breakdown (compares all sections together)
   const sectionChartData = ['AIML-A', 'AIML-B', 'AIML-C', 'AIML-D', 'AIML-E', 'AIML-F'].map(sec => ({
     name: sec,
-    Registrations: filteredRegs.filter(r => r.section === sec).length
+    Registrations: filteredRegsExceptSection.filter(r => r.section === sec).length
   }));
 
   // Drive Category Breakdown (Opportunity vs OIA)
@@ -308,12 +334,8 @@ export const Analytics: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm relative overflow-hidden select-none">
         <div className="flex flex-col sm:flex-row items-center gap-5 w-full">
           {/* Left illustration container */}
-          <div className="w-20 h-20 sm:w-24 sm:h-24 bg-slate-50/50 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden border border-slate-150 p-3 bg-gradient-to-br from-white to-slate-50 shadow-sm">
-            <img 
-              src={anuragIconLogo} 
-              alt="Anurag University Logo" 
-              className="h-full w-auto object-contain"
-            />
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 to-indigo-650 rounded-2xl flex items-center justify-center shrink-0 shadow-md shadow-blue-500/10 border border-blue-400/20">
+            <Briefcase className="h-8 w-8 text-white shrink-0" />
           </div>
           
           {/* Text block */}
