@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Post } from '../../types';
-import registeredIllustration from '../../assets/registered_illustration.jpg';
+import anuragIconLogo from '../../assets/anurag_icon_logo.png';
 
 export const Registered: React.FC = () => {
   const navigate = useNavigate();
@@ -44,24 +44,39 @@ export const Registered: React.FC = () => {
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-16 select-none px-4 sm:px-0">
       
-      {/* Header Banner Section */}
-      <div className="flex items-center justify-between gap-6 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm relative overflow-hidden">
-        <div className="space-y-1 z-10 flex-1">
-          <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight uppercase">
-            Registered Opportunities
-          </h1>
-          <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider leading-relaxed">
-            View the drives and placement posts you have registered for.
-          </p>
-        </div>
-        
-        <div className="relative shrink-0 select-none pointer-events-none">
-          <div className="absolute -inset-2 bg-emerald-500/10 rounded-full blur-xl animate-pulse" />
-          <img 
-            src={registeredIllustration} 
-            alt="Registered Checklist Illustration" 
-            className="h-20 w-20 sm:h-24 sm:w-24 object-contain relative z-10 rounded-2xl"
-          />
+      {/* Header View: Welcome Card */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm relative overflow-hidden select-none">
+        <div className="flex flex-col sm:flex-row items-center gap-5 w-full">
+          {/* Left illustration container */}
+          <div className="w-20 h-20 sm:w-24 sm:h-24 bg-slate-50/50 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden border border-slate-150 p-3 bg-gradient-to-br from-white to-slate-50 shadow-sm">
+            <img 
+              src={anuragIconLogo} 
+              alt="Anurag University Logo" 
+              className="h-full w-auto object-contain"
+            />
+          </div>
+          
+          {/* Text block */}
+          <div className="space-y-1.5 text-center sm:text-left flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-800 font-jakarta tracking-tight uppercase">
+              Registered Placements
+            </h1>
+            <p className="text-[9px] sm:text-[10px] text-slate-400 font-black uppercase tracking-widest leading-relaxed">
+              View placement posts and opportunities you have registered for.
+            </p>
+          </div>
+
+          {/* Right Action Circle Button */}
+          <div className="flex shrink-0">
+            <button
+              type="button"
+              onClick={() => navigate('/student/notice-board')}
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-blue-50/50 hover:bg-blue-100/70 text-blue-600 border border-blue-100/30 flex items-center justify-center shrink-0 transition-all active:scale-95 shadow-sm"
+              title="Browse Notice Board"
+            >
+              <Sparkles className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
