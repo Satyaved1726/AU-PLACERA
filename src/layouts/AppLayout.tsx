@@ -80,7 +80,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
           { name: 'OIA Mgmt', path: '/super-admin/oia', icon: Building2 },
           { name: 'Logs', path: '/super-admin/activity', icon: ClipboardList },
           { name: 'Security', path: '/super-admin/security', icon: Shield },
-          { name: 'Settings', path: '/super-admin/settings', icon: Settings }
+          { name: 'Settings', path: '/super-admin/settings', icon: Settings },
+          { name: 'Team Management', path: '/super-admin/team', icon: Settings }
         ]
       };
     }
@@ -97,7 +98,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
           { name: 'Students', path: '/admin/students', icon: Users },
           { name: 'OIA', path: '/admin/oia', icon: Building2 },
           { name: 'Materials', path: '/admin/materials', icon: BookOpen },
-          { name: 'Digital Board', path: '/admin/announcements', icon: Megaphone }
+          { name: 'Digital Board', path: '/admin/announcements', icon: Megaphone },
+          { name: 'Placement Team', path: '/admin/team', icon: Users }
         ]
       };
     }
@@ -113,7 +115,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
     const drawerItems = [
       { name: 'Registered', path: '/student/registered', icon: ClipboardCheck },
       { name: 'Digital Board', path: '/student/announcements', icon: Megaphone },
-      { name: 'Saved Notices', path: '/student/saved', icon: Bookmark }
+      { name: 'Saved Notices', path: '/student/saved', icon: Bookmark },
+      { name: 'Placement Team', path: '/student/team', icon: Users }
     ];
     if (hasOia) {
       drawerItems.unshift({ name: 'OIA Hub', path: '/student/oia', icon: Building2 });

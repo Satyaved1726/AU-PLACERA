@@ -102,3 +102,21 @@ export interface MaterialsConfig {
   created_at: string;
   updated_at: string;
 }
+
+export type TeamMemberCategory = 'leadership' | 'ssra';
+
+export interface TeamMember {
+  id: string;
+  full_name: string;
+  designation: string;
+  category: TeamMemberCategory;
+  department: string | null;
+  description: string | null;
+  photo_path: string;
+  linkedin_url: string | null;
+  github_url: string | null;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}

@@ -59,7 +59,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, collapsed, onCol
       items: [
         { name: 'OIA', path: '/admin/oia', icon: Building2 },
         { name: 'Materials', path: '/admin/materials', icon: BookOpen },
-        { name: 'Digital Notice Board', path: '/admin/announcements', icon: Megaphone }
+        { name: 'Digital Notice Board', path: '/admin/announcements', icon: Megaphone },
+        { name: 'Placement Team', path: '/admin/team', icon: Users }
       ]
     }
   ];
@@ -72,6 +73,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, collapsed, onCol
     { name: 'Saved', path: '/student/saved', icon: Bookmark },
     { name: 'OIA', path: '/student/oia', icon: Building2 },
     { name: 'Materials', path: '/student/materials', icon: BookOpen },
+    { name: 'Placement Team', path: '/student/team', icon: Users },
     { name: 'Profile', path: '/student/profile', icon: User }
   ];
 
@@ -101,7 +103,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, collapsed, onCol
             { name: 'OIA Management', path: '/super-admin/oia', icon: Building2 },
             { name: 'Activity Logs', path: '/super-admin/activity', icon: ClipboardList },
             { name: 'Security', path: '/super-admin/security', icon: Shield },
-            { name: 'System Settings', path: '/super-admin/settings', icon: Settings }
+            { name: 'System Settings', path: '/super-admin/settings', icon: Settings },
+            { name: 'Team Management', path: '/super-admin/team', icon: Settings }
           ]
         });
       }
