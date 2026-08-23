@@ -5,9 +5,127 @@ import { useAnnouncements } from '../../features/announcements/hooks/useAnnounce
 import type { DigitalAnnouncement } from '../../types';
 import {
   Megaphone, ExternalLink,
-  X, ZoomIn, Download, FileText
+  X, ZoomIn, Download, FileText,
+  FileSpreadsheet, Image
 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
+
+interface AttachmentItemProps {
+  attachment: any;
+  isAdmin: boolean;
+  onDelete?: (id: string, filePath: string) => void;
+}
+
+const AttachmentItem: React.FC<AttachmentItemProps> = ({ attachment }) => {
+  const [signedUrl, setSignedUrl] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  React.useEffect(() => {
+    let active = true;
+    const fetchSignedUrl = async () => {
+      try {
+        const { data, error } = await supabase.storage
+          .from('announcement-attachments')
+          .createSignedUrl(attachment.file_path, 3600);
+        
+        if (error) {
+          console.warn('Failed to generate signed URL:', error.message);
+          return;
+        }
+
+        if (active && data?.signedUrl) {
+          setSignedUrl(data.signedUrl);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch signed URL:', err);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+
+    fetchSignedUrl();
+    return () => {
+      active = false;
+    };
+  }, [attachment]);
+
+  const isPdf = attachment.file_name.toLowerCase().endsWith('.pdf');
+  const isExcel = attachment.file_name.toLowerCase().endsWith('.xlsx') || attachment.file_name.toLowerCase().endsWith('.xls');
+  const isImage = attachment.file_type.startsWith('image/') || attachment.file_name.toLowerCase().match(/\.(jpg|jpeg|png|webp)$/);
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+
+  if (isLoading) {
+    return (
+      <div className="h-9 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
+    );
+  }
+
+  if (!signedUrl) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-col gap-2 p-3 bg-slate-50 border border-slate-150 rounded-xl hover:bg-slate-100/50 transition-colors animate-fade-in">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 truncate">
+          {isPdf ? (
+            <FileText className="h-5 w-5 text-red-500 shrink-0" />
+          ) : isExcel ? (
+            <FileSpreadsheet className="h-5 w-5 text-green-600 shrink-0" />
+          ) : (
+            <Image className="h-5 w-5 text-blue-500 shrink-0" />
+          )}
+          <div className="flex flex-col truncate">
+            <span className="text-[10px] font-black text-slate-800 truncate" title={attachment.file_name}>
+              {attachment.file_name}
+            </span>
+            <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+              {formatFileSize(attachment.file_size)}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <a
+            href={signedUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            download={isExcel ? attachment.file_name : undefined}
+            className="h-7 px-3 bg-white border border-slate-200 text-slate-700 hover:text-primary hover:border-primary rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1 transition-all"
+            title={isExcel ? 'Download Excel' : 'Open Attachment'}
+          >
+            {isExcel ? <Download className="h-3.5 w-3.5" /> : <ExternalLink className="h-3.5 w-3.5" />}
+            <span>{isExcel ? 'Download' : isPdf ? 'Open PDF' : 'View'}</span>
+          </a>
+        </div>
+      </div>
+
+      {isImage && (
+        <a 
+          href={signedUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 rounded-lg overflow-hidden border border-slate-200/60 bg-white block max-w-xs cursor-zoom-in"
+        >
+          <img 
+            src={signedUrl}
+            alt={attachment.file_name}
+            className="max-h-24 object-contain mx-auto"
+            loading="lazy"
+          />
+        </a>
+      )}
+    </div>
+  );
+};
 
 export const Announcements: React.FC = () => {
   const { profile } = useAuth();
@@ -169,6 +287,24 @@ export const Announcements: React.FC = () => {
                     <p className="text-xs text-slate-550 font-semibold leading-relaxed whitespace-pre-wrap select-text">
                       {ann.description}
                     </p>
+                  )}
+
+                  {/* Attachments Section */}
+                  {ann.attachments && ann.attachments.length > 0 && (
+                    <div className="space-y-2 border-t border-slate-100 pt-3">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                        Attachments
+                      </span>
+                      <div className="space-y-1.5 mt-1.5">
+                        {ann.attachments.map((att) => (
+                          <AttachmentItem 
+                            key={att.id} 
+                            attachment={att} 
+                            isAdmin={false} 
+                          />
+                        ))}
+                      </div>
+                    </div>
                   )}
 
                   <div className="flex items-center justify-between pt-3 border-t border-slate-50 text-[9px] font-black uppercase tracking-widest text-slate-400 select-none">

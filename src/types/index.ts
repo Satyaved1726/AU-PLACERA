@@ -79,6 +79,17 @@ export interface Material {
   created_at: string;
 }
 
+export interface AnnouncementAttachment {
+  id: string;
+  announcement_id: string;
+  file_name: string;
+  file_path: string;
+  file_type: string;
+  file_size: number;
+  created_by?: string | null;
+  created_at: string;
+}
+
 export interface DigitalAnnouncement {
   id: string;
   title: string;
@@ -92,6 +103,7 @@ export interface DigitalAnnouncement {
     full_name: string;
     role: string;
   } | null;
+  attachments?: AnnouncementAttachment[];
 }
 
 export interface MaterialsConfig {

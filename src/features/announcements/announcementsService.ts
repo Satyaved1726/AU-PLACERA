@@ -1,12 +1,12 @@
 import { supabase } from '../../lib/supabase';
-import type { DigitalAnnouncement } from '../../types';
+import type { DigitalAnnouncement, AnnouncementAttachment } from '../../types';
 
 export const announcementsService = {
   // Fetch announcements visible to the user
   async getAnnouncements(): Promise<DigitalAnnouncement[]> {
     const { data, error } = await supabase
       .from('digital_announcements')
-      .select('*, profiles:created_by (full_name, role)')
+      .select('*, profiles:created_by (full_name, role), attachments:announcement_attachments (*)')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -141,7 +141,23 @@ export const announcementsService = {
 
   // Delete announcement (handles storage cleanup + DB delete)
   async deleteAnnouncement(id: string, imageUrl: string): Promise<void> {
-    // 1. Get the filename/path from the imageUrl
+    // 1. Fetch all associated attachments to delete them from storage
+    const { data: attachments } = await supabase
+      .from('announcement_attachments')
+      .select('file_path')
+      .eq('announcement_id', id);
+
+    if (attachments && attachments.length > 0) {
+      const paths = attachments.map(a => a.file_path);
+      const { error: storageAttachmentsError } = await supabase.storage
+        .from('announcement-attachments')
+        .remove(paths);
+      if (storageAttachmentsError) {
+        console.error('Failed to clean up attachments from storage:', storageAttachmentsError.message);
+      }
+    }
+
+    // 2. Get the filename/path from the imageUrl
     // Expected image URL format: http://.../storage/v1/object/public/announcements/filename.jpg
     const parts = imageUrl.split('/announcements/');
     const filePath = parts.length > 1 ? parts[1] : null;
@@ -157,11 +173,82 @@ export const announcementsService = {
       }
     }
 
-    // 2. Delete from database
+    // 3. Delete from database
     const { error } = await supabase
       .from('digital_announcements')
       .delete()
       .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  // Upload attachment file (to storage and insert DB record)
+  async uploadAttachment(announcementId: string, file: File, createdBy: string): Promise<AnnouncementAttachment> {
+    const fileExt = file.name.split('.').pop() || 'tmp';
+    const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}.${fileExt}`;
+    const filePath = `${announcementId}/${uniqueFileName}`;
+
+    // Derive correct MIME type to comply with storage bucket constraints
+    let contentType = file.type;
+    const ext = fileExt.toLowerCase();
+    if (!contentType || contentType === 'application/octet-stream') {
+      if (ext === 'pdf') contentType = 'application/pdf';
+      else if (ext === 'xlsx') contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      else if (ext === 'xls') contentType = 'application/vnd.ms-excel';
+      else if (ext === 'png') contentType = 'image/png';
+      else if (ext === 'jpg' || ext === 'jpeg') contentType = 'image/jpeg';
+      else if (ext === 'webp') contentType = 'image/webp';
+      else contentType = 'application/octet-stream';
+    }
+
+    const { error: uploadError } = await supabase.storage
+      .from('announcement-attachments')
+      .upload(filePath, file, {
+        contentType: contentType,
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) {
+      throw new Error(`Attachment upload failed: ${uploadError.message}`);
+    }
+
+    const { data, error } = await supabase
+      .from('announcement_attachments')
+      .insert({
+        announcement_id: announcementId,
+        file_name: file.name,
+        file_path: filePath,
+        file_type: contentType || 'application/octet-stream',
+        file_size: file.size,
+        created_by: createdBy
+      })
+      .select()
+      .single();
+
+    if (error) {
+      // Cleanup file if DB insert fails
+      await supabase.storage.from('announcement-attachments').remove([filePath]);
+      throw error;
+    }
+
+    return data;
+  },
+
+  // Delete attachment (removes file from storage and deletes DB record)
+  async deleteAttachment(attachmentId: string, filePath: string): Promise<void> {
+    const { error: storageError } = await supabase.storage
+      .from('announcement-attachments')
+      .remove([filePath]);
+
+    if (storageError) {
+      console.warn('Failed to delete attachment from storage:', storageError.message);
+    }
+
+    const { error } = await supabase
+      .from('announcement_attachments')
+      .delete()
+      .eq('id', attachmentId);
 
     if (error) throw error;
   }

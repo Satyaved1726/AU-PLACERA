@@ -9,15 +9,147 @@ import { useDeleteAnnouncement } from '../../features/announcements/hooks/useDel
 import type { DigitalAnnouncement } from '../../types';
 import { 
   Megaphone, Plus, Trash2, Upload, X, 
-  ExternalLink, CheckCircle2, AlertCircle, ShieldCheck, FileText, Download 
+  ExternalLink, CheckCircle2, AlertCircle, ShieldCheck, FileText, Download,
+  FileSpreadsheet, Image, Loader2
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { announcementsService } from '../../features/announcements/announcementsService';
+import { supabase } from '../../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
+
+interface AttachmentItemProps {
+  attachment: any;
+  isAdmin: boolean;
+  onDelete?: (id: string, filePath: string) => void;
+}
+
+const AttachmentItem: React.FC<AttachmentItemProps> = ({ attachment, isAdmin, onDelete }) => {
+  const [signedUrl, setSignedUrl] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  React.useEffect(() => {
+    let active = true;
+    const fetchSignedUrl = async () => {
+      try {
+        const { data, error } = await supabase.storage
+          .from('announcement-attachments')
+          .createSignedUrl(attachment.file_path, 3600);
+        
+        if (error) {
+          console.warn('Failed to generate signed URL:', error.message);
+          return;
+        }
+
+        if (active && data?.signedUrl) {
+          setSignedUrl(data.signedUrl);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch signed URL:', err);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+
+    fetchSignedUrl();
+    return () => {
+      active = false;
+    };
+  }, [attachment]);
+
+  const isPdf = attachment.file_name.toLowerCase().endsWith('.pdf');
+  const isExcel = attachment.file_name.toLowerCase().endsWith('.xlsx') || attachment.file_name.toLowerCase().endsWith('.xls');
+  const isImage = attachment.file_type.startsWith('image/') || attachment.file_name.toLowerCase().match(/\.(jpg|jpeg|png|webp)$/);
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+
+  if (isLoading) {
+    return (
+      <div className="h-9 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
+    );
+  }
+
+  if (!signedUrl) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-col gap-2 p-3 bg-slate-50 border border-slate-150 rounded-xl hover:bg-slate-100/50 transition-colors">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 truncate">
+          {isPdf ? (
+            <FileText className="h-5 w-5 text-red-500 shrink-0" />
+          ) : isExcel ? (
+            <FileSpreadsheet className="h-5 w-5 text-green-600 shrink-0" />
+          ) : (
+            <Image className="h-5 w-5 text-blue-500 shrink-0" />
+          )}
+          <div className="flex flex-col truncate">
+            <span className="text-[10px] font-black text-slate-800 truncate" title={attachment.file_name}>
+              {attachment.file_name}
+            </span>
+            <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+              {formatFileSize(attachment.file_size)}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <a
+            href={signedUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            download={isExcel ? attachment.file_name : undefined}
+            className="h-7 px-3 bg-white border border-slate-200 text-slate-700 hover:text-primary hover:border-primary rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1 transition-all"
+            title={isExcel ? 'Download Excel' : 'Open Attachment'}
+          >
+            {isExcel ? <Download className="h-3.5 w-3.5" /> : <ExternalLink className="h-3.5 w-3.5" />}
+            <span>{isExcel ? 'Download' : isPdf ? 'Open PDF' : 'View'}</span>
+          </a>
+          
+          {isAdmin && onDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(attachment.id, attachment.file_path)}
+              className="h-7 w-7 bg-red-50 hover:bg-red-150 text-red-600 rounded-lg flex items-center justify-center border border-red-100 transition-colors"
+              title="Delete Attachment"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {isImage && (
+        <a 
+          href={signedUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 rounded-lg overflow-hidden border border-slate-200/60 bg-white block max-w-xs cursor-zoom-in"
+        >
+          <img 
+            src={signedUrl}
+            alt={attachment.file_name}
+            className="max-h-24 object-contain mx-auto"
+            loading="lazy"
+          />
+        </a>
+      )}
+    </div>
+  );
+};
 
 export const Announcements: React.FC = () => {
   const { profile, loading } = useAuth();
   const { data: announcements = [], isLoading, error } = useAnnouncements();
   const createMutation = useCreateAnnouncement();
   const deleteMutation = useDeleteAnnouncement();
+  const queryClient = useQueryClient();
 
   // Search and OIA filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,6 +168,74 @@ export const Announcements: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Attachments states
+  const [selectedAttachments, setSelectedAttachments] = useState<File[]>([]);
+  const [uploadingAnnId, setUploadingAnnId] = useState<string | null>(null);
+  const [attachmentUploadStatus, setAttachmentUploadStatus] = useState<string | null>(null);
+  const attachmentFileInputRef = useRef<HTMLInputElement>(null);
+  const inlineFileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+
+  const validateAttachmentFile = (file: File): boolean => {
+    const allowedExtensions = ['.pdf', '.xlsx', '.xls', '.jpg', '.jpeg', '.png', '.webp'];
+    const fileExt = '.' + (file.name.split('.').pop() || '').toLowerCase();
+    const isAllowed = allowedExtensions.includes(fileExt);
+
+    if (!isAllowed) {
+      triggerToast(`Invalid format: ${file.name}. Only PDF, Excel, and images are allowed.`);
+      return false;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      triggerToast(`File too large: ${file.name}. Maximum size is 10MB.`);
+      return false;
+    }
+    return true;
+  };
+
+  const handleAttachmentSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter(validateAttachmentFile);
+    setSelectedAttachments(prev => [...prev, ...validFiles]);
+    if (attachmentFileInputRef.current) attachmentFileInputRef.current.value = '';
+  };
+
+  const handleInlineAttachmentUpload = async (announcementId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!validateAttachmentFile(file)) return;
+    if (!profile?.id) return;
+
+    try {
+      setUploadingAnnId(announcementId);
+      await announcementsService.uploadAttachment(announcementId, file, profile.id);
+      queryClient.invalidateQueries({ queryKey: ['announcements'] });
+      triggerToast('Attachment uploaded successfully.');
+    } catch (err: any) {
+      triggerToast(err.message || 'Failed to upload attachment.');
+    } finally {
+      setUploadingAnnId(null);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string, filePath: string) => {
+    if (!window.confirm('Are you sure you want to delete this attachment?')) return;
+    try {
+      await announcementsService.deleteAttachment(attachmentId, filePath);
+      queryClient.invalidateQueries({ queryKey: ['announcements'] });
+      triggerToast('Attachment deleted successfully.');
+    } catch (err: any) {
+      triggerToast(err.message || 'Failed to delete attachment.');
+    }
+  };
 
   React.useEffect(() => {
     const preventDefault = (e: DragEvent) => e.preventDefault();
@@ -153,7 +353,7 @@ export const Announcements: React.FC = () => {
 
     try {
       setIsCompressing(true);
-      await createMutation.mutateAsync({
+      const newAnn = await createMutation.mutateAsync({
         title: title.trim(),
         description: description.trim() || undefined,
         imageFile,
@@ -162,6 +362,14 @@ export const Announcements: React.FC = () => {
         createdBy: profile.id
       });
 
+      // Upload attachments sequentially
+      if (selectedAttachments.length > 0) {
+        for (const file of selectedAttachments) {
+          setAttachmentUploadStatus(`Uploading "${file.name}"...`);
+          await announcementsService.uploadAttachment(newAnn.id, file, profile.id);
+        }
+      }
+
       // Reset Form
       setTitle('');
       setDescription('');
@@ -169,12 +377,16 @@ export const Announcements: React.FC = () => {
       setIsOia(false);
       setImageFile(null);
       setImagePreview(null);
+      setSelectedAttachments([]);
       setIsCreateOpen(false);
       triggerToast('Notice published successfully to Digital Notice Board.');
+      // Refresh list to show attachments
+      queryClient.invalidateQueries({ queryKey: ['announcements'] });
     } catch (err: any) {
       triggerToast(err.message || 'Failed to publish notice.');
     } finally {
       setIsCompressing(false);
+      setAttachmentUploadStatus(null);
     }
   };
 
@@ -420,6 +632,54 @@ export const Announcements: React.FC = () => {
                     </p>
                   )}
 
+                  {/* Attachments Section */}
+                  <div className="space-y-2 border-t border-slate-100 pt-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                        Attachments
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {uploadingAnnId === ann.id && (
+                          <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-500 uppercase">
+                            <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                            <span>Uploading...</span>
+                          </div>
+                        )}
+                        <input 
+                          type="file"
+                          ref={el => { inlineFileInputRefs.current[ann.id] = el; }}
+                          accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png,.webp"
+                          onChange={(e) => handleInlineAttachmentUpload(ann.id, e)}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          disabled={uploadingAnnId === ann.id}
+                          onClick={() => inlineFileInputRefs.current[ann.id]?.click()}
+                          className="h-6 px-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[8px] font-black uppercase tracking-wider flex items-center gap-1 transition-all"
+                        >
+                          <Plus className="h-3 w-3" />
+                          <span>Add Attachment</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {ann.attachments && ann.attachments.length > 0 ? (
+                      <div className="space-y-1.5 mt-1.5">
+                        {ann.attachments.map((att) => (
+                          <AttachmentItem 
+                            key={att.id} 
+                            attachment={att} 
+                            isAdmin={true} 
+                            onDelete={handleDeleteAttachment} 
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[9px] text-slate-400 font-semibold italic">No attachments uploaded.</p>
+                    )}
+                  </div>
+
                   <div className="flex items-center justify-between pt-3 border-t border-slate-50 text-[9px] font-black uppercase tracking-widest text-slate-400 select-none">
                     <span />
                     {ann.external_url && (
@@ -584,6 +844,56 @@ export const Announcements: React.FC = () => {
                   )}
                 </div>
 
+                {/* Attachments Section */}
+                <div className="space-y-2 border-t border-slate-100 pt-3">
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 leading-none">
+                    Attachments (Optional)
+                  </label>
+                  <input 
+                    type="file"
+                    ref={attachmentFileInputRef}
+                    multiple
+                    accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png,.webp"
+                    onChange={handleAttachmentSelect}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => attachmentFileInputRef.current?.click()}
+                    className="h-8 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 select-none transition-colors"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Add Files</span>
+                  </button>
+                  
+                  {selectedAttachments.length > 0 && (
+                    <div className="space-y-1.5 mt-2 max-h-32 overflow-y-auto pr-1">
+                      {selectedAttachments.map((file, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-2 bg-slate-50 border border-slate-100 rounded-lg text-[10px] font-semibold text-slate-700">
+                          <div className="flex items-center gap-2 truncate">
+                            {file.name.toLowerCase().endsWith('.pdf') ? (
+                              <FileText className="h-4.5 w-4.5 text-red-500 shrink-0" />
+                            ) : file.name.toLowerCase().endsWith('.xls') || file.name.toLowerCase().endsWith('.xlsx') ? (
+                              <FileSpreadsheet className="h-4.5 w-4.5 text-green-600 shrink-0" />
+                            ) : (
+                              <Image className="h-4.5 w-4.5 text-blue-500 shrink-0" />
+                            )}
+                            <span className="truncate max-w-[200px]" title={file.name}>{file.name}</span>
+                            <span className="text-[8px] text-slate-400">({formatFileSize(file.size)})</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedAttachments(prev => prev.filter((_, i) => i !== idx))}
+                            className="p-1 text-slate-400 hover:text-red-500 rounded-md transition-colors"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* OIA Toggle Option */}
                 <div className="flex items-center justify-between py-2 border-t border-slate-100 select-none">
                   <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-slate-500">
@@ -601,6 +911,13 @@ export const Announcements: React.FC = () => {
                   </label>
                 </div>
 
+                {attachmentUploadStatus && (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg text-blue-700 text-[10px] font-bold mt-2">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500 shrink-0" />
+                    <span>{attachmentUploadStatus}</span>
+                  </div>
+                )}
+
                 {/* Footer buttons */}
                 <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                   <button
@@ -613,11 +930,19 @@ export const Announcements: React.FC = () => {
                   <Button
                     type="submit"
                     variant="primary"
-                    isLoading={createMutation.isPending || isCompressing || loading}
+                    isLoading={createMutation.isPending || isCompressing || loading || !!attachmentUploadStatus}
                     disabled={!profile}
                     className="h-10 px-6 rounded-xl"
                   >
-                    {loading ? 'Loading Session...' : isCompressing ? 'Compressing...' : createMutation.isPending ? 'Publishing...' : 'Publish Notice'}
+                    {loading 
+                      ? 'Loading Session...' 
+                      : attachmentUploadStatus 
+                        ? attachmentUploadStatus 
+                        : isCompressing 
+                          ? 'Compressing...' 
+                          : createMutation.isPending 
+                            ? 'Publishing...' 
+                            : 'Publish Notice'}
                   </Button>
                 </div>
 
