@@ -84,7 +84,9 @@ export const announcementsService = {
       try {
         uploadBlob = await this.compressImage(params.imageFile);
       } catch (err) {
-        console.warn('Image compression failed, using original file:', err);
+        if (import.meta.env.DEV) {
+          console.warn('Image compression failed, using original file:', err);
+        }
       }
     }
 
@@ -242,7 +244,9 @@ export const announcementsService = {
       .remove([filePath]);
 
     if (storageError) {
-      console.warn('Failed to delete attachment from storage:', storageError.message);
+      if (import.meta.env.DEV) {
+        console.warn('Failed to delete attachment from storage:', storageError.message);
+      }
     }
 
     const { error } = await supabase

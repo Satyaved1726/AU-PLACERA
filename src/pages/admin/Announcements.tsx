@@ -36,7 +36,9 @@ const AttachmentItem: React.FC<AttachmentItemProps> = ({ attachment, isAdmin, on
           .createSignedUrl(attachment.file_path, 3600);
         
         if (error) {
-          console.warn('Failed to generate signed URL:', error.message);
+          if (import.meta.env.DEV) {
+            console.warn('Failed to generate signed URL:', error.message);
+          }
           return;
         }
 
@@ -44,7 +46,9 @@ const AttachmentItem: React.FC<AttachmentItemProps> = ({ attachment, isAdmin, on
           setSignedUrl(data.signedUrl);
         }
       } catch (err) {
-        console.warn('Failed to fetch signed URL:', err);
+        if (import.meta.env.DEV) {
+          console.warn('Failed to fetch signed URL:', err);
+        }
       } finally {
         if (active) setIsLoading(false);
       }

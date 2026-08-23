@@ -25,7 +25,9 @@ export const OiaGuard: React.FC<OiaGuardProps> = ({ children }) => {
      profile.oia_eligible === true);
 
   if (!isEligible) {
-    console.warn(`🔒 Access denied to OIA section: User is not OIA eligible.`);
+    if (import.meta.env.DEV) {
+      console.warn(`🔒 Access denied to OIA section: User is not OIA eligible.`);
+    }
     
     // Redirect to default portals based on actual role
     if (profile?.role === 'super_admin') {

@@ -91,7 +91,9 @@ export const teamService = {
       try {
         uploadBlob = await this.compressImage(params.photoFile);
       } catch (err) {
-        console.warn('Image compression failed, using original file:', err);
+        if (import.meta.env.DEV) {
+          console.warn('Image compression failed, using original file:', err);
+        }
       }
     }
 
@@ -184,7 +186,9 @@ export const teamService = {
         try {
           uploadBlob = await this.compressImage(params.newPhotoFile);
         } catch (err) {
-          console.warn('Image compression failed:', err);
+          if (import.meta.env.DEV) {
+            console.warn('Image compression failed:', err);
+          }
         }
       }
 
@@ -255,7 +259,9 @@ export const teamService = {
           await supabase.storage.from('team-members').remove([oldFilePath]);
         }
       } catch (err) {
-        console.warn('Failed to cleanup old photo from storage:', err);
+        if (import.meta.env.DEV) {
+          console.warn('Failed to cleanup old photo from storage:', err);
+        }
       }
     }
 
@@ -282,11 +288,15 @@ export const teamService = {
             .from('team-members')
             .remove([filePath]);
           if (storageError) {
-            console.warn('Failed to delete team member image from storage:', storageError.message);
+            if (import.meta.env.DEV) {
+              console.warn('Failed to delete team member image from storage:', storageError.message);
+            }
           }
         }
       } catch (err) {
-        console.warn('Failed to resolve photo path for deletion:', err);
+        if (import.meta.env.DEV) {
+          console.warn('Failed to resolve photo path for deletion:', err);
+        }
       }
     }
   },

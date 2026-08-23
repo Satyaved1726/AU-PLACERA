@@ -171,7 +171,9 @@ export const postService = {
       .remove([filePath]);
 
     if (storageError) {
-      console.warn('Failed to delete attachment from storage:', storageError.message);
+      if (import.meta.env.DEV) {
+        console.warn('Failed to delete attachment from storage:', storageError.message);
+      }
     }
 
     const { error } = await supabase

@@ -72,7 +72,9 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({ children, allowedRole }) =
     (allowedRole === 'admin' && profile.role === 'super_admin');
 
   if (!hasAccess) {
-    console.warn(`🔒 Access denied: User role "${profile.role}" does not match required role "${allowedRole}"`);
+    if (import.meta.env.DEV) {
+      console.warn(`🔒 Access denied: User role "${profile.role}" does not match required role "${allowedRole}"`);
+    }
     
     // Redirect to default portals based on actual role
     if (profile.role === 'super_admin') {

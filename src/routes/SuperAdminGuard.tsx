@@ -42,7 +42,9 @@ export const SuperAdminGuard: React.FC<SuperAdminGuardProps> = ({ children }) =>
   }
 
   if (profile.role !== 'super_admin') {
-    console.warn(`🔒 Access denied: User role "${profile.role}" does not match super admin privileges.`);
+    if (import.meta.env.DEV) {
+      console.warn(`🔒 Access denied: User role "${profile.role}" does not match super admin privileges.`);
+    }
     
     // Redirect to default portals based on actual role
     if (profile.role === 'admin') {
