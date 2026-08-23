@@ -7,8 +7,5 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Supabase URL and Anon Key must be configured in environment variables.');
 }
 
-console.log('Supabase URL configured:', !!supabaseUrl);
-console.log('Supabase anon key configured:', !!supabaseAnonKey);
-
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 

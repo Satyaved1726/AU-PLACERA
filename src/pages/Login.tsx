@@ -75,28 +75,17 @@ export const Login: React.FC = () => {
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    console.log('[AUTH] Login submitted');
-
     try {
       const { error, user: authUser, profile: authProfile } = await signIn(email.trim(), password);
-      console.log('[AUTH] Supabase response received');
-      console.log('[AUTH] Has session:', !!authUser);
 
       if (error) {
-        console.log('[AUTH] Login failed:', error);
         setErrorMsg(translateAuthError(error));
         setIsLoading(false);
         return;
       }
 
       if (authUser) {
-        console.log('[AUTH] User ID:', authUser.id);
-        console.log('[AUTH] User email:', authUser.email);
-        console.log('[AUTH] Profile lookup started');
-        
         if (authProfile) {
-          console.log('[AUTH] Profile found: true');
-          console.log('[AUTH] Role:', authProfile.role);
           if (authProfile.status === 'suspended' || authProfile.status === 'inactive') {
             setErrorMsg('Your administrator account has been suspended. Please contact the Super Admin.');
             setIsLoading(false);
@@ -111,7 +100,6 @@ export const Login: React.FC = () => {
             navigate('/student/notice-board');
           }
         } else {
-          console.log('[AUTH] Profile found: false');
           setErrorMsg('Your account was created successfully, but your AU Placera profile has not been configured yet.');
           setIsLoading(false);
         }
