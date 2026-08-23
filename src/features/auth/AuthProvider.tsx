@@ -36,7 +36,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (data) {
         setProfile(data);
       } else {
-        console.warn('[AUTH] fetchProfile returned empty (no profile row found for user id):', userId);
+        if (import.meta.env.DEV) {
+          console.warn('[AUTH] fetchProfile returned empty (no profile row found for user id):', userId);
+        }
         setProfile(null);
       }
     } catch (err) {
@@ -47,7 +49,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Diagnostic logging for currently authenticated profile
   useEffect(() => {
-    console.log('[OIA] Current authenticated profile:', profile);
+    if (import.meta.env.DEV) {
+      console.log('[OIA] Current authenticated profile:', profile);
+    }
   }, [profile]);
 
 
@@ -78,7 +82,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
 
-      console.log('🔔 [Auth State Event]:', event);
+      if (import.meta.env.DEV) {
+        console.log('🔔 [Auth State Event]:', event);
+      }
 
       if (session) {
         setUser(session.user);

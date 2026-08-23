@@ -33,13 +33,17 @@ export const NoticeBoard: React.FC = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'posts' },
         (payload) => {
-          console.log('[OIA] Realtime posts change event received:', payload);
+          if (import.meta.env.DEV) {
+            console.log('[OIA] Realtime posts change event received:', payload);
+          }
           // Invalidate posts query to trigger background secure refetch
           queryClient.invalidateQueries({ queryKey: ['posts', 'active', oiaEligible] });
         }
       )
       .subscribe((status, err) => {
-        console.log('[OIA] Realtime posts channel status event:', status, err);
+        if (import.meta.env.DEV) {
+          console.log('[OIA] Realtime posts channel status event:', status, err);
+        }
         if (status === 'SUBSCRIBED') {
           setRealtimeHealthy(true);
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {

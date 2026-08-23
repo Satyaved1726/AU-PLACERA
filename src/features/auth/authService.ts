@@ -15,8 +15,10 @@ export const authService = {
         return { error: error.message };
       }
 
-      console.log('[AUTH] session user id:', data.user.id);
-      console.log('[AUTH] profile query user id:', data.user.id);
+      if (import.meta.env.DEV) {
+        console.log('[AUTH] session user id:', data.user.id);
+        console.log('[AUTH] profile query user id:', data.user.id);
+      }
 
       // Fetch user profile row
       const { data: profile, error: profileError } = await supabase
@@ -25,8 +27,10 @@ export const authService = {
         .eq('id', data.user.id)
         .maybeSingle();
 
-      console.log('[AUTH] profile found:', !!profile);
-      console.log('[AUTH] profile error:', profileError ? JSON.stringify(profileError) : 'none');
+      if (import.meta.env.DEV) {
+        console.log('[AUTH] profile found:', !!profile);
+        console.log('[AUTH] profile error:', profileError ? JSON.stringify(profileError) : 'none');
+      }
 
       if (profileError) {
         console.error('[AUTH] Profile query failed:', profileError);
@@ -38,7 +42,9 @@ export const authService = {
         return { error: 'Your account is authenticated, but your profile is not configured.' };
       }
 
-      console.log('[AUTH] Profile role:', profile.role);
+      if (import.meta.env.DEV) {
+        console.log('[AUTH] Profile role:', profile.role);
+      }
       return { error: null, user: data.user, profile };
     } catch (err: any) {
       return { error: err.message || 'Connection error. Please try again.' };
@@ -147,9 +153,11 @@ export const authService = {
 
   // Roster OIA toggle updater
   async updateStudentOia(studentId: string, oiaEligible: boolean): Promise<UserProfile> {
-    console.log('[OIA] Updating student:');
-    console.log('[OIA] Student ID:', studentId);
-    console.log('[OIA] New eligibility:', oiaEligible);
+    if (import.meta.env.DEV) {
+      console.log('[OIA] Updating student:');
+      console.log('[OIA] Student ID:', studentId);
+      console.log('[OIA] New eligibility:', oiaEligible);
+    }
 
     const { data, error } = await supabase
       .from('profiles')
@@ -160,7 +168,9 @@ export const authService = {
       .eq('id', studentId)
       .select();
 
-    console.log('[OIA] Supabase update result:', { data, error });
+    if (import.meta.env.DEV) {
+      console.log('[OIA] Supabase update result:', { data, error });
+    }
 
     if (error) {
       console.error('[OIA] Supabase update error:', error);
@@ -178,7 +188,9 @@ export const authService = {
       .select('id, oia_eligible')
       .eq('id', studentId);
 
-    console.log('[OIA] Database eligibility after update:', verifiedData);
+    if (import.meta.env.DEV) {
+      console.log('[OIA] Database eligibility after update:', verifiedData);
+    }
 
     if (verifyError) {
       throw new Error(`Verification query failed: ${verifyError.message}`);
