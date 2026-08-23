@@ -267,9 +267,41 @@ export const TeamView: React.FC = () => {
                             {ssraMembers[activeSsraIndex].full_name}
                           </h3>
                           {ssraMembers[activeSsraIndex].designation && (
-                            <p className="text-[10px] font-extrabold text-blue-600 uppercase tracking-wider leading-none truncate">
+                            <p className="text-[10px] font-bold text-slate-450 uppercase tracking-wide leading-none pt-0.5">
                               {ssraMembers[activeSsraIndex].designation}
                             </p>
+                          )}
+                          
+                          {/* Social Buttons */}
+                          {(ssraMembers[activeSsraIndex].linkedin_url || ssraMembers[activeSsraIndex].github_url) && (
+                            <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2.5">
+                              {ssraMembers[activeSsraIndex].linkedin_url && (
+                                <a
+                                  href={ssraMembers[activeSsraIndex].linkedin_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-blue-200 hover:border-blue-300 bg-white hover:bg-blue-50/20 text-[#0077b5] text-[9px] font-black uppercase tracking-wider transition-colors shadow-sm"
+                                >
+                                  <svg className="h-3 w-3 fill-current" viewBox="0 0 24 24">
+                                    <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.8v8.37h2.8v-4.67c0-.25.02-.5.1-.68a1.14 1.14 0 0 1 1-.77c.76 0 1 .58 1 1.42v4.7h2.8M6.5 8.37a1.37 1.37 0 1 0 0-2.75 1.37 1.37 0 0 0 0 2.75M8 18.5V10.13H5.2V18.5H8z"/>
+                                  </svg>
+                                  <span>Connect on LinkedIn</span>
+                                </a>
+                              )}
+                              {ssraMembers[activeSsraIndex].github_url && (
+                                <a
+                                  href={ssraMembers[activeSsraIndex].github_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-slate-200 hover:border-slate-350 bg-white hover:bg-slate-50 text-slate-800 text-[9px] font-black uppercase tracking-wider transition-colors shadow-sm"
+                                >
+                                  <svg className="h-3 w-3 fill-current" viewBox="0 0 24 24">
+                                    <path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/>
+                                  </svg>
+                                  <span>GitHub Profile</span>
+                                </a>
+                              )}
+                            </div>
                           )}
                         </div>
                       </motion.div>
