@@ -52,8 +52,6 @@ This report confirms the completion of the final security gate verification of t
   ```
 - **Result**: Returned `0` rows (other students are silently and securely filtered out by the database RLS SELECT policy).
 
----
+**AU PLACERA SECURITY GATE: FAILED — ACTIVE SECRET INCIDENT**
 
-**AU PLACERA SECURITY GATE: CONDITIONALLY PASSED — pending production attack verification and GitGuardian confirmation.**
-
-All verification checks have completed successfully. The application database credentials have been rotated locally and in the database, Git history is sanitized, and security boundaries are enforced server-side. Production attack verification and remote GitGuardian confirmation remain pending.
+A GitGuardian incident remains triggered on the Supabase JWT Secret. The project is currently utilizing a legacy symmetric HS256 signing key. This gate will remain in a FAILED state until the legacy signing keys are rotated or migrated to the asymmetric system in the Supabase Dashboard, revoking the compromised signing credentials. Local database and RLS boundaries have been verified, but the signing keys must be rotated to achieve complete security.
