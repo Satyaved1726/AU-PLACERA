@@ -142,13 +142,8 @@ export const Login: React.FC = () => {
       setIsWhitelistedLateral(false);
       if (rawVal.length === 10) {
         try {
-          const { data } = await supabase
-            .from('student_access_whitelist')
-            .select('*')
-            .eq('roll_number', rawVal)
-            .eq('is_active', true)
-            .maybeSingle();
-          if (data) {
+          const { data } = await supabase.rpc('check_roll_number_whitelist', { roll_num: rawVal });
+          if (data && data.is_whitelisted) {
             setIsWhitelistedLateral(true);
             if (data.section) setSection(data.section);
           }
@@ -193,13 +188,8 @@ export const Login: React.FC = () => {
 
     if (!isWhitelisted) {
       try {
-        const { data } = await supabase
-          .from('student_access_whitelist')
-          .select('*')
-          .eq('roll_number', trimmedRoll)
-          .eq('is_active', true)
-          .maybeSingle();
-        if (data) {
+        const { data } = await supabase.rpc('check_roll_number_whitelist', { roll_num: trimmedRoll });
+        if (data && data.is_whitelisted) {
           isWhitelisted = true;
           whitelistRec = data;
         }

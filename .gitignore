@@ -25,4 +25,8 @@ dist-ssr
 
 # Environment
 .env
+ .env
+scratch/
+print_auth_jwt.cjs
+
 
