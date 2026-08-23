@@ -506,7 +506,7 @@ export const SettingsPage: React.FC = () => {
                 <label className="block text-[8px] font-black text-slate-400 mb-1">College Email (Optional)</label>
                 <input
                   type="email"
-                  placeholder="name@anurag.edu.in"
+                  placeholder="rollno@anurag.edu.in"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   className="w-full h-9 px-3 border border-slate-300 rounded-lg focus:outline-none focus:border-secondary text-slate-800 font-semibold lowercase"

@@ -35,6 +35,7 @@ import { SettingsPage as SuperAdminSettings } from '../pages/super-admin/Setting
 import { SecurityPage as SuperAdminSecurity } from '../pages/super-admin/Security';
 import { ActivityPage as SuperAdminActivity } from '../pages/super-admin/Activity';
 import { StudentsPage as SuperAdminStudents } from '../pages/super-admin/Students';
+import { DatabaseSystem as SuperAdminDatabaseSystem } from '../pages/super-admin/DatabaseSystem';
 
 // Team Pages
 import { TeamView } from '../pages/shared/TeamView';
@@ -117,6 +118,7 @@ export const router = createBrowserRouter([
       { path: 'settings', element: <SuperAdminSettings /> },
       { path: 'team', element: <TeamManagement /> },
       { path: 'team-view', element: <TeamView /> },
+      { path: 'system', element: <SuperAdminDatabaseSystem /> },
     ],
   },
   

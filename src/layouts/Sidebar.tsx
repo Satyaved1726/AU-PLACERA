@@ -19,7 +19,8 @@ import {
   Shield,
   Settings,
   GraduationCap,
-  ClipboardCheck
+  ClipboardCheck,
+  Database
 } from 'lucide-react';
 import { useAuth } from '../features/auth/useAuth';
 import anuragIconLogo from '../assets/anurag_icon_logo.png';
@@ -104,7 +105,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, collapsed, onCol
             { name: 'Activity Logs', path: '/super-admin/activity', icon: ClipboardList },
             { name: 'Security', path: '/super-admin/security', icon: Shield },
             { name: 'System Settings', path: '/super-admin/settings', icon: Settings },
-            { name: 'Team Management', path: '/super-admin/team', icon: Settings }
+            { name: 'Team Management', path: '/super-admin/team', icon: Settings },
+            { name: 'Database & System', path: '/super-admin/system', icon: Database }
           ]
         });
       }

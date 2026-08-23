@@ -328,7 +328,7 @@ export const Login: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@anurag.edu.in"
+                  placeholder="rollno@anurag.edu.in"
                   autoComplete="off"
                   className="w-full h-10 px-3.5 border border-slate-350 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/50 bg-white text-slate-800"
                 />
@@ -593,7 +593,7 @@ export const Login: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@anurag.edu.in"
+                  placeholder="rollno@anurag.edu.in"
                   className="w-full h-10 px-3.5 border border-slate-350 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/50 bg-white text-slate-800"
                 />
               </div>
