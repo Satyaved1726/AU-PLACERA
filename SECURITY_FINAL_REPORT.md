@@ -33,8 +33,7 @@ This report confirms the completion of the final security gate verification of t
 ## 2. Details of Security Gate Tests Run & Evidence
 
 ### 1. PostgreSQL Credentials Rotation Test
-- **Test**: Run `node scratch/verify_old_password.cjs` using the historically exposed connection string:
-  `postgresql://postgres:auplacements@hod@db.yjcixgzqjcoinlfsqsoa.supabase.co:5432/postgres`
+- **Test**: Run `node scratch/verify_old_password.cjs` using the historically exposed connection string `[REDACTED — COMPROMISED CREDENTIAL]`.
 - **Result**:
   ```text
   Attempting to connect with compromised credentials...
