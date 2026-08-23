@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardBody } from '../../../components/common/Card';
 import { 
   Briefcase, 
@@ -11,18 +11,112 @@ import {
   Quote, 
   Building2, 
   ArrowRight, 
-  Star 
+  Star,
+  Paperclip,
+  FileSpreadsheet,
+  Image,
+  Download
 } from 'lucide-react';
 import { useAuth } from '../../../features/auth/useAuth';
 import { useIsSaved } from '../../../features/saved/hooks/useIsSaved';
 import { useSavePost } from '../../../features/saved/hooks/useSavePost';
 import { useUnsavePost } from '../../../features/saved/hooks/useUnsavePost';
 import type { Post } from '../../../types';
+import { supabase } from '../../../lib/supabase';
 
 interface PostCardProps {
   post: Post;
   onViewDetail: (post: Post) => void;
 }
+
+interface AttachmentItemProps {
+  attachment: any;
+}
+
+const AttachmentItem: React.FC<AttachmentItemProps> = ({ attachment }) => {
+  const [signedUrl, setSignedUrl] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    let active = true;
+    const fetchSignedUrl = async () => {
+      try {
+        const { data, error } = await supabase.storage
+          .from('post-attachments')
+          .createSignedUrl(attachment.file_path, 3600);
+        
+        if (error) {
+          console.warn('Failed to generate signed URL:', error.message);
+          return;
+        }
+
+        if (active && data?.signedUrl) {
+          setSignedUrl(data.signedUrl);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch signed URL:', err);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+
+    fetchSignedUrl();
+    return () => {
+      active = false;
+    };
+  }, [attachment]);
+
+  const isPdf = attachment.file_name.toLowerCase().endsWith('.pdf');
+  const isExcel = attachment.file_name.toLowerCase().endsWith('.xlsx') || attachment.file_name.toLowerCase().endsWith('.xls');
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+
+  if (isLoading) {
+    return (
+      <div className="h-9 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
+    );
+  }
+
+  if (!signedUrl) {
+    return null;
+  }
+
+  return (
+    <a
+      href={signedUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      download={isExcel ? attachment.file_name : undefined}
+      onClick={(e) => e.stopPropagation()}
+      className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-150 rounded-xl hover:bg-slate-100/60 transition-colors"
+    >
+      <div className="flex items-center gap-2 truncate">
+        {isPdf ? (
+          <FileText className="h-4.5 w-4.5 text-red-500 shrink-0" />
+        ) : isExcel ? (
+          <FileSpreadsheet className="h-4.5 w-4.5 text-green-600 shrink-0" />
+        ) : (
+          <Image className="h-4.5 w-4.5 text-blue-500 shrink-0" />
+        )}
+        <div className="flex flex-col truncate">
+          <span className="text-[10px] font-black text-slate-800 truncate" title={attachment.file_name}>
+            {attachment.file_name}
+          </span>
+          <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+            {formatFileSize(attachment.file_size)}
+          </span>
+        </div>
+      </div>
+      <Download className="h-4 w-4 text-slate-400 hover:text-primary transition-colors shrink-0 ml-4" />
+    </a>
+  );
+};
 
 export const PostCard: React.FC<PostCardProps> = ({ post, onViewDetail }) => {
   const { profile } = useAuth();
@@ -188,6 +282,21 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onViewDetail }) => {
                   return part;
                 })}
               </p>
+            </div>
+          )}
+
+          {/* Attachments Section */}
+          {post.attachments && post.attachments.length > 0 && (
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">
+                <Paperclip className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                <span>Attachments</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1.5">
+                {post.attachments.map((att) => (
+                  <AttachmentItem key={att.id} attachment={att} />
+                ))}
+              </div>
             </div>
           )}
 
