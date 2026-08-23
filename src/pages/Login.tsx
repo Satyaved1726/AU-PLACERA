@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/useAuth';
 import { authService } from '../features/auth/authService';
+import { supabase } from '../lib/supabase';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ export const Login: React.FC = () => {
   const [section, setSection] = useState('AIML-A');
   const year = 4;
   const batch = '2023-2027';
+  const [isWhitelistedLateral, setIsWhitelistedLateral] = useState(false);
 
   // Status states
   const [isLoading, setIsLoading] = useState(false);
@@ -121,6 +123,42 @@ export const Login: React.FC = () => {
     }
   };
 
+  const handleRollNumberChange = async (val: string) => {
+    const rawVal = val.toUpperCase().replace(/\s/g, '');
+    setRollNumber(rawVal);
+    
+    const APPROVED_LATERAL_ROLLS = ['24EG507F01', '24EG507F02', '24EG507F03', '24EG507F04', '24EG507F05'];
+    
+    if (APPROVED_LATERAL_ROLLS.includes(rawVal)) {
+      setIsWhitelistedLateral(true);
+      setSection('AIML-F');
+    } else if (rawVal.startsWith('23EG107') && rawVal.length >= 8) {
+      setIsWhitelistedLateral(false);
+      const sectionChar = rawVal.charAt(7);
+      if (['A', 'B', 'C', 'D', 'E', 'F'].includes(sectionChar)) {
+        setSection(`AIML-${sectionChar}`);
+      }
+    } else {
+      setIsWhitelistedLateral(false);
+      if (rawVal.length === 10) {
+        try {
+          const { data } = await supabase
+            .from('student_access_whitelist')
+            .select('*')
+            .eq('roll_number', rawVal)
+            .eq('is_active', true)
+            .maybeSingle();
+          if (data) {
+            setIsWhitelistedLateral(true);
+            if (data.section) setSection(data.section);
+          }
+        } catch (err) {
+          console.error('[AUTH] Whitelist dynamic check failed:', err);
+        }
+      }
+    }
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password || !fullName || !rollNumber) {
@@ -137,34 +175,65 @@ export const Login: React.FC = () => {
 
     // 1. Domain validation
     if (!trimmedEmail.endsWith('@anurag.edu.in')) {
-      setErrorMsg('Access restricted. AU Placera is currently available only to eligible 4th-year students of the 23EG107 A–F sections using their official Anurag University email.');
+      setErrorMsg('Access restricted. AU Placera is currently available only to eligible 4th-year students using their official Anurag University email.');
       return;
     }
 
-    // 2. Validate roll number regex: 23EG107 followed by A-F and two alphanumeric characters
-    const rollRegex = /^23EG107[A-F][0-9A-Z]{2}$/;
-    if (!rollRegex.test(trimmedRoll)) {
-      setErrorMsg('Access restricted. AU Placera is currently available only to eligible 4th-year students of the 23EG107 A–F sections using their official Anurag University email.');
-      return;
-    }
-
-    // 3. Email prefix must match roll number
+    // 2. Email prefix must match roll number
     const emailPrefix = trimmedEmail.split('@')[0];
     if (emailPrefix !== trimmedRoll.toLowerCase()) {
-      setErrorMsg('Access restricted. AU Placera is currently available only to eligible 4th-year students of the 23EG107 A–F sections using their official Anurag University email.');
+      setErrorMsg('Access restricted. College email must match the student roll number.');
       return;
     }
 
-    // 4. Section validation based on roll number character
-    const sectionChar = trimmedRoll.charAt(7); // Index 7 is the 8th character: 23EG107[A-F]
-    if (section !== `AIML-${sectionChar}`) {
-      setErrorMsg('Access restricted. AU Placera is currently available only to eligible 4th-year students of the 23EG107 A–F sections using their official Anurag University email.');
-      return;
+    // 3. Check whitelist or regular student
+    const APPROVED_LATERAL_ROLLS = ['24EG507F01', '24EG507F02', '24EG507F03', '24EG507F04', '24EG507F05'];
+    let isWhitelisted = APPROVED_LATERAL_ROLLS.includes(trimmedRoll);
+    let whitelistRec = null;
+
+    if (!isWhitelisted) {
+      try {
+        const { data } = await supabase
+          .from('student_access_whitelist')
+          .select('*')
+          .eq('roll_number', trimmedRoll)
+          .eq('is_active', true)
+          .maybeSingle();
+        if (data) {
+          isWhitelisted = true;
+          whitelistRec = data;
+        }
+      } catch (err) {
+        console.error('[AUTH] Whitelist check failed:', err);
+      }
     }
 
-    // 5. Strict batch and year check
+    if (isWhitelisted) {
+      const expectedSection = whitelistRec?.section || 'AIML-F';
+      if (section !== expectedSection) {
+        setErrorMsg(`Access restricted. Whitelisted lateral-entry students must register under section ${expectedSection}.`);
+        return;
+      }
+    } else {
+      // Regular student validation
+      // Validate roll number regex: 23EG107 followed by A-F and two alphanumeric characters
+      const rollRegex = /^23EG107[A-F][0-9A-Z]{2}$/;
+      if (!rollRegex.test(trimmedRoll)) {
+        setErrorMsg('Access restricted. AU Placera is currently available only to eligible 4th-year students of the 23EG107 A–F sections using their official Anurag University email.');
+        return;
+      }
+
+      // Section validation based on roll number character
+      const sectionChar = trimmedRoll.charAt(7); // Index 7 is the 8th character: 23EG107[A-F]
+      if (section !== `AIML-${sectionChar}`) {
+        setErrorMsg('Access restricted. AU Placera is currently available only to eligible 4th-year students of the 23EG107 A–F sections using their official Anurag University email.');
+        return;
+      }
+    }
+
+    // 4. Strict batch and year check
     if (year !== 4 || batch.trim() !== '2023-2027') {
-      setErrorMsg('Access restricted. AU Placera is currently available only to eligible 4th-year students of the 23EG107 A–F sections using their official Anurag University email.');
+      setErrorMsg('Access restricted. AU Placera is currently available only to eligible 4th-year students using their official Anurag University email.');
       return;
     }
 
@@ -195,6 +264,7 @@ export const Login: React.FC = () => {
       setConfirmPassword('');
       setFullName('');
       setRollNumber('');
+      setIsWhitelistedLateral(false);
       setMode('login');
     } catch (err: any) {
       setErrorMsg(err.message || 'Registration failed. Please try again.');
@@ -400,7 +470,7 @@ export const Login: React.FC = () => {
                   type="text"
                   required
                   value={rollNumber}
-                  onChange={(e) => setRollNumber(e.target.value)}
+                  onChange={(e) => handleRollNumberChange(e.target.value)}
                   placeholder="e.g. 23EG107A"
                   className="w-full h-10 px-3.5 border border-slate-350 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/50 bg-white text-slate-800"
                 />
@@ -414,8 +484,9 @@ export const Login: React.FC = () => {
                   <select
                     id="signup-section"
                     value={section}
+                    disabled={isWhitelistedLateral}
                     onChange={(e) => setSection(e.target.value)}
-                    className="w-full h-10 px-2.5 border border-slate-350 rounded-lg text-xs focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/50 bg-white text-slate-800"
+                    className={`w-full h-10 px-2.5 border border-slate-350 rounded-lg text-xs focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/50 bg-white text-slate-800 ${isWhitelistedLateral ? 'bg-slate-55 text-slate-400 cursor-not-allowed' : ''}`}
                   >
                     <option value="AIML-A">AIML-A</option>
                     <option value="AIML-B">AIML-B</option>

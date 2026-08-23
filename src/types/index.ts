@@ -8,12 +8,13 @@ export interface UserProfile {
   email: string;
   roll_number?: string;
   branch: 'AIML';
-  section?: 'AIML-A' | 'AIML-B' | 'AIML-C' | 'AIML-D' | 'AIML-E';
+  section?: 'AIML-A' | 'AIML-B' | 'AIML-C' | 'AIML-D' | 'AIML-E' | 'AIML-F';
   year?: 1 | 2 | 3 | 4;
   batch?: string; // e.g. "2023-2027"
   role: UserRole;
   status?: 'active' | 'inactive' | 'suspended';
   oia_eligible: boolean;
+  student_type?: 'regular' | 'lateral_entry';
   created_at?: string;
   updated_at?: string;
 }

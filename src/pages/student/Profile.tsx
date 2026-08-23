@@ -27,7 +27,6 @@ export const Profile: React.FC = () => {
     return `${year}th Year`;
   };
 
-  // Academic details list with slightly tighter padding
   const academicDetails = [
     { label: 'Official Email', value: profile?.email || 'N/A', icon: Mail, iconColor: 'text-blue-500 bg-blue-50' },
     { label: 'Roll Number', value: profile?.roll_number || 'N/A', icon: Hash, iconColor: 'text-indigo-500 bg-indigo-50' },
@@ -36,6 +35,15 @@ export const Profile: React.FC = () => {
     { label: 'Academic Year', value: getYearLabel(profile?.year), icon: GraduationCap, iconColor: 'text-purple-500 bg-purple-50' },
     { label: 'Batch Period', value: profile?.batch || 'N/A', icon: Calendar, iconColor: 'text-rose-500 bg-rose-50' }
   ];
+
+  if (profile?.student_type === 'lateral_entry') {
+    academicDetails.push({
+      label: 'Student Type',
+      value: 'Lateral Entry',
+      icon: ShieldCheck,
+      iconColor: 'text-sky-500 bg-sky-50'
+    });
+  }
 
   return (
     <div className="max-w-xl mx-auto space-y-6 select-none pb-16 px-4 sm:px-0">
