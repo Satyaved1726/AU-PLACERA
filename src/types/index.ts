@@ -38,6 +38,18 @@ export interface Post {
     role: string;
     email?: string;
   } | null;
+  attachments?: PostAttachment[];
+}
+
+export interface PostAttachment {
+  id: string;
+  post_id: string;
+  file_name: string;
+  file_path: string;
+  file_type: string;
+  file_size: number;
+  created_by?: string | null;
+  created_at: string;
 }
 
 export interface Registration {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardBody } from '../../../components/common/Card';
 import type { ParsedPost } from '../post.types';
-import { Trash2, Star, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, Star, ChevronDown, ChevronUp, Plus, X, FileText, FileSpreadsheet, Image } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface PostReviewCardProps {
@@ -236,6 +236,74 @@ export const PostReviewCard: React.FC<PostReviewCardProps> = ({
                     <span className="text-[9px] font-black uppercase tracking-wider block text-purple-700">OIA Students Only</span>
                     <span className="text-[8px] font-semibold text-slate-400 block mt-0.5 leading-none">Only OIA-approved students can view and register</span>
                   </button>
+                </div>
+              </div>
+
+              {/* Attachments Picker Section */}
+              <div className="space-y-2 border-t border-slate-100 pt-3">
+                <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">
+                  Attachments (PDF, Excel, Images - Max 15MB)
+                </label>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png,.webp"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        const currentList = post.attachments || [];
+                        handleFieldChange('attachments', [...currentList, ...files]);
+                      }}
+                      className="hidden"
+                      id={`review-attachments-input-${post.opportunityTitle || 'new'}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById(`review-attachments-input-${post.opportunityTitle || 'new'}`)?.click()}
+                      className="h-8 px-3.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Select Files</span>
+                    </button>
+                    {post.attachments && post.attachments.length > 0 && (
+                      <span className="text-[9px] text-slate-450 font-bold uppercase tracking-wider">
+                        {post.attachments.length} file(s) selected
+                      </span>
+                    )}
+                  </div>
+
+                  {post.attachments && post.attachments.length > 0 && (
+                    <div className="space-y-1.5 mt-1">
+                      {post.attachments.map((file: File, fileIdx: number) => (
+                        <div key={fileIdx} className="flex items-center justify-between p-2 bg-slate-50 border border-slate-150 rounded-xl">
+                          <div className="flex items-center gap-2 truncate">
+                            {file.name.toLowerCase().endsWith('.pdf') ? (
+                              <FileText className="h-4 w-4 text-red-500 shrink-0" />
+                            ) : file.name.toLowerCase().endsWith('.xls') || file.name.toLowerCase().endsWith('.xlsx') ? (
+                              <FileSpreadsheet className="h-4 w-4 text-green-600 shrink-0" />
+                            ) : (
+                              <Image className="h-4 w-4 text-blue-500 shrink-0" />
+                            )}
+                            <span className="truncate max-w-[240px] text-[10px] font-semibold text-slate-700" title={file.name}>
+                              {file.name}
+                            </span>
+                            <span className="text-[8px] text-slate-400">({(file.size / (1024 * 1024)).toFixed(2)} MB)</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updatedList = (post.attachments || []).filter((_: File, i: number) => i !== fileIdx);
+                              handleFieldChange('attachments', updatedList);
+                            }}
+                            className="p-1 text-slate-400 hover:text-red-500 rounded-md transition-colors"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAdminPosts } from '../../features/posts/hooks/useAdminPosts';
 import { useUpdatePost } from '../../features/posts/hooks/useUpdatePost';
 import { useDeletePost } from '../../features/posts/hooks/useDeletePost';
@@ -7,18 +7,201 @@ import { DeletePostDialog } from '../../features/posts/components/DeletePostDial
 import type { Post, PostType } from '../../types';
 import { 
   X, Star, CheckCircle2, AlertCircle, 
-  Search, Filter, ClipboardList 
+  Search, Filter, ClipboardList, Plus, FileText, FileSpreadsheet, Image, Download, ExternalLink, Trash2, Loader2
 } from 'lucide-react';
 import { PostSkeleton } from '../../components/common/LoadingSkeleton';
 import { RegistrationListDialog } from '../../features/registrations/components/RegistrationListDialog';
 import { PostDetail } from '../../features/posts/components/PostDetail';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '../../lib/supabase';
+import { postService } from '../../features/posts/postService';
 import noticeBoardManagerIllustration from '../../assets/notice_board_manager_illustration.jpg';
+import { useAuth } from '../../features/auth/useAuth';
+
+interface AttachmentItemProps {
+  attachment: any;
+  isAdmin: boolean;
+  onDelete?: (id: string, filePath: string) => void;
+}
+
+const AttachmentItem: React.FC<AttachmentItemProps> = ({ attachment, isAdmin, onDelete }) => {
+  const [signedUrl, setSignedUrl] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    let active = true;
+    const fetchSignedUrl = async () => {
+      try {
+        const { data, error } = await supabase.storage
+          .from('post-attachments')
+          .createSignedUrl(attachment.file_path, 3600);
+        
+        if (error) {
+          console.warn('Failed to generate signed URL:', error.message);
+          return;
+        }
+
+        if (active && data?.signedUrl) {
+          setSignedUrl(data.signedUrl);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch signed URL:', err);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+
+    fetchSignedUrl();
+    return () => {
+      active = false;
+    };
+  }, [attachment]);
+
+  const isPdf = attachment.file_name.toLowerCase().endsWith('.pdf');
+  const isExcel = attachment.file_name.toLowerCase().endsWith('.xlsx') || attachment.file_name.toLowerCase().endsWith('.xls');
+  const isImage = attachment.file_type.startsWith('image/') || attachment.file_name.toLowerCase().match(/\.(jpg|jpeg|png|webp)$/);
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+
+  if (isLoading) {
+    return (
+      <div className="h-9 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
+    );
+  }
+
+  if (!signedUrl) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-col gap-2 p-3 bg-slate-50 border border-slate-150 rounded-xl hover:bg-slate-100/50 transition-colors animate-fade-in">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 truncate">
+          {isPdf ? (
+            <FileText className="h-5 w-5 text-red-500 shrink-0" />
+          ) : isExcel ? (
+            <FileSpreadsheet className="h-5 w-5 text-green-600 shrink-0" />
+          ) : (
+            <Image className="h-5 w-5 text-blue-500 shrink-0" />
+          )}
+          <div className="flex flex-col truncate">
+            <span className="text-[10px] font-black text-slate-800 truncate" title={attachment.file_name}>
+              {attachment.file_name}
+            </span>
+            <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+              {formatFileSize(attachment.file_size)}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <a
+            href={signedUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            download={isExcel ? attachment.file_name : undefined}
+            className="h-7 px-3 bg-white border border-slate-200 text-slate-700 hover:text-primary hover:border-primary rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1 transition-all"
+            title={isExcel ? 'Download Excel' : 'Open Attachment'}
+          >
+            {isExcel ? <Download className="h-3.5 w-3.5" /> : <ExternalLink className="h-3.5 w-3.5" />}
+            <span>{isExcel ? 'Download' : isPdf ? 'Open PDF' : 'View'}</span>
+          </a>
+          
+          {isAdmin && onDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(attachment.id, attachment.file_path)}
+              className="h-7 w-7 bg-red-50 hover:bg-red-150 text-red-600 rounded-lg flex items-center justify-center border border-red-100 transition-colors"
+              title="Delete Attachment"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {isImage && (
+        <a 
+          href={signedUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 rounded-lg overflow-hidden border border-slate-200/60 bg-white block max-w-xs cursor-zoom-in"
+        >
+          <img 
+            src={signedUrl}
+            alt={attachment.file_name}
+            className="max-h-24 object-contain mx-auto"
+            loading="lazy"
+          />
+        </a>
+      )}
+    </div>
+  );
+};
 
 export const Posts: React.FC = () => {
   const { data: posts, isLoading, error } = useAdminPosts();
   const updatePostMutation = useUpdatePost();
   const deletePostMutation = useDeletePost();
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+
+  const handleInlineAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !editingPost) return;
+
+    setIsUploadingAttachment(true);
+    try {
+      for (const file of Array.from(files)) {
+        await postService.uploadAttachment(editingPost.id, file, profile?.id || '');
+      }
+      triggerToast('Attachment uploaded successfully.');
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      
+      const { data: updatedPost } = await supabase
+        .from('posts')
+        .select('*, profiles:created_by (full_name, role, email), attachments:post_attachments(*)')
+        .eq('id', editingPost.id)
+        .single();
+      
+      if (updatedPost) {
+        setEditingPost(updatedPost);
+      }
+    } catch (err: any) {
+      triggerToast(err.message || 'Failed to upload attachment.');
+    } finally {
+      setIsUploadingAttachment(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string, filePath: string) => {
+    if (!editingPost) return;
+    try {
+      await postService.deleteAttachment(attachmentId, filePath);
+      triggerToast('Attachment deleted successfully.');
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      
+      const { data: updatedPost } = await supabase
+        .from('posts')
+        .select('*, profiles:created_by (full_name, role, email), attachments:post_attachments(*)')
+        .eq('id', editingPost.id)
+        .single();
+      
+      if (updatedPost) {
+        setEditingPost(updatedPost);
+      }
+    } catch (err: any) {
+      triggerToast(err.message || 'Failed to delete attachment.');
+    }
+  };
 
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -466,6 +649,54 @@ export const Posts: React.FC = () => {
                     />
                     <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                   </label>
+                </div>
+
+                {/* Attachments Section */}
+                <div className="space-y-2 border-t border-slate-100 pt-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                      Attachments
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {isUploadingAttachment && (
+                        <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-500 uppercase">
+                          <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                          <span>Uploading...</span>
+                        </div>
+                      )}
+                      <input 
+                        type="file"
+                        multiple
+                        onChange={handleInlineAttachmentUpload}
+                        className="hidden"
+                        id="inline-post-attachments-input"
+                      />
+                      <button
+                        type="button"
+                        disabled={isUploadingAttachment}
+                        onClick={() => document.getElementById('inline-post-attachments-input')?.click()}
+                        className="h-6 px-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[8px] font-black uppercase tracking-wider flex items-center gap-1 transition-all"
+                      >
+                        <Plus className="h-3 w-3" />
+                        <span>Add Attachment</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {editingPost.attachments && editingPost.attachments.length > 0 ? (
+                    <div className="space-y-1.5 mt-1.5">
+                      {editingPost.attachments.map((att) => (
+                        <AttachmentItem 
+                          key={att.id} 
+                          attachment={att} 
+                          isAdmin={true} 
+                          onDelete={handleDeleteAttachment} 
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[9px] text-slate-400 font-semibold italic">No attachments uploaded.</p>
+                  )}
                 </div>
 
                 {/* Dialog Footer Actions */}

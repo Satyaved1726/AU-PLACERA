@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCreatePost } from '../../features/posts/hooks/useCreatePost';
+import { postService } from '../../features/posts/postService';
 import { postParser } from '../../features/posts/postParser';
 import type { ParsedPost } from '../../features/posts/post.types';
 import { PostReviewCard } from '../../features/posts/components/PostReviewCard';
@@ -18,6 +19,7 @@ export const CreatePost: React.FC = () => {
 
   // Wizard Steps: 1 = Paste, 2 = Review, 3 = Publish Success
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [publishingStatus, setPublishingStatus] = useState<string | null>(null);
 
   // Form states
   const [rawText, setRawText] = useState('');
@@ -166,10 +168,26 @@ export const CreatePost: React.FC = () => {
     }));
 
     try {
-      await createPostMutation.mutateAsync(payload);
+      setPublishingStatus('Publishing notices...');
+      const createdPosts = await createPostMutation.mutateAsync(payload);
+      
+      // Upload attachments sequentially
+      for (let i = 0; i < createdPosts.length; i++) {
+        const postObj = createdPosts[i];
+        const parsedItem = parsedItems[i];
+        if (parsedItem.attachments && parsedItem.attachments.length > 0) {
+          for (const file of parsedItem.attachments) {
+            setPublishingStatus(`Uploading "${file.name}" for "${postObj.opportunity_title || 'Post'}"...`);
+            await postService.uploadAttachment(postObj.id, file, profile.id);
+          }
+        }
+      }
+
       setStep(3);
     } catch (err: any) {
       setErrorMessage(`Publishing failed: ${err?.message || err || 'Unknown database error.'}`);
+    } finally {
+      setPublishingStatus(null);
     }
   };
 
@@ -398,10 +416,18 @@ export const CreatePost: React.FC = () => {
             ))}
           </div>
 
+          {publishingStatus && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-[#F0F7FF] border border-blue-100 rounded-xl text-primary text-[10px] font-bold">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500 shrink-0" />
+              <span>{publishingStatus}</span>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 pt-5 pb-8">
             <button
               onClick={() => setStep(1)}
-              className="w-full sm:w-auto h-10 px-5 text-[10px] font-black uppercase tracking-wider text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 active:scale-95 transition-all select-none"
+              disabled={createPostMutation.isPending || !!publishingStatus}
+              className="w-full sm:w-auto h-10 px-5 text-[10px] font-black uppercase tracking-wider text-slate-555 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 active:scale-95 transition-all select-none disabled:opacity-50"
             >
               Back to Paste
             </button>
@@ -412,16 +438,17 @@ export const CreatePost: React.FC = () => {
                   setParsedItems([]);
                   setStep(1);
                 }}
-                className="flex-1 sm:flex-initial h-10 px-5 text-[10px] font-black uppercase tracking-wider text-red-650 bg-red-50 hover:bg-red-100 rounded-xl active:scale-95 transition-all select-none"
+                disabled={createPostMutation.isPending || !!publishingStatus}
+                className="flex-1 sm:flex-initial h-10 px-5 text-[10px] font-black uppercase tracking-wider text-red-650 bg-red-50 hover:bg-red-100 rounded-xl active:scale-95 transition-all select-none disabled:opacity-50"
               >
                 Discard All
               </button>
               <button
                 onClick={handlePublishAll}
-                disabled={createPostMutation.isPending || loading}
-                className="flex-1 sm:flex-initial h-10 px-6 rounded-xl bg-[#0B3C5D] hover:bg-[#0B3C5D]/90 text-white text-[10px] font-black uppercase tracking-wider transition-all select-none active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-sm"
+                disabled={createPostMutation.isPending || loading || !!publishingStatus}
+                className="flex-1 sm:flex-initial h-10 px-6 rounded-xl bg-[#0B3C5D] hover:bg-[#0B3C5D]/90 text-white text-[10px] font-black uppercase tracking-wider transition-all select-none active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
               >
-                {createPostMutation.isPending ? 'Publishing...' : 'Publish All'}
+                {publishingStatus ? 'Publishing...' : 'Publish All'}
               </button>
             </div>
           </div>

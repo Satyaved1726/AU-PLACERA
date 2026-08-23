@@ -21,4 +21,5 @@ export interface ParsedPost {
   opportunityTitle?: string;
   isTopPriority?: boolean;
   audience?: 'general' | 'oia';
+  attachments?: File[];
 }
