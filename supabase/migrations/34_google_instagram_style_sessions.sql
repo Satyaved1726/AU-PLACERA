@@ -459,3 +459,16 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
 -- Reload PostgREST schema cache
 NOTIFY pgrst, 'reload schema';
+
+-- Add admin_sessions to realtime publication if not already present
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.admin_sessions;
+  END IF;
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Ignore if already added
+END;
+$$;
+

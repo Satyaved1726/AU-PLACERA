@@ -65,8 +65,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session && mounted) {
-          setUser(session.user);
-          await fetchProfile(session.user.id);
+          // Fetch profile first, then set both atomically to avoid race conditions
+          const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          if (mounted) {
+            if (data) {
+              setUser(session.user);
+              setProfile(data);
+              profileRef.current = data;
+            } else {
+              setUser(session.user);
+              setProfile(null);
+              profileRef.current = null;
+            }
+          }
         }
       } catch (err) {
         console.error('Failed to resolve initial session:', err);
@@ -87,7 +102,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (session) {
-        setUser(session.user);
         let currentProfile = profileRef.current;
         if (!currentProfile || currentProfile.id !== session.user.id) {
           setLoading(true);
@@ -96,11 +110,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .select('*')
             .eq('id', session.user.id)
             .maybeSingle();
-          if (data) {
-            setProfile(data);
-            currentProfile = data;
+          if (mounted) {
+            if (data) {
+              setUser(session.user);
+              setProfile(data);
+              currentProfile = data;
+              profileRef.current = data;
+            } else {
+              setUser(session.user);
+              setProfile(null);
+              currentProfile = null;
+              profileRef.current = null;
+            }
           }
           setLoading(false);
+        } else {
+          setUser(session.user);
         }
 
         // Track super admin session
@@ -117,6 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setUser(null);
         setProfile(null);
+        profileRef.current = null;
         setLoading(false);
       }
 
@@ -189,7 +215,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           p_browser: browser,
           p_os: os
         });
-        if (error) console.error('[HEARTBEAT] track_admin_session failed:', error.message);
+        if (error) {
+          console.error('[HEARTBEAT] track_admin_session failed:', error.message);
+          if (
+            error.message.includes('No active session identifier') ||
+            error.message.includes('Not authenticated') ||
+            error.message.includes('Session not found')
+          ) {
+            console.warn('[HEARTBEAT] Session revoked by server. Performing local logout.');
+            await signOut();
+          }
+        }
       }
     };
 
@@ -210,6 +246,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearInterval(intervalId);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, profile?.id, profile?.role]);
 
   const refreshProfile = async () => {

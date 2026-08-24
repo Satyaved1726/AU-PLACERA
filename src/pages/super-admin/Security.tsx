@@ -196,7 +196,31 @@ export const SecurityPage: React.FC = () => {
 
   useEffect(() => {
     loadAll();
-  }, []);
+
+    if (!profile?.id) return;
+
+    // Realtime subscription for admin sessions
+    const channel = supabase
+      .channel('admin_sessions_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'admin_sessions',
+          filter: `user_id=eq.${profile.id}`
+        },
+        () => {
+          fetchSessionData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
 
   // Secure elevation workflow
   const handleElevate = async (e: React.FormEvent) => {
