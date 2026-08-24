@@ -11,45 +11,42 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Check if all mandatory configurations exist (returns false if empty or undefined)
 const hasFirebaseConfig = 
   !!firebaseConfig.apiKey && 
   !!firebaseConfig.projectId && 
   !!firebaseConfig.messagingSenderId && 
   !!firebaseConfig.appId;
 
-let app;
-let messaging: Messaging | null = null;
+let appInstance: any = null;
+let messagingInstance: Messaging | null = null;
 
-if (hasFirebaseConfig) {
+export const getFirebaseApp = () => {
+  if (appInstance) return appInstance;
+  if (!hasFirebaseConfig) return null;
+
   try {
-    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    // Firebase Messaging only works in the browser environment (not SSR/worker contexts directly)
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      messaging = getMessaging(app);
+    appInstance = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+    return appInstance;
+  } catch (error) {
+    console.error('Failed to initialize Firebase App SDK:', error);
+    return null;
+  }
+};
+
+export const getMessagingInstance = (): Messaging | null => {
+  if (messagingInstance) return messagingInstance;
+  if (typeof window === 'undefined') return null;
+
+  const app = getFirebaseApp();
+  if (!app) return null;
+
+  try {
+    if ('serviceWorker' in navigator) {
+      messagingInstance = getMessaging(app);
     }
   } catch (error) {
-    console.error('Failed to initialize Firebase SDK:', error);
+    console.error('Failed to initialize Firebase Messaging SDK:', error);
   }
-} else if (import.meta.env.DEV) {
-  console.warn('Firebase Messaging: Public config variables are missing from environment variables.');
-}
-
-// Global handler to intercept and cleanly log background Firebase installations/messaging unhandled rejections
-if (typeof window !== 'undefined') {
-  window.addEventListener('unhandledrejection', (event) => {
-    const error = event.reason;
-    if (error && (error.name === 'FirebaseError' || error.name === 'n' || error.httpStatus === 200 || error.code === 403)) {
-      event.preventDefault();
-      console.warn('[FCM] Intercepted background Firebase Installations/Messaging error:', {
-        name: error.name || 'Unknown',
-        code: error.code || 'None',
-        message: error.message || 'No message provided',
-        httpStatus: error.httpStatus || 'N/A',
-        httpError: error.httpError !== undefined ? String(error.httpError) : 'N/A'
-      });
-    }
-  });
-}
-
-export { app, messaging };
+  
+  return messagingInstance;
+};
