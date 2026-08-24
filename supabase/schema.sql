@@ -220,19 +220,23 @@ CREATE TABLE IF NOT EXISTS public.admin_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   session_id UUID NOT NULL UNIQUE,
+  device_type TEXT,
   device_name TEXT,
   browser TEXT,
   operating_system TEXT,
-  ip_address TEXT,
   user_agent TEXT,
+  ip_address TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  revoked_at TIMESTAMPTZ
+  revoked_at TIMESTAMPTZ,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  CONSTRAINT unique_user_session UNIQUE (user_id, session_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_admin_sessions_user_id ON public.admin_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_admin_sessions_session_id ON public.admin_sessions(session_id);
 CREATE INDEX IF NOT EXISTS idx_admin_sessions_last_seen_at ON public.admin_sessions(last_seen_at);
+CREATE INDEX IF NOT EXISTS idx_admin_sessions_active_status ON public.admin_sessions(is_active) WHERE is_active = TRUE;
 
 ALTER TABLE public.admin_sessions ENABLE ROW LEVEL SECURITY;
 

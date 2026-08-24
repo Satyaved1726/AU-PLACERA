@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../features/auth/useAuth';
 import { 
   Shield, AlertTriangle, CheckCircle2, Users, Activity, Lock, 
-  Smartphone, Laptop, AlertCircle, KeyRound 
+  Smartphone, Laptop, Tablet, AlertCircle, KeyRound 
 } from 'lucide-react';
 
 interface SuperAdminProfile {
@@ -31,6 +31,7 @@ interface SecurityLog {
 interface DeviceSession {
   id: string;
   session_id: string;
+  device_type: string;
   device_name: string;
   browser: string;
   operating_system: string;
@@ -525,9 +526,10 @@ export const SecurityPage: React.FC = () => {
                       <div key={sess.id} className="p-4.5 flex items-center justify-between gap-4 hover:bg-slate-50/20 transition-all">
                         <div className="flex items-start gap-3.5">
                           <div className="p-2.5 bg-slate-100 rounded-xl text-slate-600">
-                            {sess.operating_system?.toLowerCase().includes('android') || 
-                            sess.operating_system?.toLowerCase().includes('ios') ? (
+                            {sess.device_type === 'Mobile' ? (
                               <Smartphone className="h-5 w-5" />
+                            ) : sess.device_type === 'Tablet' ? (
+                              <Tablet className="h-5 w-5" />
                             ) : (
                               <Laptop className="h-5 w-5" />
                             )}

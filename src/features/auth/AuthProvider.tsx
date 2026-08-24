@@ -155,6 +155,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.error('Failed to clean up FCM token on signout:', err);
     }
+
+    // Revoke current session in database for Super Admin
+    if (profile?.role === 'super_admin') {
+      try {
+        const { error } = await supabase.rpc('revoke_current_admin_session');
+        if (error) {
+          console.error('[AUTH] Failed to revoke session on signout:', error.message);
+        }
+      } catch (err) {
+        console.error('[AUTH] Exception during session revocation on signout:', err);
+      }
+    }
+
     await authService.signOut();
     setUser(null);
     setProfile(null);
@@ -186,8 +199,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       runHeartbeat().catch((err: any) => console.error('[HEARTBEAT] Cycle failed:', err));
     }, 10 * 60 * 1000); // 10 minutes
 
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        runHeartbeat().catch((err: any) => console.error('[HEARTBEAT] Visibility trigger failed:', err));
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
       clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [user, profile?.id, profile?.role]);
 
