@@ -189,9 +189,13 @@ export const CreatePost: React.FC = () => {
       if (sendNotification && createdPosts && createdPosts.length > 0) {
         setPublishingStatus('Sending push notifications...');
         try {
+          const { data: { session } } = await supabase.auth.getSession();
           for (const postObj of createdPosts) {
             const { error: fnError } = await supabase.functions.invoke('send-push-notification', {
-              body: { postId: postObj.id }
+              body: { postId: postObj.id },
+              headers: session?.access_token ? {
+                Authorization: `Bearer ${session.access_token}`
+              } : undefined
             });
             if (fnError) throw fnError;
           }

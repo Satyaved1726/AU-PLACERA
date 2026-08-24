@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Custom OAuth2 access token generator using Web Crypto API for RSASSA-PKAS1-v1_5
+// Custom OAuth2 access token generator using Web Crypto API for RSASSA-PKCS1-v1_5
 async function getAccessToken(serviceAccount: any): Promise<string> {
   const jwtHeader = { alg: "RS256", typ: "JWT" };
   const now = Math.floor(Date.now() / 1000);
@@ -106,7 +106,10 @@ serve(async (req) => {
   }
 
   try {
+    console.log(`[Diagnostic] Request method: ${req.method}`)
     const authHeader = req.headers.get('Authorization')
+    console.log(`[Diagnostic] Authorization header exists: ${!!authHeader}`)
+    
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Missing Authorization header' }), {
         status: 401,
@@ -115,21 +118,31 @@ serve(async (req) => {
     }
 
     const jwt = authHeader.replace('Bearer ', '').trim()
+    console.log(`[Diagnostic] Bearer token length: ${jwt.length}`)
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    console.log(`[Diagnostic] SUPABASE_URL: ${supabaseUrl ? 'exists' : 'empty'}, SUPABASE_ANON_KEY: ${supabaseAnonKey ? 'exists' : 'empty'}`)
+
     const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
     // Verify caller session using the extracted JWT
     const { data: { user }, error: authError } = await supabase.auth.getUser(jwt)
+    console.log(`[Diagnostic] getUser success: ${!!user}, authError: ${authError?.message || 'none'}`)
+
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized user session' }), {
+      return new Response(JSON.stringify({ error: 'Unauthorized user session', details: authError?.message }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
+    console.log(`[Diagnostic] Authenticated user ID: ${user.id}`)
+
     // Load service role client to bypass database RLS policies securely
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    console.log(`[Diagnostic] SUPABASE_SERVICE_ROLE_KEY: ${serviceRoleKey ? 'exists' : 'empty'}`)
+
     if (!serviceRoleKey) {
       throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured')
     }
@@ -141,6 +154,8 @@ serve(async (req) => {
       .select('role')
       .eq('id', user.id)
       .single()
+
+    console.log(`[Diagnostic] Caller role: ${callerProfile?.role || 'none'}, roleError: ${roleError?.message || 'none'}`)
 
     if (roleError || !callerProfile || (callerProfile.role !== 'admin' && callerProfile.role !== 'super_admin')) {
       return new Response(JSON.stringify({ error: 'Forbidden: Admin access required' }), {
@@ -257,6 +272,8 @@ serve(async (req) => {
 
     // Load Service Account secrets
     const serviceAccountStr = Deno.env.get('FIREBASE_SERVICE_ACCOUNT')
+    console.log(`[Diagnostic] FIREBASE_SERVICE_ACCOUNT: ${serviceAccountStr ? 'exists' : 'empty'}`)
+
     if (!serviceAccountStr) {
       throw new Error('FIREBASE_SERVICE_ACCOUNT is not configured')
     }
@@ -295,6 +312,8 @@ serve(async (req) => {
     let failureCount = 0
     const recipientCount = tokenRows.length
     const unregisteredTokens: string[] = []
+
+    console.log(`[Diagnostic] Resolved recipient device count: ${recipientCount}`)
 
     if (recipientCount > 0) {
       const tokens = tokenRows.map(row => row.token)
