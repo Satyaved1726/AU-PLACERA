@@ -35,4 +35,21 @@ if (hasFirebaseConfig) {
   console.warn('Firebase Messaging: Public config variables are missing from environment variables.');
 }
 
+// Global handler to intercept and cleanly log background Firebase installations/messaging unhandled rejections
+if (typeof window !== 'undefined') {
+  window.addEventListener('unhandledrejection', (event) => {
+    const error = event.reason;
+    if (error && (error.name === 'FirebaseError' || error.name === 'n' || error.httpStatus === 200 || error.code === 403)) {
+      event.preventDefault();
+      console.warn('[FCM] Intercepted background Firebase Installations/Messaging error:', {
+        name: error.name || 'Unknown',
+        code: error.code || 'None',
+        message: error.message || 'No message provided',
+        httpStatus: error.httpStatus || 'N/A',
+        httpError: error.httpError !== undefined ? String(error.httpError) : 'N/A'
+      });
+    }
+  });
+}
+
 export { app, messaging };

@@ -9,6 +9,7 @@ export type NotificationPermissionState = 'default' | 'granted' | 'denied' | 'un
 // Module-level globals to act as stable guards across re-renders/unmounts
 let globalToken: string | null = null;
 let isInitializing = false;
+let initializationPromise: Promise<string | null> | null = null;
 
 export const useNotifications = () => {
   const { profile } = useAuth();
@@ -50,7 +51,7 @@ export const useNotifications = () => {
         storageBucket: storageBucket || '',
         messagingSenderId,
         appId: appId || '',
-        v: '1.0.1' // Cache buster query param
+        v: '1.0.2' // Cache buster query param
       }).toString();
 
       console.log('[FCM] Registering service worker...');
@@ -72,17 +73,18 @@ export const useNotifications = () => {
 
   const registerTokenToBackend = useCallback(async (fcmToken: string) => {
     try {
+      console.log('[FCM] Fetching authenticated user...');
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
-        console.error('[FCM] No authenticated user session found, aborting token registration.');
+        console.log('[FCM] Authenticated user = NO');
         return;
       }
       
-      console.log(`[FCM] Authenticated user = ${user.id.substring(0, 8)}***`);
-      console.log('[FCM] Upserting token...');
+      console.log('[FCM] Authenticated user = YES');
+      console.log('[FCM] Supabase upsert started');
 
-      const { data: _upsertData, error: upsertError } = await supabase
+      const { data: upsertData, error: upsertError } = await supabase
         .from('fcm_tokens')
         .upsert(
           {
@@ -96,12 +98,18 @@ export const useNotifications = () => {
 
       if (upsertError) {
         console.log('[FCM] Supabase upsert = error');
-        console.error(`[FCM] Supabase upsert error details: ${upsertError.message}`);
+        console.error('[FCM] Supabase upsert failed', {
+          message: upsertError.message,
+          code: upsertError.code,
+          details: upsertError.details,
+          hint: upsertError.hint
+        });
         throw upsertError;
       }
 
-      console.log('[FCM] Supabase upsert = success');
-      console.log('[FCM] FCM initialization COMPLETE');
+      console.log('[FCM] Supabase upsert success = YES');
+      console.log(`[FCM] Database row returned = ${upsertData && upsertData.length > 0 ? 'YES' : 'NO'}`);
+      console.log('[FCM] Token saved successfully');
 
       localStorage.setItem('au_fcm_token', fcmToken);
       globalToken = fcmToken;
@@ -117,43 +125,54 @@ export const useNotifications = () => {
       return globalToken;
     }
 
-    if (isInitializing) {
-      return null;
+    // Reuse existing initialization promise if already in flight
+    if (isInitializing && initializationPromise) {
+      return initializationPromise;
     }
 
     isInitializing = true;
-    try {
-      console.log(`[FCM] Firebase initialized = ${!!messaging}`);
-      console.log(`[FCM] Messaging instance = ${messaging ? 'YES' : 'NO'}`);
-      
-      if (!messaging || !profile?.id) {
+    initializationPromise = (async () => {
+      try {
+        console.log(`[FCM] Firebase initialized = ${!!messaging}`);
+        console.log(`[FCM] Messaging instance exists = ${messaging ? 'YES' : 'NO'}`);
+        
+        const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+        console.log(`[FCM] VAPID key configured = ${vapidKey ? 'YES' : 'NO'}`);
+
+        if (!messaging || !profile?.id) {
+          return null;
+        }
+
+        const registration = await registerServiceWorker();
+        if (!registration) {
+          return null;
+        }
+
+        console.log('[FCM] Calling getToken()');
+        const currentToken = await getToken(messaging, {
+          serviceWorkerRegistration: registration,
+          vapidKey: vapidKey,
+        });
+
+        console.log(`[FCM] Token received = ${currentToken ? 'YES' : 'NO'}`);
+        if (currentToken) {
+          // Print safe masked token representation
+          console.log(`[FCM] Token preview = ${currentToken.substring(0, 6)}...${currentToken.substring(currentToken.length - 6)}`);
+          await registerTokenToBackend(currentToken);
+          console.log('[FCM] FCM initialization COMPLETE');
+          return currentToken;
+        }
         return null;
-      }
-
-      const registration = await registerServiceWorker();
-      if (!registration) {
+      } catch (err) {
+        console.error('[FCM] getToken failed:', err);
         return null;
+      } finally {
+        isInitializing = false;
+        initializationPromise = null;
       }
+    })();
 
-      const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-      console.log('[FCM] Calling getToken()');
-      const currentToken = await getToken(messaging, {
-        serviceWorkerRegistration: registration,
-        vapidKey: vapidKey,
-      });
-
-      console.log(`[FCM] Token received = ${currentToken ? 'YES' : 'NO'}`);
-      if (currentToken) {
-        await registerTokenToBackend(currentToken);
-        return currentToken;
-      }
-      return null;
-    } catch (err) {
-      console.error('[FCM] getToken failed:', err);
-      return null;
-    } finally {
-      isInitializing = false;
-    }
+    return initializationPromise;
   }, [profile?.id, registerServiceWorker, registerTokenToBackend]);
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
@@ -182,17 +201,21 @@ export const useNotifications = () => {
   }, [profile?.id, fetchAndRegisterToken]);
 
   const initPushNotifications = useCallback(async () => {
-    if (typeof window === 'undefined' || !('Notification' in window) || !messaging || !profile?.id) {
-      return;
-    }
+    try {
+      if (typeof window === 'undefined' || !('Notification' in window) || !messaging || !profile?.id) {
+        return;
+      }
 
-    console.log('[FCM] Initialization started');
-    const currentPermission = Notification.permission as NotificationPermissionState;
-    setPermission(currentPermission);
-    console.log(`[FCM] Notification permission = ${currentPermission}`);
-    
-    if (currentPermission === 'granted') {
-      await fetchAndRegisterToken();
+      console.log('[FCM] Initialization started');
+      const currentPermission = Notification.permission as NotificationPermissionState;
+      setPermission(currentPermission);
+      console.log(`[FCM] Notification permission = ${currentPermission}`);
+      
+      if (currentPermission === 'granted') {
+        await fetchAndRegisterToken();
+      }
+    } catch (err) {
+      console.error('[FCM] initPushNotifications failed:', err);
     }
   }, [profile?.id, fetchAndRegisterToken]);
 
