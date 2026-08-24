@@ -11,8 +11,12 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Check if all configurations exist (returns false if empty or undefined)
-const hasFirebaseConfig = Object.values(firebaseConfig).every(val => !!val);
+// Check if all mandatory configurations exist (returns false if empty or undefined)
+const hasFirebaseConfig = 
+  !!firebaseConfig.apiKey && 
+  !!firebaseConfig.projectId && 
+  !!firebaseConfig.messagingSenderId && 
+  !!firebaseConfig.appId;
 
 let app;
 let messaging: Messaging | null = null;
