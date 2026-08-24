@@ -42,15 +42,16 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
 
   const location = useLocation();
   const { profile } = useAuth();
+  const userRole = profile?.role || role;
   const shouldReduceMotion = useReducedMotion();
   const { initPushNotifications } = useNotifications();
 
   // Initialize push notifications silently for students if permission is already granted
   useEffect(() => {
-    if (role === 'student' && profile?.id) {
+    if (userRole === 'student' && profile?.id) {
       initPushNotifications();
     }
-  }, [role, profile?.id, initPushNotifications]);
+  }, [userRole, profile?.id, initPushNotifications]);
 
   // Persist sidebar collapse state
   useEffect(() => {
@@ -79,7 +80,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
 
   // Setup bottom navigation items partitions based on role
   const getMobileNav = () => {
-    if (role === 'super_admin') {
+    if (userRole === 'super_admin') {
       return {
         main: [
           { name: 'Dashboard', path: '/super-admin/dashboard', icon: LayoutDashboard },
@@ -95,7 +96,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
         ]
       };
     }
-    if (role === 'admin') {
+    if (userRole === 'admin') {
       return {
         main: [
           { name: 'Home', path: '/admin/dashboard', icon: LayoutDashboard },
@@ -145,7 +146,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
       
       {/* Sidebar Navigation */}
       <Sidebar
-        role={role}
+        role={userRole}
         isOpen={sidebarOpen}
         collapsed={sidebarCollapsed}
         onCollapseToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -161,7 +162,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
         
         {/* Top Header - Sticky with Blur */}
         <Header
-          role={role}
+          role={userRole}
           title={title}
           onMenuClick={() => setSidebarOpen(true)}
         />
@@ -169,7 +170,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
         {/* Page Container */}
         <main className="flex-grow p-4 sm:p-6 md:p-8 overflow-y-auto max-w-[1400px] w-full mx-auto">
           <div className="flex flex-col gap-6">
-            {role === 'student' && <NotificationPrompt />}
+            {userRole === 'student' && <NotificationPrompt />}
             
             {/* Animated Route Transitions */}
             <AnimatePresence mode="wait">
