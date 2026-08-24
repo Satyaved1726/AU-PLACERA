@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Custom OAuth2 access token generator using Web Crypto API for RSASSA-PKCS1-v1_5
+// Custom OAuth2 access token generator using Web Crypto API for RSASSA-PKAS1-v1_5
 async function getAccessToken(serviceAccount: any): Promise<string> {
   const jwtHeader = { alg: "RS256", typ: "JWT" };
   const now = Math.floor(Date.now() / 1000);
@@ -114,14 +114,13 @@ serve(async (req) => {
       })
     }
 
-    // Verify caller session
+    const jwt = authHeader.replace('Bearer ', '').trim()
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    })
+    const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Verify caller session using the extracted JWT
+    const { data: { user }, error: authError } = await supabase.auth.getUser(jwt)
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized user session' }), {
         status: 401,
@@ -129,8 +128,15 @@ serve(async (req) => {
       })
     }
 
-    // Check Role: MUST be admin or super_admin
-    const { data: callerProfile, error: roleError } = await supabase
+    // Load service role client to bypass database RLS policies securely
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    if (!serviceRoleKey) {
+      throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured')
+    }
+    const supabaseService = createClient(supabaseUrl, serviceRoleKey)
+
+    // Check Role: MUST be admin or super_admin. Resolve role via supabaseService to bypass table RLS.
+    const { data: callerProfile, error: roleError } = await supabaseService
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -150,13 +156,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
-
-    // Load service role client to bypass database RLS policies securely
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    if (!serviceRoleKey) {
-      throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured')
-    }
-    const supabaseService = createClient(supabaseUrl, serviceRoleKey)
 
     // Fetch the post from database
     const { data: post, error: postError } = await supabaseService
@@ -303,7 +302,7 @@ serve(async (req) => {
 
       for (let i = 0; i < tokens.length; i += CHUNK_SIZE) {
         const chunk = tokens.slice(i, i + CHUNK_SIZE)
-        const chunkResults = await Promise.all(
+        await Promise.all(
           chunk.map(token => 
             sendFcmMessage(accessToken, projectIdFCM, {
               token,
