@@ -21,7 +21,6 @@ if (hasFirebaseConfig) {
 
   // Listen to background messages when tab is closed
   messaging.onBackgroundMessage((payload) => {
-    console.log('[firebase-messaging-sw.js] Background push payload received:', payload);
     const notificationTitle = payload.notification?.title || '🔔 New notice';
     const notificationOptions = {
       body: payload.notification?.body || 'Check the portal for details.',

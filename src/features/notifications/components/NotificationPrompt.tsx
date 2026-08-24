@@ -6,8 +6,10 @@ export const NotificationPrompt: React.FC = () => {
   const { permission, requestPermission } = useNotifications();
 
   useEffect(() => {
-    console.log('[FCM UI] NotificationPrompt mounted');
-    console.log('[FCM UI] Current permission = ' + permission);
+    if (import.meta.env.DEV) {
+      console.log('[FCM UI] NotificationPrompt mounted');
+      console.log('[FCM UI] Current permission = ' + permission);
+    }
   }, [permission]);
 
   // Hide the banner if permission is already granted
@@ -49,9 +51,13 @@ export const NotificationPrompt: React.FC = () => {
 
   // Handle case where permission is default
   const handleEnable = async () => {
-    console.log('[FCM UI] Enable Notifications clicked');
+    if (import.meta.env.DEV) {
+      console.log('[FCM UI] Enable Notifications clicked');
+    }
     const result = await requestPermission();
-    console.log('[FCM UI] Permission result =', result);
+    if (import.meta.env.DEV) {
+      console.log('[FCM UI] Permission result =', result);
+    }
   };
 
   return (

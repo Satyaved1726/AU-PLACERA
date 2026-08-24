@@ -11,6 +11,13 @@ let globalToken: string | null = null;
 let isInitializing = false;
 let initializationPromise: Promise<string | null> | null = null;
 
+// Developer-only logging helper
+const logDev = (...args: any[]) => {
+  if (import.meta.env.DEV) {
+    console.log(...args);
+  }
+};
+
 export const useNotifications = () => {
   const { profile } = useAuth();
   const [permission, setPermission] = useState<NotificationPermissionState>('default');
@@ -36,9 +43,9 @@ export const useNotifications = () => {
       return;
     }
 
-    console.log('[FCM] Registering foreground message handler...');
+    logDev('[FCM] Registering foreground message handler...');
     const unsubscribe = onMessage(messaging, (payload) => {
-      console.log('[FCM] Foreground message received:', payload);
+      logDev('[FCM] Foreground message received:', payload);
       
       const title = payload.notification?.title || '🔔 New Notification';
       const body = payload.notification?.body || 'Check the portal for updates.';
@@ -62,7 +69,7 @@ export const useNotifications = () => {
 
   const registerServiceWorker = useCallback(async () => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
-      console.log('[FCM] Service worker not supported in this browser context');
+      logDev('[FCM] Service worker not supported in this browser context');
       return null;
     }
 
@@ -75,7 +82,6 @@ export const useNotifications = () => {
       const appId = import.meta.env.VITE_FIREBASE_APP_ID;
 
       if (!apiKey || !messagingSenderId || !projectId) {
-        console.warn('FCM SW registration aborted: Missing Firebase environment configuration.');
         return null;
       }
 
@@ -89,35 +95,35 @@ export const useNotifications = () => {
         v: '1.0.4' // Cache buster query param
       }).toString();
 
-      console.log('[FCM] Registering service worker...');
+      logDev('[FCM] Registering service worker...');
       const registration = await navigator.serviceWorker.register(
         `/firebase-messaging-sw.js?${queryParams}`,
         { scope: '/' }
       );
-      console.log('[FCM] Service worker registered = success');
+      logDev('[FCM] Service worker registered = success');
       
-      console.log('[FCM] Waiting for service worker...');
+      logDev('[FCM] Waiting for service worker...');
       await navigator.serviceWorker.ready;
-      console.log('[FCM] Service worker ready = yes');
+      logDev('[FCM] Service worker ready = yes');
       return registration;
     } catch (err) {
-      console.error('Service Worker registration for FCM failed:', err);
+      console.error('[FCM] Service Worker registration failed:', err);
       return null;
     }
   }, []);
 
   const registerTokenToBackend = useCallback(async (fcmToken: string) => {
     try {
-      console.log('[FCM] Fetching authenticated user...');
+      logDev('[FCM] Fetching authenticated user...');
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
-        console.log('[FCM] Authenticated user = NO');
+        logDev('[FCM] Authenticated user = NO');
         return;
       }
       
-      console.log('[FCM] Authenticated user = YES');
-      console.log('[FCM] Supabase upsert started');
+      logDev('[FCM] Authenticated user = YES');
+      logDev('[FCM] Supabase upsert started');
 
       const { data: upsertData, error: upsertError } = await supabase
         .from('fcm_tokens')
@@ -132,8 +138,7 @@ export const useNotifications = () => {
         .select();
 
       if (upsertError) {
-        console.log('[FCM] Supabase upsert = error');
-        console.error('[FCM] Supabase upsert failed', {
+        console.error('[FCM] Supabase token upsert failed:', {
           message: upsertError.message,
           code: upsertError.code,
           details: upsertError.details,
@@ -142,9 +147,9 @@ export const useNotifications = () => {
         throw upsertError;
       }
 
-      console.log('[FCM] Supabase upsert success = YES');
-      console.log(`[FCM] Database row returned = ${upsertData && upsertData.length > 0 ? 'YES' : 'NO'}`);
-      console.log('[FCM] Token saved successfully');
+      logDev('[FCM] Supabase upsert success = YES');
+      logDev(`[FCM] Database row returned = ${upsertData && upsertData.length > 0 ? 'YES' : 'NO'}`);
+      logDev('[FCM] Token saved successfully');
 
       localStorage.setItem('au_fcm_token', fcmToken);
       globalToken = fcmToken;
@@ -168,13 +173,13 @@ export const useNotifications = () => {
     isInitializing = true;
     initializationPromise = (async () => {
       try {
-        console.log('[FCM] Firebase initialization started');
+        logDev('[FCM] Firebase initialization started');
         const messaging = getMessagingInstance();
-        console.log(`[FCM] Firebase initialized = ${!!messaging}`);
-        console.log(`[FCM] Messaging instance exists = ${messaging ? 'YES' : 'NO'}`);
+        logDev(`[FCM] Firebase initialized = ${!!messaging}`);
+        logDev(`[FCM] Messaging instance exists = ${messaging ? 'YES' : 'NO'}`);
         
         const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-        console.log(`[FCM] VAPID key configured = ${vapidKey ? 'YES' : 'NO'}`);
+        logDev(`[FCM] VAPID key configured = ${vapidKey ? 'YES' : 'NO'}`);
 
         if (!messaging || !profile?.id) {
           return null;
@@ -185,17 +190,17 @@ export const useNotifications = () => {
           return null;
         }
 
-        console.log('[FCM] getToken started');
+        logDev('[FCM] getToken started');
         const currentToken = await getToken(messaging, {
           serviceWorkerRegistration: registration,
           vapidKey: vapidKey,
         });
 
-        console.log(`[FCM] Token received = ${currentToken ? 'YES' : 'NO'}`);
+        logDev(`[FCM] Token received = ${currentToken ? 'YES' : 'NO'}`);
         if (currentToken) {
-          console.log(`[FCM] Token preview = ${currentToken.substring(0, 6)}...${currentToken.substring(currentToken.length - 6)}`);
+          logDev(`[FCM] Token preview = ${currentToken.substring(0, 6)}...${currentToken.substring(currentToken.length - 6)}`);
           await registerTokenToBackend(currentToken);
-          console.log('[FCM] FCM initialization COMPLETE');
+          logDev('[FCM] FCM initialization COMPLETE');
           return currentToken;
         }
         return null;
@@ -218,10 +223,10 @@ export const useNotifications = () => {
 
     setLoading(true);
     try {
-      console.log('[FCM UI] Permission request started');
+      logDev('[FCM UI] Permission request started');
       const result = await Notification.requestPermission();
       setPermission(result as NotificationPermissionState);
-      console.log(`[FCM UI] Permission result = ${result}`);
+      logDev(`[FCM UI] Permission result = ${result}`);
       
       if (result === 'granted') {
         const messaging = getMessagingInstance();
@@ -232,7 +237,7 @@ export const useNotifications = () => {
       }
       return false;
     } catch (err) {
-      console.error('Error requesting notification permission:', err);
+      console.error('[FCM UI] Error requesting notification permission:', err);
       return false;
     } finally {
       setLoading(false);
@@ -245,10 +250,10 @@ export const useNotifications = () => {
         return;
       }
 
-      console.log('[FCM] Initialization started');
+      logDev('[FCM] Initialization started');
       const currentPermission = Notification.permission as NotificationPermissionState;
       setPermission(currentPermission);
-      console.log(`[FCM UI] Notification permission = ${currentPermission}`);
+      logDev(`[FCM UI] Notification permission = ${currentPermission}`);
       
       if (currentPermission === 'granted') {
         const messaging = getMessagingInstance();
