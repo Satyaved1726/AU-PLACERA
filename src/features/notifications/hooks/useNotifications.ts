@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getToken } from 'firebase/messaging';
-import { messaging } from '../../../lib/firebase';
+import { getToken, onMessage } from 'firebase/messaging';
+import { getMessagingInstance } from '../../../lib/firebase';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../auth/useAuth';
 
@@ -24,6 +24,41 @@ export const useNotifications = () => {
     }
     setPermission(Notification.permission as NotificationPermissionState);
   }, []);
+
+  // Listen to foreground notifications
+  useEffect(() => {
+    if (permission !== 'granted') {
+      return;
+    }
+
+    const messaging = getMessagingInstance();
+    if (!messaging) {
+      return;
+    }
+
+    console.log('[FCM] Registering foreground message handler...');
+    const unsubscribe = onMessage(messaging, (payload) => {
+      console.log('[FCM] Foreground message received:', payload);
+      
+      const title = payload.notification?.title || '🔔 New Notification';
+      const body = payload.notification?.body || 'Check the portal for updates.';
+      
+      if (Notification.permission === 'granted') {
+        try {
+          new Notification(title, {
+            body,
+            icon: '/app_icon.png',
+          });
+        } catch (e) {
+          console.error('[FCM] Failed to display native foreground notification:', e);
+        }
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [permission]);
 
   const registerServiceWorker = useCallback(async () => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
@@ -51,7 +86,7 @@ export const useNotifications = () => {
         storageBucket: storageBucket || '',
         messagingSenderId,
         appId: appId || '',
-        v: '1.0.2' // Cache buster query param
+        v: '1.0.4' // Cache buster query param
       }).toString();
 
       console.log('[FCM] Registering service worker...');
@@ -133,6 +168,7 @@ export const useNotifications = () => {
     isInitializing = true;
     initializationPromise = (async () => {
       try {
+        const messaging = getMessagingInstance();
         console.log(`[FCM] Firebase initialized = ${!!messaging}`);
         console.log(`[FCM] Messaging instance exists = ${messaging ? 'YES' : 'NO'}`);
         
@@ -156,7 +192,6 @@ export const useNotifications = () => {
 
         console.log(`[FCM] Token received = ${currentToken ? 'YES' : 'NO'}`);
         if (currentToken) {
-          // Print safe masked token representation
           console.log(`[FCM] Token preview = ${currentToken.substring(0, 6)}...${currentToken.substring(currentToken.length - 6)}`);
           await registerTokenToBackend(currentToken);
           console.log('[FCM] FCM initialization COMPLETE');
@@ -176,7 +211,7 @@ export const useNotifications = () => {
   }, [profile?.id, registerServiceWorker, registerTokenToBackend]);
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
-    if (typeof window === 'undefined' || !('Notification' in window) || !messaging || !profile?.id) {
+    if (typeof window === 'undefined' || !('Notification' in window) || !profile?.id) {
       return false;
     }
 
@@ -188,8 +223,11 @@ export const useNotifications = () => {
       console.log(`[FCM] Permission result = ${result}`);
       
       if (result === 'granted') {
-        const generatedToken = await fetchAndRegisterToken();
-        return !!generatedToken;
+        const messaging = getMessagingInstance();
+        if (messaging) {
+          const generatedToken = await fetchAndRegisterToken();
+          return !!generatedToken;
+        }
       }
       return false;
     } catch (err) {
@@ -202,7 +240,7 @@ export const useNotifications = () => {
 
   const initPushNotifications = useCallback(async () => {
     try {
-      if (typeof window === 'undefined' || !('Notification' in window) || !messaging || !profile?.id) {
+      if (typeof window === 'undefined' || !('Notification' in window) || !profile?.id) {
         return;
       }
 
@@ -212,7 +250,10 @@ export const useNotifications = () => {
       console.log(`[FCM] Notification permission = ${currentPermission}`);
       
       if (currentPermission === 'granted') {
-        await fetchAndRegisterToken();
+        const messaging = getMessagingInstance();
+        if (messaging) {
+          await fetchAndRegisterToken();
+        }
       }
     } catch (err) {
       console.error('[FCM] initPushNotifications failed:', err);
