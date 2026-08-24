@@ -1,18 +1,73 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, X } from 'lucide-react';
+import { Bell, X, AlertTriangle } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 
 export const NotificationPrompt: React.FC = () => {
   const { permission, requestPermission } = useNotifications();
   const [dismissed, setDismissed] = useState(true);
+  const [blockedDismissed, setBlockedDismissed] = useState(true);
 
   useEffect(() => {
     // Check localStorage in useEffect to avoid hydration mismatch
     const isDismissed = localStorage.getItem('au_notifications_prompt_dismissed') === 'true';
+    const isBlockedDismissed = localStorage.getItem('au_notifications_blocked_dismissed') === 'true';
     setDismissed(isDismissed);
+    setBlockedDismissed(isBlockedDismissed);
   }, []);
 
-  if (permission !== 'default' || dismissed) {
+  // Handle case where permission is unsupported or already granted
+  if (permission === 'granted' || permission === 'unsupported') {
+    return null;
+  }
+
+  // Handle case where permission is blocked/denied
+  if (permission === 'denied') {
+    if (blockedDismissed) {
+      return null;
+    }
+
+    const handleDismissBlocked = () => {
+      localStorage.setItem('au_notifications_blocked_dismissed', 'true');
+      setBlockedDismissed(true);
+    };
+
+    return (
+      <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 border border-amber-100/50 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm relative overflow-hidden select-none">
+        <div className="flex items-center gap-3.5 z-10">
+          <div className="p-2.5 bg-amber-600 text-white rounded-xl shadow-md shrink-0">
+            <AlertTriangle className="h-4.5 w-4.5" />
+          </div>
+          <div className="space-y-0.5">
+            <h4 className="text-xs font-black text-amber-800 uppercase tracking-wider">
+              Notifications Blocked
+            </h4>
+            <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wide leading-relaxed">
+              Alerts are blocked in your browser. Click the site settings icon (lock/options) in your address bar and change Notifications to "Allow".
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2.5 z-10 w-full sm:w-auto justify-end">
+          <button
+            onClick={handleDismissBlocked}
+            className="px-4.5 py-2 bg-amber-700 hover:bg-amber-850 text-white rounded-xl text-[9px] font-black uppercase tracking-wider shadow-sm transition-all active:scale-[0.97]"
+          >
+            Got it
+          </button>
+        </div>
+        
+        <button
+          onClick={handleDismissBlocked}
+          className="absolute top-2.5 right-2.5 text-amber-500 hover:text-amber-700 p-0.5 rounded-lg transition-colors"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  // Handle case where permission is default
+  if (dismissed) {
     return null;
   }
 
