@@ -37,6 +37,15 @@
           "value": "default-src 'self'; connect-src 'self' https://yjcixgzqjcoinlfsqsoa.supabase.co wss://yjcixgzqjcoinlfsqsoa.supabase.co https://firebaseinstallations.googleapis.com https://fcmregistrations.googleapis.com https://fcm.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://yjcixgzqjcoinlfsqsoa.supabase.co; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com; worker-src 'self' blob:; frame-ancestors 'none';"
         }
       ]
+    },
+    {
+      "source": "/(index.html)?",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate, max-age=0"
+        }
+      ]
     }
   ],
   "rewrites": [
