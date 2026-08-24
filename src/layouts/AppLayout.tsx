@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { useAuth } from '../features/auth/useAuth';
 import { useNotifications } from '../features/notifications/hooks/useNotifications';
+import { NotificationPrompt } from '../features/notifications/components/NotificationPrompt';
 import { 
   ClipboardList, 
   Bookmark, 
@@ -167,19 +168,23 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
 
         {/* Page Container */}
         <main className="flex-grow p-4 sm:p-6 md:p-8 overflow-y-auto max-w-[1400px] w-full mx-auto">
-          {/* Animated Route Transitions */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
-              animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
-              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -10 }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="h-full"
-            >
-              <Outlet />
-            </motion.div>
-          </AnimatePresence>
+          <div className="flex flex-col gap-6">
+            {role === 'student' && <NotificationPrompt />}
+            
+            {/* Animated Route Transitions */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+                animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -10 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+                className="h-full"
+              >
+                <Outlet />
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </main>
       </div>
 

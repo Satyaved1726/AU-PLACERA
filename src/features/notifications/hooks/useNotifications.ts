@@ -94,7 +94,7 @@ export const useNotifications = () => {
         `/firebase-messaging-sw.js?${queryParams}`,
         { scope: '/' }
       );
-      console.log('[FCM] Service worker registration = success');
+      console.log('[FCM] Service worker registered = success');
       
       console.log('[FCM] Waiting for service worker...');
       await navigator.serviceWorker.ready;
@@ -168,6 +168,7 @@ export const useNotifications = () => {
     isInitializing = true;
     initializationPromise = (async () => {
       try {
+        console.log('[FCM] Firebase initialization started');
         const messaging = getMessagingInstance();
         console.log(`[FCM] Firebase initialized = ${!!messaging}`);
         console.log(`[FCM] Messaging instance exists = ${messaging ? 'YES' : 'NO'}`);
@@ -184,7 +185,7 @@ export const useNotifications = () => {
           return null;
         }
 
-        console.log('[FCM] Calling getToken()');
+        console.log('[FCM] getToken started');
         const currentToken = await getToken(messaging, {
           serviceWorkerRegistration: registration,
           vapidKey: vapidKey,
@@ -217,10 +218,10 @@ export const useNotifications = () => {
 
     setLoading(true);
     try {
-      console.log('[FCM] Requesting notification permission...');
+      console.log('[FCM UI] Permission request started');
       const result = await Notification.requestPermission();
       setPermission(result as NotificationPermissionState);
-      console.log(`[FCM] Permission result = ${result}`);
+      console.log(`[FCM UI] Permission result = ${result}`);
       
       if (result === 'granted') {
         const messaging = getMessagingInstance();
@@ -247,7 +248,7 @@ export const useNotifications = () => {
       console.log('[FCM] Initialization started');
       const currentPermission = Notification.permission as NotificationPermissionState;
       setPermission(currentPermission);
-      console.log(`[FCM] Notification permission = ${currentPermission}`);
+      console.log(`[FCM UI] Notification permission = ${currentPermission}`);
       
       if (currentPermission === 'granted') {
         const messaging = getMessagingInstance();

@@ -11,7 +11,6 @@ import type { Post } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { NotificationPrompt } from '../../features/notifications/components/NotificationPrompt';
 
 export const NoticeBoard: React.FC = () => {
   const { profile } = useAuth();
@@ -115,8 +114,6 @@ export const NoticeBoard: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12 select-none px-4 sm:px-0">
-      
-      <NotificationPrompt />
       
       {/* Welcome Banner */}
       <div className="bg-[#0B3C5D] text-white p-6 rounded-2xl shadow-md border border-white/5 relative overflow-hidden">

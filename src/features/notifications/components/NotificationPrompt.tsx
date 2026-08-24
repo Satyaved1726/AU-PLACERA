@@ -4,20 +4,39 @@ import { useNotifications } from '../hooks/useNotifications';
 
 export const NotificationPrompt: React.FC = () => {
   const { permission, requestPermission } = useNotifications();
-  const [dismissed, setDismissed] = useState(true);
-  const [blockedDismissed, setBlockedDismissed] = useState(true);
+
+  const [dismissed, setDismissed] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('au_notifications_prompt_dismissed') === 'true';
+    }
+    return false;
+  });
+
+  const [blockedDismissed, setBlockedDismissed] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('au_notifications_blocked_dismissed') === 'true';
+    }
+    return false;
+  });
 
   useEffect(() => {
-    // Check localStorage in useEffect to avoid hydration mismatch
-    const isDismissed = localStorage.getItem('au_notifications_prompt_dismissed') === 'true';
-    const isBlockedDismissed = localStorage.getItem('au_notifications_blocked_dismissed') === 'true';
-    setDismissed(isDismissed);
-    setBlockedDismissed(isBlockedDismissed);
+    console.log('[FCM UI] NotificationPrompt mounted = true');
   }, []);
 
-  // Handle case where permission is unsupported or already granted
-  if (permission === 'granted' || permission === 'unsupported') {
+  // Handle case where permission is already granted
+  if (permission === 'granted') {
     return null;
+  }
+
+  // Handle case where notifications are unsupported
+  if (permission === 'unsupported') {
+    return (
+      <div className="bg-slate-100 border border-slate-200 rounded-2xl p-4 text-center select-none">
+        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+          Browser notifications are not supported on this browser.
+        </p>
+      </div>
+    );
   }
 
   // Handle case where permission is blocked/denied
@@ -42,7 +61,7 @@ export const NotificationPrompt: React.FC = () => {
               Notifications Blocked
             </h4>
             <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wide leading-relaxed">
-              Alerts are blocked in your browser. Click the site settings icon (lock/options) in your address bar and change Notifications to "Allow".
+              Allow notifications for AU Placera from your browser's site settings, then reload the page.
             </p>
           </div>
         </div>
@@ -72,6 +91,7 @@ export const NotificationPrompt: React.FC = () => {
   }
 
   const handleEnable = async () => {
+    console.log('[FCM UI] Enable button clicked');
     const success = await requestPermission();
     if (success) {
       localStorage.setItem('au_notifications_prompt_dismissed', 'true');
@@ -92,10 +112,10 @@ export const NotificationPrompt: React.FC = () => {
         </div>
         <div className="space-y-0.5">
           <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">
-            Enable Push Notifications
+            Enable Notifications
           </h4>
           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wide leading-relaxed">
-            Get instant alerts when new opportunities and announcements are posted.
+            Get instant alerts for new placements, notices and important updates.
           </p>
         </div>
       </div>
@@ -111,7 +131,7 @@ export const NotificationPrompt: React.FC = () => {
           onClick={handleEnable}
           className="px-4.5 py-2 bg-[#0B3C5D] hover:bg-[#0B3C5D]/90 text-white rounded-xl text-[9px] font-black uppercase tracking-wider shadow-sm transition-all active:scale-[0.97]"
         >
-          Enable
+          Enable Notifications
         </button>
       </div>
       
