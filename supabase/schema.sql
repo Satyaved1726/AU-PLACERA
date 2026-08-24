@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   batch TEXT,
   role TEXT NOT NULL CHECK (role IN ('admin', 'student')),
   oia_eligible BOOLEAN DEFAULT FALSE,
+  password_updated BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

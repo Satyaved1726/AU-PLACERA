@@ -141,6 +141,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   };
 
+  const refreshProfile = async () => {
+    if (user?.id) {
+      await fetchProfile(user.id);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -149,7 +155,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading: initialLoading || loading,
         signIn,
         signOut,
-        supabaseEnabled: true
+        supabaseEnabled: true,
+        refreshProfile
       }}
     >
       <AnimatePresence>

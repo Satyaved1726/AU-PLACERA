@@ -15,4 +15,5 @@ export interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: string | null; user?: any; profile?: UserProfile }>;
   signOut: () => Promise<void>;
   supabaseEnabled: boolean;
+  refreshProfile?: () => Promise<void>;
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../features/auth/useAuth';
 import { supabase } from '../../lib/supabase';
 import { 
@@ -8,9 +8,30 @@ import {
 import profileAvatarEmoji from '../../assets/profile_avatar_emoji.jpg';
 
 export const Profile: React.FC = () => {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, refreshProfile } = useAuth();
   const isAdmin = profile?.role === 'admin';
   const isSuperAdmin = profile?.role === 'super_admin';
+
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const fetchLatestStatus = async () => {
+      if (refreshProfile) {
+        setLoadingProfile(true);
+        await refreshProfile();
+        if (active) {
+          setLoadingProfile(false);
+        }
+      } else {
+        setLoadingProfile(false);
+      }
+    };
+    fetchLatestStatus();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Password change states
   const [currentPassword, setCurrentPassword] = useState('');
@@ -85,6 +106,22 @@ export const Profile: React.FC = () => {
       if (updateError) {
         setErrorMsg(`Failed to update password: ${updateError.message}`);
         return;
+      }
+
+      // Update the user's profile status to indicate the password has been changed
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ password_updated: true })
+        .eq('id', profile?.id || '');
+
+      if (profileError) {
+        setErrorMsg(`Password was updated, but failed to update profile status: ${profileError.message}`);
+        return;
+      }
+
+      // Refresh profile context
+      if (refreshProfile) {
+        await refreshProfile();
       }
 
       setSuccessMsg('Password updated successfully.');
@@ -205,90 +242,92 @@ export const Profile: React.FC = () => {
       </div>
 
       {/* Section 3: Change Password Form */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 px-1">
-          <div className="p-1.5 bg-indigo-50 border border-indigo-100 text-indigo-650 rounded-full flex items-center justify-center shrink-0 shadow-sm">
-            <Lock className="h-4 w-4" />
+      {!loadingProfile && !profile?.password_updated && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            <div className="p-1.5 bg-indigo-50 border border-indigo-100 text-indigo-650 rounded-full flex items-center justify-center shrink-0 shadow-sm">
+              <Lock className="h-4 w-4" />
+            </div>
+            <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider">
+              Change Account Password
+            </h3>
           </div>
-          <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider">
-            Change Account Password
-          </h3>
-        </div>
 
-        <div className="bg-white border border-slate-150 shadow-sm rounded-3xl p-5">
-          <form onSubmit={handleChangePassword} className="space-y-4">
-            {errorMsg && (
-              <div className="p-3.5 bg-red-50 border border-red-150 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
-                <span>{errorMsg}</span>
-              </div>
-            )}
-            {successMsg && (
-              <div className="p-3.5 bg-emerald-50 border border-emerald-150 text-emerald-700 text-xs font-semibold rounded-xl flex items-start gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                <span>{successMsg}</span>
-              </div>
-            )}
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-[9px] font-black uppercase text-slate-500 tracking-wider mb-1 px-0.5">Current Password</label>
-                <input
-                  type="password"
-                  required
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Enter current password"
-                  className="w-full h-10 px-3.5 border border-slate-300 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:border-secondary text-slate-800 font-semibold bg-white"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[9px] font-black uppercase text-slate-500 tracking-wider mb-1 px-0.5">New Password</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Min 8 characters"
-                      className="w-full h-10 pl-3.5 pr-10 border border-slate-300 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:border-secondary text-slate-800 font-semibold bg-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
+          <div className="bg-white border border-slate-150 shadow-sm rounded-3xl p-5">
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              {errorMsg && (
+                <div className="p-3.5 bg-red-50 border border-red-150 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                  <span>{errorMsg}</span>
                 </div>
+              )}
+              {successMsg && (
+                <div className="p-3.5 bg-emerald-50 border border-emerald-150 text-emerald-700 text-xs font-semibold rounded-xl flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                  <span>{successMsg}</span>
+                </div>
+              )}
 
+              <div className="space-y-3">
                 <div>
-                  <label className="block text-[9px] font-black uppercase text-slate-500 tracking-wider mb-1 px-0.5">Confirm New Password</label>
+                  <label className="block text-[9px] font-black uppercase text-slate-500 tracking-wider mb-1 px-0.5">Current Password</label>
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type="password"
                     required
-                    value={confirmNewPassword}
-                    onChange={(e) => setConfirmNewPassword(e.target.value)}
-                    placeholder="Min 8 characters"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Enter current password"
                     className="w-full h-10 px-3.5 border border-slate-300 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:border-secondary text-slate-800 font-semibold bg-white"
                   />
                 </div>
-              </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={updating}
-              className="w-full py-3 bg-[#F4F9FF]/20 hover:bg-[#F4F9FF]/60 text-blue-600 hover:text-blue-700 border border-blue-100 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all select-none active:scale-[0.98] shadow-sm disabled:opacity-50 mt-2"
-            >
-              <span>{updating ? 'Updating...' : 'Update Password'}</span>
-            </button>
-          </form>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[9px] font-black uppercase text-slate-500 tracking-wider mb-1 px-0.5">New Password</label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Min 8 characters"
+                        className="w-full h-10 pl-3.5 pr-10 border border-slate-300 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:border-secondary text-slate-800 font-semibold bg-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-black uppercase text-slate-500 tracking-wider mb-1 px-0.5">Confirm New Password</label>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      placeholder="Min 8 characters"
+                      className="w-full h-10 px-3.5 border border-slate-300 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:border-secondary text-slate-800 font-semibold bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={updating}
+                className="w-full py-3 bg-[#F4F9FF]/20 hover:bg-[#F4F9FF]/60 text-blue-600 hover:text-blue-700 border border-blue-100 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all select-none active:scale-[0.98] shadow-sm disabled:opacity-50 mt-2"
+              >
+                <span>{updating ? 'Updating...' : 'Update Password'}</span>
+              </button>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Section 4: Sign Out */}
       <div className="bg-white border border-slate-150 shadow-sm rounded-3xl p-4.5">

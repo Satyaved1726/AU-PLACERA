@@ -15,6 +15,7 @@ export interface UserProfile {
   status?: 'active' | 'inactive' | 'suspended';
   oia_eligible: boolean;
   student_type?: 'regular' | 'lateral_entry';
+  password_updated?: boolean;
   created_at?: string;
   updated_at?: string;
 }
