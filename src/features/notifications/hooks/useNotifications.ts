@@ -47,6 +47,7 @@ export const useNotifications = () => {
         storageBucket: storageBucket || '',
         messagingSenderId,
         appId: appId || '',
+        v: '1.0.1' // Cache buster to bypass old Vercel CDN hits
       }).toString();
 
       const registration = await navigator.serviceWorker.register(
