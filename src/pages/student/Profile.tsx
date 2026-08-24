@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../features/auth/useAuth';
+import { getDisplayEmail } from '../../features/auth/authService';
 import { 
   User, Mail, Hash, Book, Calendar, GraduationCap, 
   ShieldCheck, LogOut, CheckCircle2 
@@ -28,7 +29,7 @@ export const Profile: React.FC = () => {
   };
 
   const academicDetails = [
-    { label: 'Official Email', value: profile?.email || 'N/A', icon: Mail, iconColor: 'text-blue-500 bg-blue-50' },
+    { label: 'Official Email', value: getDisplayEmail(profile) || 'N/A', icon: Mail, iconColor: 'text-blue-500 bg-blue-50' },
     { label: 'Roll Number', value: profile?.roll_number || 'N/A', icon: Hash, iconColor: 'text-indigo-500 bg-indigo-50' },
     { label: 'Branch / Specialization', value: profile?.branch || 'AIML', icon: Book, iconColor: 'text-emerald-500 bg-emerald-50' },
     { label: 'Class Section', value: profile?.section || 'N/A', icon: User, iconColor: 'text-amber-500 bg-amber-50' },

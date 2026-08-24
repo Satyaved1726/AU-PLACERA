@@ -540,7 +540,7 @@ export const TeamManagement: React.FC = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. rollno@anurag.edu.in"
+                      placeholder="e.g. name@anurag.edu.in"
                       className="w-full pl-3.5 pr-3.5 py-2 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:border-primary transition-all font-semibold text-slate-800 h-[38px]"
                     />
                   </div>

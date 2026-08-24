@@ -209,4 +209,11 @@ export const authService = {
   }
 };
 
+export function getDisplayEmail(profile: any): string {
+  if (profile?.role === 'student' && profile?.roll_number) {
+    return `${profile.roll_number.toUpperCase()}@anurag.edu.in`;
+  }
+  return profile?.email ?? '';
+}
+
 export default authService;

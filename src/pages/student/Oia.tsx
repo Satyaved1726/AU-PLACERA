@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { SearchBar } from '../../components/common/SearchBar';
 import { useAuth } from '../../features/auth/useAuth';
 import { useOiaPosts } from '../../features/posts/hooks/useOiaPosts';
@@ -38,6 +39,22 @@ export const Oia: React.FC = () => {
 
   // Selected announcement for flyer lightbox
   const [selectedAnn, setSelectedAnn] = useState<DigitalAnnouncement | null>(null);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const postIdParam = searchParams.get('postId');
+
+  // Handle auto-opening of post details from push notification parameter redirect
+  useEffect(() => {
+    if (postIdParam && posts && posts.length > 0) {
+      const targetPost = posts.find(p => p.id === postIdParam);
+      if (targetPost) {
+        setSelectedPost(targetPost);
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('postId');
+        setSearchParams(newParams, { replace: true });
+      }
+    }
+  }, [postIdParam, posts, searchParams, setSearchParams]);
 
   // Filter posts based on search key
   const filteredPosts = (posts || []).filter(n => {

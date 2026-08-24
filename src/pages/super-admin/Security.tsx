@@ -291,7 +291,7 @@ export const SecurityPage: React.FC = () => {
                     type="email"
                     value={elevateEmail}
                     onChange={(e) => setElevateEmail(e.target.value)}
-                    placeholder="rollno@anurag.edu.in"
+                    placeholder="name@anurag.edu.in"
                     className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-800 text-xs transition-all"
                   />
                 </div>

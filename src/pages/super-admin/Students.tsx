@@ -3,6 +3,7 @@ import { Card, CardBody } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { SearchBar } from '../../components/common/SearchBar';
 import { supabase } from '../../lib/supabase';
+import { getDisplayEmail } from '../../features/auth/authService';
 import { GraduationCap, AlertCircle } from 'lucide-react';
 
 interface StudentRosterItem {
@@ -65,6 +66,7 @@ export const StudentsPage: React.FC = () => {
         full_name: p.full_name,
         email: p.email,
         roll_number: p.roll_number,
+        role: 'student',
         branch: p.branch || 'AIML',
         section: p.section || 'AIML-A',
         year: p.year || 3,
@@ -245,7 +247,7 @@ export const StudentsPage: React.FC = () => {
                           <div className="font-bold text-slate-800">{student.full_name}</div>
                           <span className="text-[10px] text-slate-450 font-bold block mt-0.5">{student.roll_number || 'N/A'}</span>
                         </td>
-                        <td className="px-6 py-4.5 select-all text-slate-500 font-bold">{student.email}</td>
+                        <td className="px-6 py-4.5 select-all text-slate-500 font-bold">{getDisplayEmail(student)}</td>
                         <td className="px-6 py-4.5 text-center uppercase">
                           <div className="font-semibold text-slate-650">{student.branch}-{student.section}</div>
                           <span className="text-[9px] text-slate-400 block mt-0.5">{student.batch} (Year {student.year})</span>
@@ -279,7 +281,7 @@ export const StudentsPage: React.FC = () => {
                     </div>
 
                     <div className="text-[10px] text-slate-500 space-y-1 select-text">
-                      <div>Email: <span className="font-bold text-slate-700">{student.email}</span></div>
+                      <div>Email: <span className="font-bold text-slate-700">{getDisplayEmail(student)}</span></div>
                       <div className="uppercase">Class: <span className="font-bold text-slate-700">{student.branch}-{student.section} ({student.batch})</span></div>
                       <div>Applications: <span className="font-black text-slate-800">{student.registrationCount}</span></div>
                     </div>

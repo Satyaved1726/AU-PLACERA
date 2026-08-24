@@ -124,6 +124,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     setLoading(true);
+    // Clean up local/db FCM token before actual sign out while the session is still active
+    try {
+      const token = localStorage.getItem('au_fcm_token');
+      if (token) {
+        await supabase.from('fcm_tokens').delete().eq('token', token);
+        localStorage.removeItem('au_fcm_token');
+      }
+    } catch (err) {
+      console.error('Failed to clean up FCM token on signout:', err);
+    }
     await authService.signOut();
     setUser(null);
     setProfile(null);

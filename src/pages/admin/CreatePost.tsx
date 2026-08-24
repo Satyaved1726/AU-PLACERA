@@ -6,9 +6,10 @@ import { postParser } from '../../features/posts/postParser';
 import type { ParsedPost } from '../../features/posts/post.types';
 import { PostReviewCard } from '../../features/posts/components/PostReviewCard';
 import { useAuth } from '../../features/auth/useAuth';
+import { supabase } from '../../lib/supabase';
 import { 
   Sparkles, CheckCircle2, ChevronRight, AlertCircle, 
-  Plus, Loader2, ClipboardCheck, Info, Briefcase, Megaphone, ArrowRight 
+  Plus, Loader2, ClipboardCheck, Info, Briefcase, Megaphone, ArrowRight, Bell
 } from 'lucide-react';
 import createPostIllustration from '../../assets/create_post_illustration.jpg';
 
@@ -20,6 +21,7 @@ export const CreatePost: React.FC = () => {
   // Wizard Steps: 1 = Paste, 2 = Review, 3 = Publish Success
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [publishingStatus, setPublishingStatus] = useState<string | null>(null);
+  const [sendNotification, setSendNotification] = useState(false);
 
   // Form states
   const [rawText, setRawText] = useState('');
@@ -180,6 +182,22 @@ export const CreatePost: React.FC = () => {
             setPublishingStatus(`Uploading "${file.name}" for "${postObj.opportunity_title || 'Post'}"...`);
             await postService.uploadAttachment(postObj.id, file, profile.id);
           }
+        }
+      }
+
+      // If notification is toggled ON, send notifications after post creation and attachment upload are complete
+      if (sendNotification && createdPosts && createdPosts.length > 0) {
+        setPublishingStatus('Sending push notifications...');
+        try {
+          for (const postObj of createdPosts) {
+            const { error: fnError } = await supabase.functions.invoke('send-push-notification', {
+              body: { postId: postObj.id }
+            });
+            if (fnError) throw fnError;
+          }
+        } catch (fcmErr: any) {
+          console.error('FCM Dispatch error:', fcmErr);
+          setWarningMessage('Post published, but notification delivery failed.');
         }
       }
 
@@ -423,6 +441,34 @@ export const CreatePost: React.FC = () => {
             </div>
           )}
 
+          {/* Push Notification Toggle Option */}
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                <Bell className="h-5 w-5" />
+              </div>
+              <div>
+                <span className="text-xs font-black text-slate-800 uppercase tracking-wide block">🔔 Send Push Notification</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mt-0.5">
+                  {sendNotification ? '✨ Alerting students instantly upon successful publication' : 'Alert students instantly via device notification'}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSendNotification(!sendNotification)}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                sendNotification ? 'bg-[#0B3C5D]' : 'bg-slate-200'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  sendNotification ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 pt-5 pb-8">
             <button
               onClick={() => setStep(1)}
@@ -467,6 +513,12 @@ export const CreatePost: React.FC = () => {
             <p className="text-[10px] text-slate-400 font-bold leading-relaxed max-w-xs mx-auto uppercase tracking-wide">
               {parsedItems.length} notices have been uploaded to Supabase and are now live for all students.
             </p>
+            {warningMessage && (
+              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-xs font-semibold flex items-center justify-center gap-2 max-w-xs mx-auto mt-4">
+                <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 animate-pulse" />
+                <span>{warningMessage}</span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3 pt-2">

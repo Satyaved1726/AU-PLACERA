@@ -23,6 +23,7 @@ import {
   Database
 } from 'lucide-react';
 import { useAuth } from '../features/auth/useAuth';
+import { getDisplayEmail } from '../features/auth/authService';
 import anuragIconLogo from '../assets/anurag_icon_logo.png';
 import anuragFullLogo from '../assets/anurag_full_logo.png';
 import type { UserRole } from '../types';
@@ -249,7 +250,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, collapsed, onCol
                 {profile?.full_name || 'Loading...'}
               </p>
               <p className="text-[9px] text-slate-300 font-semibold truncate leading-none mt-0.5">
-                {profile?.email || 'email@anurag.edu.in'}
+                {getDisplayEmail(profile) || 'email@anurag.edu.in'}
               </p>
               {profile?.role === 'super_admin' && (
                 <span className="inline-block px-1.5 py-0.5 mt-1 bg-secondary/80 border border-white/10 rounded text-[7px] font-bold text-white uppercase tracking-widest leading-none select-none">

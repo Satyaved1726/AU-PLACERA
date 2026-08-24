@@ -3,6 +3,7 @@ import { Outlet, useLocation, NavLink } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { useAuth } from '../features/auth/useAuth';
+import { useNotifications } from '../features/notifications/hooks/useNotifications';
 import { 
   ClipboardList, 
   Bookmark, 
@@ -41,6 +42,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
   const location = useLocation();
   const { profile } = useAuth();
   const shouldReduceMotion = useReducedMotion();
+  const { initPushNotifications } = useNotifications();
+
+  // Initialize push notifications silently for students if permission is already granted
+  useEffect(() => {
+    if (role === 'student' && profile?.id) {
+      initPushNotifications();
+    }
+  }, [role, profile?.id, initPushNotifications]);
 
   // Persist sidebar collapse state
   useEffect(() => {
