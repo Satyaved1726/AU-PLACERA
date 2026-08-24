@@ -212,3 +212,56 @@ CREATE POLICY "Students can insert own saved posts" ON public.saved_posts
 CREATE POLICY "Students can delete own saved posts" ON public.saved_posts
   FOR DELETE TO authenticated USING (student_id = auth.uid());
 
+
+-- ==========================================
+-- 5. ADMIN SESSIONS TABLE
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.admin_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  session_id UUID NOT NULL UNIQUE,
+  device_name TEXT,
+  browser TEXT,
+  operating_system TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  revoked_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_sessions_user_id ON public.admin_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_admin_sessions_session_id ON public.admin_sessions(session_id);
+CREATE INDEX IF NOT EXISTS idx_admin_sessions_last_seen_at ON public.admin_sessions(last_seen_at);
+
+ALTER TABLE public.admin_sessions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Super Admins can view own sessions" ON public.admin_sessions
+  FOR SELECT TO authenticated
+  USING (
+    user_id = auth.uid() AND 
+    (auth.jwt()->'user_metadata'->>'role') = 'super_admin'
+  );
+
+CREATE POLICY "Super Admins can update own sessions" ON public.admin_sessions
+  FOR UPDATE TO authenticated
+  USING (
+    user_id = auth.uid() AND 
+    (auth.jwt()->'user_metadata'->>'role') = 'super_admin'
+  );
+
+CREATE POLICY "Super Admins can delete own sessions" ON public.admin_sessions
+  FOR DELETE TO authenticated
+  USING (
+    user_id = auth.uid() AND 
+    (auth.jwt()->'user_metadata'->>'role') = 'super_admin'
+  );
+
+CREATE POLICY "Super Admins can insert own sessions" ON public.admin_sessions
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    user_id = auth.uid() AND 
+    (auth.jwt()->'user_metadata'->>'role') = 'super_admin'
+  );
+
+

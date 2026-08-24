@@ -88,10 +88,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (session) {
         setUser(session.user);
-        if (!profileRef.current || profileRef.current.id !== session.user.id) {
+        let currentProfile = profileRef.current;
+        if (!currentProfile || currentProfile.id !== session.user.id) {
           setLoading(true);
-          await fetchProfile(session.user.id);
+          const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          if (data) {
+            setProfile(data);
+            currentProfile = data;
+          }
           setLoading(false);
+        }
+
+        // Track super admin session
+        if (currentProfile?.role === 'super_admin') {
+          const { browser, os, device } = parseUserAgent(navigator.userAgent);
+          supabase.rpc('track_admin_session', {
+            p_device_name: device,
+            p_browser: browser,
+            p_os: os
+          }).then(({ error }) => {
+            if (error) console.error('[AUTH] track_admin_session failed:', error.message);
+          });
         }
       } else {
         setUser(null);
@@ -140,6 +161,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     queryClient.clear();
     setLoading(false);
   };
+
+  // Heartbeat for Super Admin
+  useEffect(() => {
+    if (!user || profile?.role !== 'super_admin') return;
+
+    const { browser, os, device } = parseUserAgent(navigator.userAgent);
+    
+    const runHeartbeat = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { error } = await supabase.rpc('track_admin_session', {
+          p_device_name: device,
+          p_browser: browser,
+          p_os: os
+        });
+        if (error) console.error('[HEARTBEAT] track_admin_session failed:', error.message);
+      }
+    };
+
+    runHeartbeat().catch((err: any) => console.error('[HEARTBEAT] Initial track failed:', err));
+
+    const intervalId = setInterval(() => {
+      runHeartbeat().catch((err: any) => console.error('[HEARTBEAT] Cycle failed:', err));
+    }, 10 * 60 * 1000); // 10 minutes
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [user, profile?.id, profile?.role]);
 
   const refreshProfile = async () => {
     if (user?.id) {
@@ -211,3 +261,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
+
+function parseUserAgent(ua: string) {
+  let browser = 'Unknown Browser';
+  let os = 'Unknown OS';
+  let device = 'Desktop';
+
+  if (/windows/i.test(ua)) os = 'Windows';
+  else if (/macintosh|mac os x/i.test(ua)) os = 'macOS';
+  else if (/android/i.test(ua)) { os = 'Android'; device = 'Mobile'; }
+  else if (/iphone|ipad|ipod/i.test(ua)) { os = 'iOS'; device = 'Mobile'; }
+  else if (/linux/i.test(ua)) os = 'Linux';
+
+  if (/chrome|crios/i.test(ua) && !/edge|edg/i.test(ua) && !/opr/i.test(ua)) browser = 'Chrome';
+  else if (/safari/i.test(ua) && !/chrome|crios/i.test(ua)) browser = 'Safari';
+  else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
+  else if (/edge|edg/i.test(ua)) browser = 'Edge';
+  else if (/opr/i.test(ua)) browser = 'Opera';
+
+  if (/mobile/i.test(ua)) device = 'Mobile';
+  else if (/tablet|ipad/i.test(ua)) device = 'Tablet';
+
+  return { browser, os, device };
+}
+
