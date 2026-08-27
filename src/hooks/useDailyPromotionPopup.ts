@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../features/auth/useAuth';
+import { supabase } from '../lib/supabase';
 
-const DISMISSAL_KEY = 'au_rb_popup_dismissed';
+const DISMISSAL_PREFIX = 'au_rb_popup_dismissed_';
 
 /**
  * Checks if the Raksha Bandhan promotional campaign is currently active.
@@ -56,50 +57,78 @@ export const isCampaignActive = (): boolean => {
 export const useDailyPromotionPopup = () => {
   const { user, loading } = useAuth();
   const [shouldShow, setShouldShow] = useState(false);
-  const prevUserRef = useRef<any>(null);
 
-  // Sync prevUserRef as user changes
-  useEffect(() => {
-    if (user && !loading) {
-      prevUserRef.current = user;
-    }
-  }, [user, loading]);
+  // Helper to generate a unique key for the current login session
+  const getDismissalKey = (u: any): string => {
+    if (!u) return '';
+    // Use last_sign_in_at timestamp to uniquely identify the current login session
+    const sessionTime = u.last_sign_in_at 
+      ? new Date(u.last_sign_in_at).getTime() 
+      : (u.updated_at ? new Date(u.updated_at).getTime() : 'session');
+    return `${DISMISSAL_PREFIX}${u.id}_${sessionTime}`;
+  };
 
+  // 1. Listen to Supabase SIGNED_OUT auth events to clear the dismissal state
   useEffect(() => {
-    // Wait until initial auth loading is complete to prevent flashing
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        // Clear all keys matching the prefix from both storage types
+        const keysToRemove: string[] = [];
+        
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith(DISMISSAL_PREFIX)) {
+            keysToRemove.push(key);
+          }
+        }
+        
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key && key.startsWith(DISMISSAL_PREFIX)) {
+            keysToRemove.push(key);
+          }
+        }
+
+        keysToRemove.forEach(k => {
+          localStorage.removeItem(k);
+          sessionStorage.removeItem(k);
+        });
+
+        setShouldShow(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // 2. Manage the popup state based on auth status and timing window
+  useEffect(() => {
     if (loading) return;
 
-    // Detect explicit logout: transition from logged-in to logged-out
-    if (prevUserRef.current && !user) {
-      sessionStorage.removeItem(DISMISSAL_KEY);
-      prevUserRef.current = null;
-      setShouldShow(false);
-      return;
-    }
-
-    // If no user is authenticated, do not show the popup
     if (!user) {
       setShouldShow(false);
       return;
     }
 
     const checkStatus = () => {
-      // 1. Check if campaign is active
+      // Check timing window eligibility
       const active = isCampaignActive();
       if (!active) {
         setShouldShow(false);
         return;
       }
 
-      // 2. Check if user already dismissed it in this session
-      const dismissed = sessionStorage.getItem(DISMISSAL_KEY) === 'true';
+      // Check session dismissal state
+      const key = getDismissalKey(user);
+      const dismissed = localStorage.getItem(key) === 'true' || sessionStorage.getItem(key) === 'true';
       if (dismissed) {
         setShouldShow(false);
         return;
       }
 
-      // 3. Prevent duplicate modals by checking if the modal element already exists in DOM
-      // (This serves as a safety check if multiple components mount/render)
+      // Prevent duplicate modals by checking if the modal element already exists in DOM
       const alreadyExists = document.getElementById('raksha-bandhan-popup') !== null;
       if (alreadyExists && !shouldShow) {
         setShouldShow(false);
@@ -111,14 +140,18 @@ export const useDailyPromotionPopup = () => {
 
     checkStatus();
 
-    // Check periodically to auto-expire at exactly 11:00 PM IST
+    // Check periodically to automatically close at exactly 11:00 PM IST
     const interval = setInterval(checkStatus, 15000);
 
     return () => clearInterval(interval);
   }, [user, loading, shouldShow]);
 
   const dismissPopup = () => {
-    sessionStorage.setItem(DISMISSAL_KEY, 'true');
+    if (user) {
+      const key = getDismissalKey(user);
+      localStorage.setItem(key, 'true');
+      sessionStorage.setItem(key, 'true');
+    }
     setShouldShow(false);
   };
 
