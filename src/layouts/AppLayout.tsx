@@ -5,6 +5,7 @@ import { Header } from './Header';
 import { useAuth } from '../features/auth/useAuth';
 import { useNotifications } from '../features/notifications/hooks/useNotifications';
 import { NotificationPrompt } from '../features/notifications/components/NotificationPrompt';
+import { RakshaBandhanPopup } from '../components/promotions/RakshaBandhanPopup';
 import { 
   ClipboardList, 
   Bookmark, 
@@ -284,6 +285,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
           </>
         )}
       </AnimatePresence>
+
+      {/* Raksha Bandhan Promotional Popup */}
+      <RakshaBandhanPopup />
     </div>
   );
 };
