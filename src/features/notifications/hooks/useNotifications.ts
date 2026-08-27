@@ -8,6 +8,7 @@ export type NotificationPermissionState = 'default' | 'granted' | 'denied' | 'un
 
 // Module-level globals to act as stable guards across re-renders/unmounts
 let globalToken: string | null = null;
+let registeredUserId: string | null = null;
 let isInitializing = false;
 let initializationPromise: Promise<string | null> | null = null;
 
@@ -24,6 +25,7 @@ export const useNotifications = () => {
   const [token, setToken] = useState<string | null>(globalToken);
   const [loading, setLoading] = useState(false);
 
+  // Set initial permission on client mount
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) {
       setPermission('unsupported');
@@ -31,6 +33,15 @@ export const useNotifications = () => {
     }
     setPermission(Notification.permission as NotificationPermissionState);
   }, []);
+
+  // Reset token and registration states if the user logs out
+  useEffect(() => {
+    if (!profile?.id) {
+      globalToken = null;
+      registeredUserId = null;
+      setToken(null);
+    }
+  }, [profile?.id]);
 
   // Listen to foreground notifications
   useEffect(() => {
@@ -51,13 +62,44 @@ export const useNotifications = () => {
       const body = payload.notification?.body || 'Check the portal for updates.';
       
       if (Notification.permission === 'granted') {
-        try {
-          new Notification(title, {
-            body,
-            icon: '/app_icon.png',
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.ready.then(async (registration) => {
+            const activeNotifications = await registration.getNotifications();
+            const isDuplicate = activeNotifications.some(
+              n => n.title === title && n.body === body
+            );
+            if (isDuplicate) {
+              logDev('[FCM] Service worker already displayed this notification, skipping foreground duplicate.');
+              return;
+            }
+            try {
+              new Notification(title, {
+                body,
+                icon: '/app_icon.png',
+              });
+            } catch (e) {
+              console.error('[FCM] Failed to display native foreground notification:', e);
+            }
+          }).catch((err) => {
+            console.error('[FCM] Error checking active notifications in SW, falling back to show:', err);
+            try {
+              new Notification(title, {
+                body,
+                icon: '/app_icon.png',
+              });
+            } catch (e) {
+              console.error('[FCM] Failed to display native foreground notification:', e);
+            }
           });
-        } catch (e) {
-          console.error('[FCM] Failed to display native foreground notification:', e);
+        } else {
+          try {
+            new Notification(title, {
+              body,
+              icon: '/app_icon.png',
+            });
+          } catch (e) {
+            console.error('[FCM] Failed to display native foreground notification:', e);
+          }
         }
       }
     });
@@ -153,6 +195,7 @@ export const useNotifications = () => {
 
       localStorage.setItem('au_fcm_token', fcmToken);
       globalToken = fcmToken;
+      registeredUserId = user.id;
       setToken(fcmToken);
     } catch (err) {
       console.error('[FCM] Failed to register FCM token with database:', err);
@@ -160,7 +203,7 @@ export const useNotifications = () => {
   }, []);
 
   const fetchAndRegisterToken = useCallback(async () => {
-    if (globalToken) {
+    if (globalToken && registeredUserId === profile?.id) {
       setToken(globalToken);
       return globalToken;
     }
@@ -244,27 +287,67 @@ export const useNotifications = () => {
     }
   }, [profile?.id, fetchAndRegisterToken]);
 
+  const checkPermission = useCallback(async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      setPermission('unsupported');
+      return;
+    }
+    const currentPermission = Notification.permission as NotificationPermissionState;
+    setPermission(currentPermission);
+
+    if (currentPermission === 'granted') {
+      const messaging = getMessagingInstance();
+      if (messaging && profile?.id) {
+        await fetchAndRegisterToken();
+      }
+    }
+  }, [profile?.id, fetchAndRegisterToken]);
+
   const initPushNotifications = useCallback(async () => {
     try {
-      if (typeof window === 'undefined' || !('Notification' in window) || !profile?.id) {
-        return;
-      }
-
-      logDev('[FCM] Initialization started');
-      const currentPermission = Notification.permission as NotificationPermissionState;
-      setPermission(currentPermission);
-      logDev(`[FCM UI] Notification permission = ${currentPermission}`);
-      
-      if (currentPermission === 'granted') {
-        const messaging = getMessagingInstance();
-        if (messaging) {
-          await fetchAndRegisterToken();
-        }
+      if (profile?.id) {
+        await checkPermission();
       }
     } catch (err) {
       console.error('[FCM] initPushNotifications failed:', err);
     }
-  }, [profile?.id, fetchAndRegisterToken]);
+  }, [profile?.id, checkPermission]);
+
+  // Listen to window focus and document visibilitychange to re-check permission
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('Notification' in window) || !profile?.id) {
+      return;
+    }
+
+    // Run initial check
+    checkPermission().catch((err) => {
+      console.error('[FCM] checkPermission failed on mount:', err);
+    });
+
+    const handleFocus = () => {
+      logDev('[FCM] Window focused, re-checking permission...');
+      checkPermission().catch((err) => {
+        console.error('[FCM] checkPermission failed on focus:', err);
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        logDev('[FCM] Visibility changed to visible, re-checking permission...');
+        checkPermission().catch((err) => {
+          console.error('[FCM] checkPermission failed on visibility change:', err);
+        });
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [profile?.id, checkPermission]);
 
   return {
     permission,
