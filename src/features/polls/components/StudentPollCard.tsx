@@ -5,11 +5,10 @@ import {
   Vote, 
   Check, 
   CheckCircle2, 
-  Calendar,
   Users,
-  Loader2
+  Loader2,
+  Star
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 interface StudentPollCardProps {
   poll: PollWithDetails;
@@ -79,7 +78,7 @@ export const StudentPollCard: React.FC<StudentPollCardProps> = ({
         optionIds: nextOptionIds
       });
       if (nextOptionIds.length === 0) {
-        onToast('Your vote has been removed.');
+        onToast('Your response has been removed.');
       }
     } catch (_err: any) {
       // 2. Rollback on failure
@@ -90,72 +89,76 @@ export const StudentPollCard: React.FC<StudentPollCardProps> = ({
     }
   };
 
-  // Compute live option vote counts and percentages (combines remote counts with optimistic adjustment)
+  // Compute live option vote counts and percentages
   const totalVoters = Math.max(poll.total_voted || 0, hasInteracted ? 1 : 0);
 
-  // Format relative or standard timestamp
-  const formattedDate = new Date(poll.created_at).toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric'
-  });
+  // Format relative timestamp (e.g., "Just now", "2m ago", "1h ago", "2d ago")
+  const getRelativeTime = (isoString: string): string => {
+    const elapsed = Date.now() - new Date(isoString).getTime();
+    const minutes = Math.floor(elapsed / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${days}d ago`;
+  };
 
   return (
-    <motion.div
-      layout
+    <div
       id={`poll-${poll.id}`}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      className={`bg-white rounded-2xl border p-5 sm:p-6 shadow-sm transition-all duration-200 relative overflow-hidden ${
+      className={`transition-all duration-200 rounded-2xl p-5 sm:p-6 select-none relative overflow-hidden bg-white ${
         isHighlighted
-          ? 'ring-2 ring-[#0B3C5D] shadow-md'
+          ? 'border-2 border-[#0B3C5D] shadow-md ring-2 ring-[#0B3C5D]/20'
           : poll.is_priority
-          ? 'border-amber-300 ring-1 ring-amber-400/30 shadow-amber-950/5'
-          : hasInteracted
-          ? 'border-emerald-200/90 shadow-emerald-950/5'
-          : 'border-slate-200 hover:border-slate-300'
+          ? 'border border-amber-300 shadow-[0_4px_16px_-4px_rgba(217,179,16,0.08),0_1px_4px_-2px_rgba(217,179,16,0.04)] bg-amber-50/[0.02]'
+          : 'border border-slate-100 hover:border-slate-200 shadow-soft'
       }`}
     >
-      {/* Top Poll Visual Identity Badge */}
+      {/* Card Header: Badges & Relative Timestamp */}
       <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           {poll.is_priority ? (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/15 text-amber-800 border border-amber-300/60 text-[10px] font-black uppercase tracking-wider">
-              <span>🚨 PRIORITY POLL</span>
+            <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-800 border border-amber-300/70 text-[10px] font-black uppercase tracking-wider">
+              <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+              <span>PRIORITY</span>
+              <span className="text-amber-400 font-normal px-0.5">•</span>
+              <span>POLL</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#0B3C5D]/10 text-[#0B3C5D] text-[10px] font-black uppercase tracking-wider">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0B3C5D]/10 text-[#0B3C5D] border border-[#0B3C5D]/15 text-[10px] font-black uppercase tracking-wider">
               <Vote className="w-3.5 h-3.5 text-[#0B3C5D]" />
               <span>POLL</span>
             </div>
           )}
+
           {poll.allow_multiple_answers && (
-            <span className="text-[9px] text-slate-500 font-bold px-2 py-0.5 rounded bg-slate-100">
-              Multiple Answers
+            <span className="text-[9px] text-slate-500 font-bold px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200/60">
+              Multiple Choices
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
-          <Calendar className="w-3 h-3 text-slate-300" />
-          <span>{formattedDate}</span>
-        </div>
+        <span className="text-[11px] font-semibold text-slate-400">
+          {getRelativeTime(poll.created_at)}
+        </span>
       </div>
 
       {/* Poll Question */}
-      <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-snug mb-1">
+      <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-snug">
         {poll.question}
       </h3>
 
-      {/* Hint / Subtitle */}
-      <p className="text-[11px] font-semibold text-slate-400 mb-4">
+      {/* Subtitle / Hint */}
+      <p className="text-[11px] font-medium text-slate-400 mt-1 mb-4">
         {poll.allow_multiple_answers
           ? 'Select one or more options'
           : 'Select one option'}
       </p>
 
       {/* ------------------------------------------------------------------ */}
-      {/* OPTIONS LIST                                                       */}
+      {/* FULL-WIDTH OPTION BOXES                                            */}
       {/* ------------------------------------------------------------------ */}
       <div className="space-y-2.5">
         {poll.options.map(option => {
@@ -175,32 +178,31 @@ export const StudentPollCard: React.FC<StudentPollCardProps> = ({
                   handleOptionClick(option.id);
                 }
               }}
-              className={`relative overflow-hidden rounded-xl border transition-all duration-200 cursor-pointer select-none active:scale-[0.99] min-h-[48px] flex items-center ${
+              className={`relative overflow-hidden rounded-xl border transition-all duration-200 cursor-pointer select-none active:scale-[0.99] min-h-[50px] flex items-center ${
                 isSelected
-                  ? 'border-emerald-500 ring-1 ring-emerald-500/20 bg-emerald-50/40 text-emerald-950'
+                  ? 'border-emerald-500 ring-1 ring-emerald-500/20 bg-emerald-50/40 text-emerald-950 shadow-sm'
                   : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50 text-slate-800'
               } ${isUpdating ? 'opacity-90' : ''}`}
             >
-              {/* WhatsApp-Style Horizontal Progress Bar (Visible after voting) */}
+              {/* WhatsApp-Style Horizontal Progress Bar (Visible when student has voted) */}
               {hasInteracted && (
                 <div
                   className={`absolute inset-y-0 left-0 transition-all duration-500 pointer-events-none ${
-                    isSelected ? 'bg-emerald-200/50' : 'bg-slate-100'
+                    isSelected ? 'bg-emerald-200/40' : 'bg-slate-100/90'
                   }`}
                   style={{ width: `${percentage}%` }}
                 />
               )}
 
-              {/* Option Content */}
+              {/* Option Box Content */}
               <div className="relative z-10 w-full px-4 py-3 flex items-center justify-between gap-3">
                 
-                {/* Left: Indicator + Option Text */}
+                {/* Left: Radio/Checkbox Indicator + Option Text */}
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  {/* Selection Indicator */}
                   {poll.allow_multiple_answers ? (
                     // Checkbox (Multiple Answers)
                     <div
-                      className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all duration-150 ${
+                      className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all duration-150 ${
                         isSelected
                           ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm'
                           : 'border-slate-300 bg-white'
@@ -225,8 +227,8 @@ export const StudentPollCard: React.FC<StudentPollCardProps> = ({
 
                   {/* Option Label */}
                   <span
-                    className={`text-xs sm:text-sm truncate ${
-                      isSelected ? 'font-black text-emerald-950' : 'font-medium text-slate-800'
+                    className={`text-xs sm:text-sm leading-relaxed ${
+                      isSelected ? 'font-bold text-emerald-950' : 'font-medium text-slate-800'
                     }`}
                   >
                     {option.option_text}
@@ -255,13 +257,16 @@ export const StudentPollCard: React.FC<StudentPollCardProps> = ({
       </div>
 
       {/* ------------------------------------------------------------------ */}
-      {/* FOOTER: Live Total Voters & Status                                 */}
+      {/* FOOTER: Live Responses Count & Status                              */}
       {/* ------------------------------------------------------------------ */}
-      <div className="mt-4 pt-3 flex items-center justify-between border-t border-slate-100 text-xs">
-        <div className="flex items-center gap-2 text-slate-500 font-semibold text-[11px]">
+      <div className="mt-4 pt-3.5 flex items-center justify-between border-t border-slate-100 text-xs">
+        <div className="flex items-center gap-1.5 text-slate-500 font-semibold text-[11px]">
           <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
           <span>
-            {totalVoters} {totalVoters === 1 ? 'student voted' : 'students voted'}
+            {totalVoters}{' '}
+            {poll.allow_multiple_answers
+              ? totalVoters === 1 ? 'participant' : 'participants'
+              : totalVoters === 1 ? 'response' : 'responses'}
           </span>
         </div>
 
@@ -274,7 +279,7 @@ export const StudentPollCard: React.FC<StudentPollCardProps> = ({
         ) : hasInteracted ? (
           <div className="flex items-center gap-1.5 text-emerald-700 text-[11px] font-bold">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span>Vote saved</span>
+            <span>Response saved</span>
           </div>
         ) : (
           <span className="text-[10px] text-slate-400 font-medium">
@@ -282,6 +287,6 @@ export const StudentPollCard: React.FC<StudentPollCardProps> = ({
           </span>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 };
