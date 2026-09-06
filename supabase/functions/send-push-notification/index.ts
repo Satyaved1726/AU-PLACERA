@@ -212,12 +212,13 @@ serve(async (req) => {
               sendFcmMessage(accessToken, projectIdFCM, {
                 token,
                 notification: {
-                  title: '🗳️ New Poll Available',
-                  body: poll.question || 'A new poll has been posted. Tap to participate.'
+                  title: '🗳️ New Poll',
+                  body: 'A new poll has been posted. Share your response.'
                 },
                 data: {
                   type: 'poll',
-                  pollId: poll.id
+                  pollId: poll.id,
+                  url: `/student/notice-board?pollId=${poll.id}`
                 }
               }).then(res => {
                 if (res.status === 'success') successCount++

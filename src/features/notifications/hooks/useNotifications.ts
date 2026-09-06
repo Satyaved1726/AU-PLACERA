@@ -80,7 +80,7 @@ export const useNotifications = () => {
               notif.onclick = () => {
                 window.focus();
                 if (payload.data?.pollId) {
-                  window.location.href = `/student/polls/${payload.data.pollId}`;
+                  window.location.href = `/student/notice-board?pollId=${payload.data.pollId}`;
                 } else if (payload.data?.postId) {
                   const targetPath = payload.data.audience === 'oia' ? '/student/oia' : '/student/notice-board';
                   window.location.href = `${targetPath}?postId=${payload.data.postId}`;
@@ -99,7 +99,7 @@ export const useNotifications = () => {
               notif.onclick = () => {
                 window.focus();
                 if (payload.data?.pollId) {
-                  window.location.href = `/student/polls/${payload.data.pollId}`;
+                  window.location.href = `/student/notice-board?pollId=${payload.data.pollId}`;
                 } else if (payload.data?.postId) {
                   const targetPath = payload.data.audience === 'oia' ? '/student/oia' : '/student/notice-board';
                   window.location.href = `${targetPath}?postId=${payload.data.postId}`;
@@ -118,7 +118,7 @@ export const useNotifications = () => {
             notif.onclick = () => {
               window.focus();
               if (payload.data?.pollId) {
-                window.location.href = `/student/polls/${payload.data.pollId}`;
+                window.location.href = `/student/notice-board?pollId=${payload.data.pollId}`;
               } else if (payload.data?.postId) {
                 const targetPath = payload.data.audience === 'oia' ? '/student/oia' : '/student/notice-board';
                 window.location.href = `${targetPath}?postId=${payload.data.postId}`;
