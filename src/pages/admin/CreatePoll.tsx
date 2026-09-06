@@ -10,8 +10,7 @@ import {
   ChevronUp, 
   ChevronDown, 
   AlertCircle,
-  CheckCircle2,
-  Bell
+  CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -28,9 +27,6 @@ export const CreatePoll: React.FC = () => {
 
   // Allow multiple answers checkbox
   const [allowMultipleAnswers, setAllowMultipleAnswers] = useState<boolean>(false);
-
-  // Notify students push notification toggle (Default: ON)
-  const [notifyStudents, setNotifyStudents] = useState<boolean>(true);
 
   // Toast feedback
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -97,8 +93,7 @@ export const CreatePoll: React.FC = () => {
         payload: {
           question: question.trim(),
           options: cleanOptions,
-          allow_multiple_answers: allowMultipleAnswers,
-          notify_students: notifyStudents
+          allow_multiple_answers: allowMultipleAnswers
         },
         adminId: profile.id
       });
@@ -173,7 +168,7 @@ export const CreatePoll: React.FC = () => {
             type="text"
             value={question}
             onChange={e => setQuestion(e.target.value)}
-            placeholder="Ask your students a question..."
+            placeholder="What would you like to ask?"
             className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0B3C5D]/20 focus:border-[#0B3C5D] placeholder:text-slate-400"
             autoFocus
           />
@@ -264,32 +259,6 @@ export const CreatePoll: React.FC = () => {
             type="checkbox"
             checked={allowMultipleAnswers}
             onChange={e => setAllowMultipleAnswers(e.target.checked)}
-            onClick={e => e.stopPropagation()}
-            className="w-4.5 h-4.5 rounded text-[#0B3C5D] focus:ring-[#0B3C5D] cursor-pointer"
-          />
-        </div>
-
-        {/* Notify Students Push Notification Toggle */}
-        <div 
-          className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/70 rounded-xl cursor-pointer" 
-          onClick={() => setNotifyStudents(!notifyStudents)}
-        >
-          <div className="flex items-start gap-2.5">
-            <Bell className="w-4 h-4 text-[#D9B310] mt-0.5 shrink-0" />
-            <div>
-              <span className="text-xs font-bold text-slate-800 block">
-                Notify Students
-              </span>
-              <span className="text-[10px] text-slate-400 font-medium block">
-                Send a push notification when this poll is published.
-              </span>
-            </div>
-          </div>
-
-          <input
-            type="checkbox"
-            checked={notifyStudents}
-            onChange={e => setNotifyStudents(e.target.checked)}
             onClick={e => e.stopPropagation()}
             className="w-4.5 h-4.5 rounded text-[#0B3C5D] focus:ring-[#0B3C5D] cursor-pointer"
           />

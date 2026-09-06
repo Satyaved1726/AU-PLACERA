@@ -39,7 +39,7 @@ self.addEventListener('notificationclick', (event) => {
 
   let targetUrl = `${self.location.origin}/student/notice-board`;
   if (data.pollId) {
-    targetUrl = `${self.location.origin}/student/notice-board?pollId=${data.pollId}`;
+    targetUrl = `${self.location.origin}/student/polls/${data.pollId}`;
   } else if (data.postId) {
     const targetPath = data.audience === 'oia' ? '/student/oia' : '/student/notice-board';
     targetUrl = `${self.location.origin}${targetPath}?postId=${data.postId}`;

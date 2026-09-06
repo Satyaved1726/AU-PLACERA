@@ -98,6 +98,4 @@ export interface CreatePollPayload {
   question: string;
   options: string[]; // Minimum 2 options, user-provided
   allow_multiple_answers: boolean;
-  notify_students?: boolean;
 }
-
