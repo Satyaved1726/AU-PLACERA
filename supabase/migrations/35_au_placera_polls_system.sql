@@ -101,17 +101,15 @@ CREATE POLICY "Anyone can view poll options" ON public.poll_options
 -- ------------------------------------------------------------------------------
 -- C. POLL RESPONSES POLICIES
 -- ------------------------------------------------------------------------------
+DROP POLICY IF EXISTS "Admins can manage all poll responses" ON public.poll_responses;
 DROP POLICY IF EXISTS "Admins can view all poll responses" ON public.poll_responses;
-CREATE POLICY "Admins can view all poll responses" ON public.poll_responses
-  FOR SELECT TO authenticated
+DROP POLICY IF EXISTS "Admins can delete poll responses" ON public.poll_responses;
+CREATE POLICY "Admins can manage all poll responses" ON public.poll_responses
+  FOR ALL TO authenticated
   USING (
     public.get_user_role(auth.uid()) IN ('admin', 'super_admin')
-  );
-
-DROP POLICY IF EXISTS "Admins can delete poll responses" ON public.poll_responses;
-CREATE POLICY "Admins can delete poll responses" ON public.poll_responses
-  FOR DELETE TO authenticated
-  USING (
+  )
+  WITH CHECK (
     public.get_user_role(auth.uid()) IN ('admin', 'super_admin')
   );
 
@@ -132,10 +130,14 @@ CREATE POLICY "Students can insert own response" ON public.poll_responses
 -- ------------------------------------------------------------------------------
 -- D. POLL RESPONSE OPTIONS POLICIES
 -- ------------------------------------------------------------------------------
+DROP POLICY IF EXISTS "Admins can manage all poll response options" ON public.poll_response_options;
 DROP POLICY IF EXISTS "Admins can view all poll response options" ON public.poll_response_options;
-CREATE POLICY "Admins can view all poll response options" ON public.poll_response_options
-  FOR SELECT TO authenticated
+CREATE POLICY "Admins can manage all poll response options" ON public.poll_response_options
+  FOR ALL TO authenticated
   USING (
+    public.get_user_role(auth.uid()) IN ('admin', 'super_admin')
+  )
+  WITH CHECK (
     public.get_user_role(auth.uid()) IN ('admin', 'super_admin')
   );
 
@@ -160,3 +162,9 @@ CREATE POLICY "Students can insert own poll response options" ON public.poll_res
         AND pr.student_id = auth.uid()
     )
   );
+
+-- ------------------------------------------------------------------------------
+-- 5. RELOAD POSTGREST SCHEMA CACHE
+-- ------------------------------------------------------------------------------
+NOTIFY pgrst, 'reload schema';
+
