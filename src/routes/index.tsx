@@ -71,6 +71,7 @@ export const router = createBrowserRouter([
       { path: 'materials', element: <StudentMaterials /> },
       { path: 'announcements', element: <StudentAnnouncements /> },
       { path: 'polls', element: <StudentPolls /> },
+      { path: 'polls/:pollId', element: <StudentPolls /> },
       { path: 'profile', element: <StudentProfile /> },
       { path: 'team', element: <TeamView /> },
     ],

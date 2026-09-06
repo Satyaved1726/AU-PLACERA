@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { pollService } from '../pollService';
 import type { CreatePollPayload } from '../../../types';
 
-export const useSubmitVote = () => {
+export const useSaveVote = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -14,7 +14,7 @@ export const useSubmitVote = () => {
       pollId: string;
       studentId: string;
       optionIds: string[];
-    }) => pollService.submitVote(pollId, studentId, optionIds),
+    }) => pollService.saveStudentVote(pollId, studentId, optionIds),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['studentPolls'] });
       queryClient.invalidateQueries({ queryKey: ['pollDetail', variables.pollId] });
@@ -23,6 +23,8 @@ export const useSubmitVote = () => {
     },
   });
 };
+
+export const useSubmitVote = useSaveVote;
 
 export const useCreatePoll = () => {
   const queryClient = useQueryClient();

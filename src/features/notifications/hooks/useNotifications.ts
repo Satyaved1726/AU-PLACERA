@@ -73,30 +73,57 @@ export const useNotifications = () => {
               return;
             }
             try {
-              new Notification(title, {
+              const notif = new Notification(title, {
                 body,
                 icon: '/app_icon.png',
               });
+              notif.onclick = () => {
+                window.focus();
+                if (payload.data?.pollId) {
+                  window.location.href = `/student/polls/${payload.data.pollId}`;
+                } else if (payload.data?.postId) {
+                  const targetPath = payload.data.audience === 'oia' ? '/student/oia' : '/student/notice-board';
+                  window.location.href = `${targetPath}?postId=${payload.data.postId}`;
+                }
+              };
             } catch (e) {
               console.error('[FCM] Failed to display native foreground notification:', e);
             }
           }).catch((err) => {
             console.error('[FCM] Error checking active notifications in SW, falling back to show:', err);
             try {
-              new Notification(title, {
+              const notif = new Notification(title, {
                 body,
                 icon: '/app_icon.png',
               });
+              notif.onclick = () => {
+                window.focus();
+                if (payload.data?.pollId) {
+                  window.location.href = `/student/polls/${payload.data.pollId}`;
+                } else if (payload.data?.postId) {
+                  const targetPath = payload.data.audience === 'oia' ? '/student/oia' : '/student/notice-board';
+                  window.location.href = `${targetPath}?postId=${payload.data.postId}`;
+                }
+              };
             } catch (e) {
               console.error('[FCM] Failed to display native foreground notification:', e);
             }
           });
         } else {
           try {
-            new Notification(title, {
+            const notif = new Notification(title, {
               body,
               icon: '/app_icon.png',
             });
+            notif.onclick = () => {
+              window.focus();
+              if (payload.data?.pollId) {
+                window.location.href = `/student/polls/${payload.data.pollId}`;
+              } else if (payload.data?.postId) {
+                const targetPath = payload.data.audience === 'oia' ? '/student/oia' : '/student/notice-board';
+                window.location.href = `${targetPath}?postId=${payload.data.postId}`;
+              }
+            };
           } catch (e) {
             console.error('[FCM] Failed to display native foreground notification:', e);
           }

@@ -4,18 +4,21 @@ import { useAuth } from '../../features/auth/useAuth';
 import { usePosts } from '../../features/posts/hooks/usePosts';
 import { PostCard } from '../../features/posts/components/PostCard';
 import { PostDetail } from '../../features/posts/components/PostDetail';
-import { Bell, AlertCircle, GraduationCap, Star } from 'lucide-react';
+import { Bell, AlertCircle, GraduationCap, Star, Vote, CheckCircle2, ChevronRight } from 'lucide-react';
 import { PostSkeleton } from '../../components/common/LoadingSkeleton';
 import { motion } from 'framer-motion';
 import type { Post } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useStudentPolls } from '../../features/polls/hooks/usePolls';
 
 export const NoticeBoard: React.FC = () => {
   const { profile } = useAuth();
   const [realtimeHealthy, setRealtimeHealthy] = useState(true);
   const { data: posts, isLoading, error } = usePosts(realtimeHealthy ? false : 30000);
+  const navigate = useNavigate();
+  const { data: polls = [] } = useStudentPolls(profile);
   const queryClient = useQueryClient();
   const oiaEligible = profile?.oia_eligible || false;
 
@@ -89,6 +92,10 @@ export const NoticeBoard: React.FC = () => {
 
     return matchesSearch && matchesTab;
   });
+
+  const matchingPolls = (activeTab === 'all')
+    ? polls.filter(p => p.question.toLowerCase().includes(searchQuery.toLowerCase()))
+    : [];
 
   const priorityNotices = filteredNotices.filter(n => n.is_top_priority);
   const normalNotices = filteredNotices.filter(n => !n.is_top_priority);
@@ -207,7 +214,7 @@ export const NoticeBoard: React.FC = () => {
       {isLoading && <PostSkeleton />}
 
       {/* EMPTY LIST STATE */}
-      {!isLoading && filteredNotices.length === 0 && (
+      {!isLoading && filteredNotices.length === 0 && matchingPolls.length === 0 && (
         <div className="text-center py-16 bg-white border border-slate-200 rounded-2xl p-8 max-w-sm mx-auto shadow-sm">
           <div className="p-3 bg-slate-50 border border-slate-100 rounded-full inline-block mb-3 text-slate-400">
             <Bell className="h-5 w-5 text-slate-400" />
@@ -227,6 +234,78 @@ export const NoticeBoard: React.FC = () => {
           animate="visible"
           className="space-y-6"
         >
+          {/* Active Polls Section in Notice Board */}
+          {matchingPolls.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <h4 className="text-[10px] font-black text-[#0B3C5D] uppercase tracking-widest flex items-center gap-1.5">
+                  <Vote className="w-3.5 h-3.5 text-[#0B3C5D]" />
+                  <span>Live Student Polls</span>
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => navigate('/student/polls')}
+                  className="text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  View All ({polls.length}) →
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                {matchingPolls.slice(0, 3).map(poll => {
+                  const hasVoted = !!poll.user_vote;
+                  return (
+                    <motion.div
+                      key={poll.id}
+                      variants={cardVariants}
+                      onClick={() => navigate(`/student/polls/${poll.id}`)}
+                      className="group p-4 bg-white border border-slate-200/90 hover:border-[#0B3C5D]/40 rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer select-none relative overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="px-2 py-0.5 rounded-md bg-[#0B3C5D]/10 text-[#0B3C5D] text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                          <span>🗳️</span>
+                          <span>NEW POLL</span>
+                        </span>
+
+                        {hasVoted ? (
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/80">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>Your response recorded</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-[10px] font-black text-[#0B3C5D] group-hover:text-blue-700 transition-colors">
+                            <span>Tap to participate</span>
+                            <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-sm font-bold text-slate-800 tracking-tight leading-snug group-hover:text-[#0B3C5D] transition-colors">
+                        {poll.question}
+                      </h3>
+
+                      {/* Options Preview */}
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+                        {poll.options.slice(0, 4).map(opt => (
+                          <span
+                            key={opt.id}
+                            className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200/80 text-[11px] font-medium text-slate-600"
+                          >
+                            {opt.option_text}
+                          </span>
+                        ))}
+                        {poll.options.length > 4 && (
+                          <span className="text-[10px] text-slate-400 font-semibold">
+                            +{poll.options.length - 4} more
+                          </span>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {/* Priority Notices block */}
           {priorityNotices.length > 0 && (
             <div className="space-y-3">

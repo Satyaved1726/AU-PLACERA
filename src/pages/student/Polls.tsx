@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useAuth } from '../../features/auth/useAuth';
 import { useStudentPolls } from '../../features/polls/hooks/usePolls';
 import { StudentPollCard } from '../../features/polls/components/StudentPollCard';
@@ -12,11 +13,25 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const Polls: React.FC = () => {
+  const { pollId } = useParams<{ pollId?: string }>();
   const { profile } = useAuth();
   const { data: polls = [], isLoading, error } = useStudentPolls(profile);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'unvoted' | 'voted'>('all');
+
+  // Auto-scroll to target poll when navigating from Notice Board or Push Notification
+  useEffect(() => {
+    if (pollId && polls.length > 0) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`poll-${pollId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [pollId, polls]);
 
   // Toast feedback state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -143,6 +158,7 @@ export const Polls: React.FC = () => {
               poll={poll}
               studentId={profile?.id || ''}
               onToast={showToast}
+              isHighlighted={poll.id === pollId}
             />
           ))}
         </div>

@@ -164,9 +164,80 @@ serve(async (req) => {
       })
     }
 
-    const { postId } = await req.json()
+    const reqBody = await req.json()
+    const { postId, pollId } = reqBody
+
+    if (pollId) {
+      // 1. Fetch the poll
+      const { data: poll, error: pollError } = await supabaseService
+        .from('polls')
+        .select('*')
+        .eq('id', pollId)
+        .single()
+
+      if (pollError || !poll) {
+        return new Response(JSON.stringify({ error: 'Poll not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      // 2. Load service account & access token
+      const serviceAccountStr = Deno.env.get('FIREBASE_SERVICE_ACCOUNT')
+      if (!serviceAccountStr) {
+        throw new Error('FIREBASE_SERVICE_ACCOUNT is not configured')
+      }
+      const serviceAccount = JSON.parse(serviceAccountStr)
+      const projectIdFCM = serviceAccount.project_id
+      const accessToken = await getAccessToken(serviceAccount)
+
+      // 3. Query all active student tokens
+      const { data: tokenRows, error: tokenError } = await supabaseService
+        .from('fcm_tokens')
+        .select('token, profiles!inner(role)')
+        .eq('profiles.role', 'student')
+
+      if (tokenError) {
+        throw new Error(`Failed to query student tokens: ${tokenError.message}`)
+      }
+
+      let successCount = 0
+      const tokens = (tokenRows || []).map(r => r.token)
+      if (tokens.length > 0) {
+        const CHUNK_SIZE = 100
+        for (let i = 0; i < tokens.length; i += CHUNK_SIZE) {
+          const chunk = tokens.slice(i, i + CHUNK_SIZE)
+          await Promise.all(
+            chunk.map(token =>
+              sendFcmMessage(accessToken, projectIdFCM, {
+                token,
+                notification: {
+                  title: '🗳️ New Poll Available',
+                  body: poll.question || 'A new poll has been posted. Tap to participate.'
+                },
+                data: {
+                  type: 'poll',
+                  pollId: poll.id
+                }
+              }).then(res => {
+                if (res.status === 'success') successCount++
+                return res
+              }).catch(err => {
+                console.error(`FCM poll send error for token: ${token}`, err)
+                return { token, status: 'error' }
+              })
+            )
+          )
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true, isPoll: true, dispatched: successCount }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
     if (!postId) {
-      return new Response(JSON.stringify({ error: 'Missing postId in request body' }), {
+      return new Response(JSON.stringify({ error: 'Missing postId or pollId in request body' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })

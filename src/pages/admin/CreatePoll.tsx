@@ -148,11 +148,11 @@ export const CreatePoll: React.FC = () => {
         <div>
           <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[#0B3C5D]">
             <Vote className="w-4 h-4 text-[#D9B310]" />
-            <span>AU PLACERA POLL</span>
+            <span>CREATE POLL</span>
           </div>
-          <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase">
-            Create Poll
-          </h1>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
+            Ask your students a question
+          </p>
         </div>
       </div>
 
@@ -168,7 +168,7 @@ export const CreatePoll: React.FC = () => {
             type="text"
             value={question}
             onChange={e => setQuestion(e.target.value)}
-            placeholder="Ask your question"
+            placeholder="What would you like to ask?"
             className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0B3C5D]/20 focus:border-[#0B3C5D] placeholder:text-slate-400"
             autoFocus
           />

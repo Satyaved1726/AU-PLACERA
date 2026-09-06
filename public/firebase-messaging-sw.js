@@ -35,10 +35,15 @@ if (hasFirebaseConfig) {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const data = event.notification.data;
-  if (!data || !data.postId) return;
+  if (!data) return;
 
-  const targetPath = data.audience === 'oia' ? '/student/oia' : '/student/notice-board';
-  const targetUrl = `${self.location.origin}${targetPath}?postId=${data.postId}`;
+  let targetUrl = `${self.location.origin}/student/notice-board`;
+  if (data.pollId) {
+    targetUrl = `${self.location.origin}/student/polls/${data.pollId}`;
+  } else if (data.postId) {
+    const targetPath = data.audience === 'oia' ? '/student/oia' : '/student/notice-board';
+    targetUrl = `${self.location.origin}${targetPath}?postId=${data.postId}`;
+  }
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {

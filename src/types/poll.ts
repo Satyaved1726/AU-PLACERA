@@ -19,6 +19,8 @@ export interface PollOption {
   option_text: string;
   option_order: number;
   created_at: string;
+  vote_count?: number;
+  percentage?: number;
 }
 
 export interface PollResponse {

@@ -22,11 +22,12 @@ export const formatSectionLabel = (section: string): string => {
 
 export const pollService = {
   // --------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
   // 1. STUDENT METHODS
   // --------------------------------------------------------------------------
 
   /**
-   * Fetches all polls and attaches the current student's vote if already cast.
+   * Fetches all polls, attaching the current student's vote and live public aggregate results.
    */
   async getStudentPolls(studentId: string): Promise<PollWithDetails[]> {
     // 1. Fetch all polls
@@ -43,32 +44,39 @@ export const pollService = {
 
     const pollIds = polls.map(p => p.id);
 
-    // 2. Fetch options and current student's responses
-    const [optionsRes, responsesRes] = await Promise.all([
+    // 2. Fetch options, current student's responses, and public aggregate results
+    const [optionsRes, responsesRes, publicSummaryRes] = await Promise.all([
       supabase.from('poll_options').select('*').in('poll_id', pollIds).order('option_order', { ascending: true }),
-      supabase
-        .from('poll_responses')
-        .select(`
-          id,
-          poll_id,
-          student_id,
-          voted_at,
-          poll_response_options (option_id)
-        `)
-        .eq('student_id', studentId)
-        .in('poll_id', pollIds)
+      studentId 
+        ? supabase
+            .from('poll_responses')
+            .select(`
+              id,
+              poll_id,
+              student_id,
+              voted_at,
+              poll_response_options (option_id)
+            `)
+            .eq('student_id', studentId)
+            .in('poll_id', pollIds)
+        : Promise.resolve({ data: null, error: null }),
+      Promise.resolve(supabase.rpc('get_polls_public_results')).catch(() => ({ data: null, error: null }))
     ]);
 
     if (optionsRes.error) throw optionsRes.error;
     if (responsesRes.error) throw responsesRes.error;
 
-    const optionsByPoll = (optionsRes.data || []).reduce<Record<string, PollOption[]>>((acc, opt) => {
+    const publicSummary: Record<string, { total_voters?: number; options?: Record<string, number> }> = 
+      (publicSummaryRes?.data as any) || {};
+
+    const optionsData: PollOption[] = (optionsRes.data as PollOption[]) || [];
+    const optionsByPoll = optionsData.reduce<Record<string, PollOption[]>>((acc: Record<string, PollOption[]>, opt: PollOption) => {
       if (!acc[opt.poll_id]) acc[opt.poll_id] = [];
       acc[opt.poll_id].push(opt);
       return acc;
     }, {});
 
-    const votesByPoll = (responsesRes.data || []).reduce<Record<string, StudentPollVote>>((acc, resp: any) => {
+    const votesByPoll = ((responsesRes.data || []) as any[]).reduce<Record<string, StudentPollVote>>((acc, resp: any) => {
       const optionIds = (resp.poll_response_options || []).map((o: any) => o.option_id);
       acc[resp.poll_id] = {
         response_id: resp.id,
@@ -78,24 +86,57 @@ export const pollService = {
       return acc;
     }, {});
 
-    return polls.map(p => ({
-      ...p,
-      options: optionsByPoll[p.id] || [],
-      user_vote: votesByPoll[p.id] || null
-    }));
+    return polls.map(p => {
+      const userVote = votesByPoll[p.id] || null;
+      const pollStats = publicSummary[p.id];
+      const totalVoted = pollStats?.total_voters ?? (userVote ? 1 : 0);
+      const rawOptions: PollOption[] = optionsByPoll[p.id] || [];
+
+      const optionsWithStats: PollOption[] = rawOptions.map((opt: PollOption) => {
+        const voteCount = pollStats?.options?.[opt.id] ?? (userVote?.option_ids.includes(opt.id) ? 1 : 0);
+        const percentage = totalVoted > 0 ? Math.round((voteCount / totalVoted) * 100) : 0;
+        return {
+          ...opt,
+          vote_count: voteCount,
+          percentage
+        };
+      });
+
+      return {
+        ...p,
+        options: optionsWithStats,
+        user_vote: userVote,
+        total_voted: totalVoted
+      };
+    });
   },
 
   /**
-   * Submit a student's vote.
-   * If allow_multiple_answers is false, strictly one option must be selected.
-   * Database constraint UNIQUE(poll_id, student_id) ensures one vote per student.
+   * Save a student's vote live (WhatsApp style: instant selection, vote change, or deselect).
+   * - If optionIds is empty: removes response (student is unvoted).
+   * - If optionIds has items: upserts response and updates chosen options.
    */
-  async submitVote(pollId: string, studentId: string, optionIds: string[]): Promise<StudentPollVote> {
-    if (!optionIds || optionIds.length === 0) {
-      throw new Error('Please select at least one option to vote.');
+  async saveStudentVote(pollId: string, studentId: string, optionIds: string[]): Promise<StudentPollVote> {
+    if (!studentId) {
+      throw new Error('Authentication required to cast a vote.');
     }
 
-    // Verify poll configuration
+    // A. Student deselected all options -> remove response completely
+    if (!optionIds || optionIds.length === 0) {
+      await supabase
+        .from('poll_responses')
+        .delete()
+        .eq('poll_id', pollId)
+        .eq('student_id', studentId);
+
+      return {
+        response_id: '',
+        option_ids: [],
+        voted_at: ''
+      };
+    }
+
+    // B. Verify poll settings
     const { data: poll, error: pollError } = await supabase
       .from('polls')
       .select('allow_multiple_answers')
@@ -105,46 +146,89 @@ export const pollService = {
     if (pollError) throw pollError;
     if (!poll) throw new Error('Poll not found');
 
-    if (!poll.allow_multiple_answers && optionIds.length > 1) {
-      throw new Error('This poll allows only a single answer.');
-    }
+    const effectiveOptionIds = !poll.allow_multiple_answers && optionIds.length > 1
+      ? [optionIds[optionIds.length - 1]] // Take latest selected option
+      : optionIds;
 
-    // Insert response record
-    const now = new Date().toISOString();
-    const { data: responseData, error: respError } = await supabase
+    // Check if student already has a response record
+    const { data: existingResp, error: fetchError } = await supabase
       .from('poll_responses')
-      .insert({
-        poll_id: pollId,
-        student_id: studentId,
+      .select('id')
+      .eq('poll_id', pollId)
+      .eq('student_id', studentId)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+
+    const now = new Date().toISOString();
+
+    if (existingResp?.id) {
+      // 1. Update response timestamp
+      await supabase
+        .from('poll_responses')
+        .update({ voted_at: now })
+        .eq('id', existingResp.id);
+
+      // 2. Clear previous response options and insert new ones
+      await supabase
+        .from('poll_response_options')
+        .delete()
+        .eq('response_id', existingResp.id);
+
+      const optionPayload = effectiveOptionIds.map(optId => ({
+        response_id: existingResp.id,
+        option_id: optId
+      }));
+
+      const { error: optError } = await supabase
+        .from('poll_response_options')
+        .insert(optionPayload);
+
+      if (optError) throw optError;
+
+      return {
+        response_id: existingResp.id,
+        option_ids: effectiveOptionIds,
         voted_at: now
-      })
-      .select()
-      .single();
+      };
+    } else {
+      // 3. Insert new response record
+      const { data: newResp, error: respError } = await supabase
+        .from('poll_responses')
+        .insert({
+          poll_id: pollId,
+          student_id: studentId,
+          voted_at: now
+        })
+        .select()
+        .single();
 
-    if (respError) {
-      if (respError.code === '23505') {
-        throw new Error('Your vote has already been recorded for this poll.');
-      }
-      throw respError;
+      if (respError) throw respError;
+
+      const optionPayload = effectiveOptionIds.map(optId => ({
+        response_id: newResp.id,
+        option_id: optId
+      }));
+
+      const { error: optError } = await supabase
+        .from('poll_response_options')
+        .insert(optionPayload);
+
+      if (optError) throw optError;
+
+      return {
+        response_id: newResp.id,
+        option_ids: effectiveOptionIds,
+        voted_at: newResp.voted_at
+      };
     }
+  },
 
-    // Insert chosen response option(s)
-    const optionPayload = optionIds.map(optId => ({
-      response_id: responseData.id,
-      option_id: optId
-    }));
-
-    const { error: optError } = await supabase
-      .from('poll_response_options')
-      .insert(optionPayload);
-
-    if (optError) throw optError;
-
-    return {
-      response_id: responseData.id,
-      option_ids: optionIds,
-      voted_at: responseData.voted_at
-    };
+  /**
+   * Alias for saveStudentVote to ensure full backward compatibility.
+   */
+  async submitVote(pollId: string, studentId: string, optionIds: string[]): Promise<StudentPollVote> {
+    return this.saveStudentVote(pollId, studentId, optionIds);
   },
 
   // --------------------------------------------------------------------------
@@ -292,6 +376,19 @@ export const pollService = {
 
     const { error: optError } = await supabase.from('poll_options').insert(optionRows);
     if (optError) throw optError;
+
+    // 3. Dispatch Push Notification to all active student devices
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await supabase.functions.invoke('send-push-notification', {
+        body: { pollId: poll.id },
+        headers: session?.access_token ? {
+          Authorization: `Bearer ${session.access_token}`
+        } : undefined
+      });
+    } catch (fcmErr) {
+      console.warn('[Poll] Push notification dispatch error:', fcmErr);
+    }
 
     return poll;
   },

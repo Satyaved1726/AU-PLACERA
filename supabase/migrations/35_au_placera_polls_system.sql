@@ -127,6 +127,23 @@ CREATE POLICY "Students can insert own response" ON public.poll_responses
     student_id = auth.uid()
   );
 
+DROP POLICY IF EXISTS "Students can update own response" ON public.poll_responses;
+CREATE POLICY "Students can update own response" ON public.poll_responses
+  FOR UPDATE TO authenticated
+  USING (
+    student_id = auth.uid()
+  )
+  WITH CHECK (
+    student_id = auth.uid()
+  );
+
+DROP POLICY IF EXISTS "Students can delete own response" ON public.poll_responses;
+CREATE POLICY "Students can delete own response" ON public.poll_responses
+  FOR DELETE TO authenticated
+  USING (
+    student_id = auth.uid()
+  );
+
 -- ------------------------------------------------------------------------------
 -- D. POLL RESPONSE OPTIONS POLICIES
 -- ------------------------------------------------------------------------------
@@ -163,8 +180,52 @@ CREATE POLICY "Students can insert own poll response options" ON public.poll_res
     )
   );
 
+DROP POLICY IF EXISTS "Students can delete own poll response options" ON public.poll_response_options;
+CREATE POLICY "Students can delete own poll response options" ON public.poll_response_options
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.poll_responses pr
+      WHERE pr.id = poll_response_options.response_id
+        AND pr.student_id = auth.uid()
+    )
+  );
+
 -- ------------------------------------------------------------------------------
--- 5. RELOAD POSTGREST SCHEMA CACHE
+-- 5. PUBLIC AGGREGATED RESULTS RPC (Privacy-Preserving Live Results)
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.get_polls_public_results()
+RETURNS JSONB
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  result JSONB;
+BEGIN
+  SELECT jsonb_object_agg(
+    p.id,
+    jsonb_build_object(
+      'total_voters', (SELECT COUNT(DISTINCT pr.student_id) FROM public.poll_responses pr WHERE pr.poll_id = p.id),
+      'options', COALESCE((
+        SELECT jsonb_object_agg(po.id, COALESCE((
+          SELECT COUNT(pro.id) 
+          FROM public.poll_response_options pro 
+          WHERE pro.option_id = po.id
+        ), 0))
+        FROM public.poll_options po
+        WHERE po.poll_id = p.id
+      ), '{}'::jsonb)
+    )
+  ) INTO result
+  FROM public.polls p;
+
+  RETURN COALESCE(result, '{}'::jsonb);
+END;
+$$ LANGUAGE plpgsql;
+
+-- ------------------------------------------------------------------------------
+-- 6. RELOAD POSTGREST SCHEMA CACHE
 -- ------------------------------------------------------------------------------
 NOTIFY pgrst, 'reload schema';
+
 
