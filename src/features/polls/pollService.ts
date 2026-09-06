@@ -360,6 +360,7 @@ export const pollService = {
       .insert({
         question: payload.question.trim(),
         allow_multiple_answers: payload.allow_multiple_answers ?? false,
+        is_priority: payload.is_priority ?? false,
         created_by: adminId
       })
       .select()
@@ -377,17 +378,19 @@ export const pollService = {
     const { error: optError } = await supabase.from('poll_options').insert(optionRows);
     if (optError) throw optError;
 
-    // 3. Dispatch Push Notification to all active student devices
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      await supabase.functions.invoke('send-push-notification', {
-        body: { pollId: poll.id },
-        headers: session?.access_token ? {
-          Authorization: `Bearer ${session.access_token}`
-        } : undefined
-      });
-    } catch (fcmErr) {
-      console.warn('[Poll] Push notification dispatch error:', fcmErr);
+    // 3. Dispatch Push Notification if requested
+    if (payload.notify_students !== false) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        await supabase.functions.invoke('send-push-notification', {
+          body: { pollId: poll.id },
+          headers: session?.access_token ? {
+            Authorization: `Bearer ${session.access_token}`
+          } : undefined
+        });
+      } catch (fcmErr) {
+        console.warn('[Poll] Push notification dispatch error:', fcmErr);
+      }
     }
 
     return poll;

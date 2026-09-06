@@ -52,18 +52,19 @@ export const StudentPollCard: React.FC<StudentPollCardProps> = ({
 
     if (poll.allow_multiple_answers) {
       if (selectedOptionIds.includes(optionId)) {
-        // Deselect option
+        // Deselect option (if last option removed, nextOptionIds becomes empty)
         nextOptionIds = selectedOptionIds.filter(id => id !== optionId);
       } else {
         // Select additional option
         nextOptionIds = [...selectedOptionIds, optionId];
       }
     } else {
-      // Single answer: click another option changes vote immediately
+      // Single answer: click selected option removes response; clicking other option switches vote
       if (selectedOptionIds.includes(optionId)) {
-        return; // Already selected
+        nextOptionIds = [];
+      } else {
+        nextOptionIds = [optionId];
       }
-      nextOptionIds = [optionId];
     }
 
     const previousOptionIds = selectedOptionIds;
@@ -108,6 +109,8 @@ export const StudentPollCard: React.FC<StudentPollCardProps> = ({
       className={`bg-white rounded-2xl border p-5 sm:p-6 shadow-sm transition-all duration-200 relative overflow-hidden ${
         isHighlighted
           ? 'ring-2 ring-[#0B3C5D] shadow-md'
+          : poll.is_priority
+          ? 'border-amber-300 ring-1 ring-amber-400/30 shadow-amber-950/5'
           : hasInteracted
           ? 'border-emerald-200/90 shadow-emerald-950/5'
           : 'border-slate-200 hover:border-slate-300'
@@ -115,12 +118,20 @@ export const StudentPollCard: React.FC<StudentPollCardProps> = ({
     >
       {/* Top Poll Visual Identity Badge */}
       <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#0B3C5D]/10 text-[#0B3C5D] text-[10px] font-black uppercase tracking-wider">
-          <Vote className="w-3.5 h-3.5 text-[#0B3C5D]" />
-          <span>POLL</span>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {poll.is_priority ? (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/15 text-amber-800 border border-amber-300/60 text-[10px] font-black uppercase tracking-wider">
+              <span>🚨 PRIORITY POLL</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#0B3C5D]/10 text-[#0B3C5D] text-[10px] font-black uppercase tracking-wider">
+              <Vote className="w-3.5 h-3.5 text-[#0B3C5D]" />
+              <span>POLL</span>
+            </div>
+          )}
           {poll.allow_multiple_answers && (
-            <span className="text-[9px] text-slate-500 font-bold ml-1">
-              • Multiple Answers
+            <span className="text-[9px] text-slate-500 font-bold px-2 py-0.5 rounded bg-slate-100">
+              Multiple Answers
             </span>
           )}
         </div>

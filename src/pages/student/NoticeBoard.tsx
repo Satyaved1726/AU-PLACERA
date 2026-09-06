@@ -93,9 +93,15 @@ export const NoticeBoard: React.FC = () => {
     return matchesSearch && matchesTab;
   });
 
-  const matchingPolls = (activeTab === 'all')
-    ? polls.filter(p => p.question.toLowerCase().includes(searchQuery.toLowerCase()))
-    : [];
+  const matchingPolls = polls.filter(p => {
+    const matchesSearch = p.question.toLowerCase().includes(searchQuery.toLowerCase());
+    if (activeTab === 'priority') return matchesSearch && p.is_priority;
+    if (activeTab === 'all') return matchesSearch;
+    return false;
+  });
+
+  const priorityPolls = matchingPolls.filter(p => p.is_priority);
+  const normalPolls = matchingPolls.filter(p => !p.is_priority);
 
   const priorityNotices = filteredNotices.filter(n => n.is_top_priority);
   const normalNotices = filteredNotices.filter(n => !n.is_top_priority);
@@ -234,8 +240,80 @@ export const NoticeBoard: React.FC = () => {
           animate="visible"
           className="space-y-6"
         >
-          {/* Active Polls Section in Notice Board */}
-          {matchingPolls.length > 0 && (
+          {/* Priority Polls Section in Notice Board */}
+          {priorityPolls.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <h4 className="text-[10px] font-black text-amber-800 uppercase tracking-widest flex items-center gap-1.5">
+                  <span>🚨 Priority Live Polls</span>
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => navigate('/student/polls')}
+                  className="text-[10px] font-bold text-amber-700 hover:text-amber-900 transition-colors"
+                >
+                  View All ({polls.length}) →
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                {priorityPolls.map(poll => {
+                  const hasVoted = !!poll.user_vote;
+                  return (
+                    <motion.div
+                      key={poll.id}
+                      variants={cardVariants}
+                      onClick={() => navigate(`/student/polls/${poll.id}`)}
+                      className="group p-4 bg-amber-50/40 border border-amber-300 hover:border-amber-400 rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer select-none relative overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="px-2.5 py-0.5 rounded-md bg-amber-500/15 text-amber-800 border border-amber-300/60 text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                          <span>🚨</span>
+                          <span>PRIORITY POLL</span>
+                        </span>
+
+                        {hasVoted ? (
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/80">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>Your response recorded</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-[10px] font-black text-amber-900 group-hover:text-amber-950 transition-colors">
+                            <span>Tap to vote</span>
+                            <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-sm font-bold text-slate-900 tracking-tight leading-snug group-hover:text-amber-900 transition-colors">
+                        {poll.question}
+                      </h3>
+
+                      {/* Options Preview */}
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+                        {poll.options.slice(0, 4).map(opt => (
+                          <span
+                            key={opt.id}
+                            className="px-2.5 py-1 rounded-lg bg-white/80 border border-amber-200 text-[11px] font-medium text-amber-950"
+                          >
+                            {opt.option_text}
+                          </span>
+                        ))}
+                        {poll.options.length > 4 && (
+                          <span className="text-[10px] text-amber-700 font-semibold">
+                            +{poll.options.length - 4} more
+                          </span>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Normal Active Polls Section in Notice Board */}
+          {activeTab === 'all' && normalPolls.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between px-1">
                 <h4 className="text-[10px] font-black text-[#0B3C5D] uppercase tracking-widest flex items-center gap-1.5">
@@ -252,7 +330,7 @@ export const NoticeBoard: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 gap-3">
-                {matchingPolls.slice(0, 3).map(poll => {
+                {normalPolls.slice(0, 3).map(poll => {
                   const hasVoted = !!poll.user_vote;
                   return (
                     <motion.div
@@ -264,7 +342,7 @@ export const NoticeBoard: React.FC = () => {
                       <div className="flex items-center justify-between gap-2 mb-2">
                         <span className="px-2 py-0.5 rounded-md bg-[#0B3C5D]/10 text-[#0B3C5D] text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
                           <span>🗳️</span>
-                          <span>NEW POLL</span>
+                          <span>POLL</span>
                         </span>
 
                         {hasVoted ? (

@@ -4,6 +4,7 @@ export interface Poll {
   id: string;
   question: string;
   allow_multiple_answers: boolean;
+  is_priority?: boolean;
   created_by: string | null;
   created_at: string;
   profiles?: {
@@ -98,4 +99,6 @@ export interface CreatePollPayload {
   question: string;
   options: string[]; // Minimum 2 options, user-provided
   allow_multiple_answers: boolean;
+  is_priority?: boolean;
+  notify_students?: boolean;
 }

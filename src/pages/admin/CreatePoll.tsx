@@ -28,6 +28,12 @@ export const CreatePoll: React.FC = () => {
   // Allow multiple answers checkbox
   const [allowMultipleAnswers, setAllowMultipleAnswers] = useState<boolean>(false);
 
+  // Priority Poll checkbox
+  const [isPriority, setIsPriority] = useState<boolean>(false);
+
+  // Notify students push notification checkbox
+  const [notifyStudents, setNotifyStudents] = useState<boolean>(true);
+
   // Toast feedback
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -93,7 +99,9 @@ export const CreatePoll: React.FC = () => {
         payload: {
           question: question.trim(),
           options: cleanOptions,
-          allow_multiple_answers: allowMultipleAnswers
+          allow_multiple_answers: allowMultipleAnswers,
+          is_priority: isPriority,
+          notify_students: notifyStudents
         },
         adminId: profile.id
       });
@@ -242,26 +250,82 @@ export const CreatePoll: React.FC = () => {
 
         <hr className="border-slate-100" />
 
-        {/* Allow Multiple Answers Checkbox (WhatsApp Style) */}
-        <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/70 rounded-xl cursor-pointer" onClick={() => setAllowMultipleAnswers(!allowMultipleAnswers)}>
-          <div>
-            <span className="text-xs font-bold text-slate-800 block">
-              Allow multiple answers
-            </span>
-            <span className="text-[10px] text-slate-400 font-medium block">
-              {allowMultipleAnswers
-                ? 'Students can select more than one option.'
-                : 'Students can choose only one option.'}
-            </span>
+        {/* Options Settings: Allow Multiple Answers, Priority Poll, Notify Students */}
+        <div className="space-y-3">
+          {/* Allow Multiple Answers Checkbox (WhatsApp Style) */}
+          <div
+            className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/70 rounded-xl cursor-pointer hover:bg-slate-100/60 transition-colors"
+            onClick={() => setAllowMultipleAnswers(!allowMultipleAnswers)}
+          >
+            <div>
+              <span className="text-xs font-bold text-slate-800 block">
+                Allow multiple answers
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium block">
+                {allowMultipleAnswers
+                  ? 'Students can select more than one option.'
+                  : 'Students can choose only one option.'}
+              </span>
+            </div>
+
+            <input
+              type="checkbox"
+              checked={allowMultipleAnswers}
+              onChange={e => setAllowMultipleAnswers(e.target.checked)}
+              onClick={e => e.stopPropagation()}
+              className="w-4.5 h-4.5 rounded text-[#0B3C5D] focus:ring-[#0B3C5D] cursor-pointer"
+            />
           </div>
 
-          <input
-            type="checkbox"
-            checked={allowMultipleAnswers}
-            onChange={e => setAllowMultipleAnswers(e.target.checked)}
-            onClick={e => e.stopPropagation()}
-            className="w-4.5 h-4.5 rounded text-[#0B3C5D] focus:ring-[#0B3C5D] cursor-pointer"
-          />
+          {/* Priority Poll Checkbox */}
+          <div
+            className={`flex items-center justify-between p-3.5 border rounded-xl cursor-pointer transition-colors ${
+              isPriority
+                ? 'bg-amber-50/70 border-amber-300 ring-1 ring-amber-300/40'
+                : 'bg-slate-50 border-slate-200/70 hover:bg-slate-100/60'
+            }`}
+            onClick={() => setIsPriority(!isPriority)}
+          >
+            <div>
+              <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                <span>🚨 Priority Poll</span>
+              </span>
+              <span className="text-[10px] text-amber-700/80 font-medium block">
+                Highlights poll at the top of the Student Notice Stream.
+              </span>
+            </div>
+
+            <input
+              type="checkbox"
+              checked={isPriority}
+              onChange={e => setIsPriority(e.target.checked)}
+              onClick={e => e.stopPropagation()}
+              className="w-4.5 h-4.5 rounded text-amber-600 focus:ring-amber-500 cursor-pointer accent-amber-600"
+            />
+          </div>
+
+          {/* Notify Students Checkbox */}
+          <div
+            className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/70 rounded-xl cursor-pointer hover:bg-slate-100/60 transition-colors"
+            onClick={() => setNotifyStudents(!notifyStudents)}
+          >
+            <div>
+              <span className="text-xs font-bold text-slate-800 block">
+                Notify Students
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium block">
+                Send push notification instantly to all eligible students.
+              </span>
+            </div>
+
+            <input
+              type="checkbox"
+              checked={notifyStudents}
+              onChange={e => setNotifyStudents(e.target.checked)}
+              onClick={e => e.stopPropagation()}
+              className="w-4.5 h-4.5 rounded text-[#0B3C5D] focus:ring-[#0B3C5D] cursor-pointer"
+            />
+          </div>
         </div>
 
         {/* Action Button */}

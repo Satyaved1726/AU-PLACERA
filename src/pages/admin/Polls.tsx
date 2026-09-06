@@ -138,7 +138,12 @@ export const Polls: React.FC = () => {
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div className="space-y-1 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {poll.is_priority && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300">
+                          🚨 Priority Poll
+                        </span>
+                      )}
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200">
                         {poll.allow_multiple_answers ? 'Multiple Answers' : 'Single Answer'}
                       </span>
