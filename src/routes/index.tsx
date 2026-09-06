@@ -15,6 +15,7 @@ import { Materials as StudentMaterials } from '../pages/student/Materials';
 import { Announcements as StudentAnnouncements } from '../pages/student/Announcements';
 import { Profile as StudentProfile } from '../pages/student/Profile';
 import { Registered as StudentRegistered } from '../pages/student/Registered';
+import { Polls as StudentPolls } from '../pages/student/Polls';
 
 // Admin Pages
 import { Dashboard as AdminDashboard } from '../pages/admin/Dashboard';
@@ -26,6 +27,9 @@ import { Announcements as AdminAnnouncements } from '../pages/admin/Announcement
 import { Analytics as AdminAnalytics } from '../pages/admin/Analytics';
 import { Students as AdminStudents } from '../pages/admin/Students';
 import { Profile as AdminProfile } from '../pages/admin/Profile';
+import { Polls as AdminPolls } from '../pages/admin/Polls';
+import { CreatePoll as AdminCreatePoll } from '../pages/admin/CreatePoll';
+import { PollAnalytics as AdminPollAnalytics } from '../pages/admin/PollAnalytics';
 
 // Super Admin Pages
 import { Dashboard as SuperAdminDashboard } from '../pages/super-admin/Dashboard';
@@ -66,6 +70,7 @@ export const router = createBrowserRouter([
       { path: 'oia', element: <OiaGuard><StudentOia /></OiaGuard> },
       { path: 'materials', element: <StudentMaterials /> },
       { path: 'announcements', element: <StudentAnnouncements /> },
+      { path: 'polls', element: <StudentPolls /> },
       { path: 'profile', element: <StudentProfile /> },
       { path: 'team', element: <TeamView /> },
     ],
@@ -86,6 +91,10 @@ export const router = createBrowserRouter([
       { path: 'dashboard', element: <AdminDashboard /> },
       { path: 'posts', element: <AdminPosts /> },
       { path: 'posts/create', element: <AdminCreatePost /> },
+      { path: 'polls', element: <AdminPolls /> },
+      { path: 'polls/create', element: <AdminCreatePoll /> },
+      { path: 'polls/:id/edit', element: <AdminCreatePoll /> },
+      { path: 'polls/:id', element: <AdminPollAnalytics /> },
       { path: 'oia', element: <AdminOia /> },
       { path: 'materials', element: <AdminMaterials /> },
       { path: 'announcements', element: <AdminAnnouncements /> },

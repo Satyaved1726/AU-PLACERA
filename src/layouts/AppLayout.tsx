@@ -22,7 +22,8 @@ import {
   Megaphone,
   Shield,
   X,
-  ClipboardCheck
+  ClipboardCheck,
+  Vote
 } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { UserRole } from '../types';
@@ -106,6 +107,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
           { name: 'Profile', path: '/admin/profile', icon: User }
         ],
         drawer: [
+          { name: 'Polls', path: '/admin/polls', icon: Vote },
           { name: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
           { name: 'Students', path: '/admin/students', icon: Users },
           { name: 'OIA', path: '/admin/oia', icon: Building2 },
@@ -125,6 +127,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
     ];
     
     const drawerItems = [
+      { name: 'Polls', path: '/student/polls', icon: Vote },
       { name: 'Registered', path: '/student/registered', icon: ClipboardCheck },
       { name: 'Digital Board', path: '/student/announcements', icon: Megaphone },
       { name: 'Saved Notices', path: '/student/saved', icon: Bookmark },

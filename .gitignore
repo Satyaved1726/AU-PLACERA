@@ -30,6 +30,7 @@ dist-ssr
  .env
 scratch/
 print_auth_jwt.cjs
+supabase/.temp/
 
 
 

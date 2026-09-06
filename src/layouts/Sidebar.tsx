@@ -20,7 +20,8 @@ import {
   Settings,
   GraduationCap,
   ClipboardCheck,
-  Database
+  Database,
+  Vote
 } from 'lucide-react';
 import { useAuth } from '../features/auth/useAuth';
 import { getDisplayEmail } from '../features/auth/authService';
@@ -52,6 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, collapsed, onCol
     {
       label: 'Management',
       items: [
+        { name: 'Polls', path: '/admin/polls', icon: Vote },
         { name: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
         { name: 'Students', path: '/admin/students', icon: Users }
       ]
@@ -71,6 +73,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, collapsed, onCol
   const studentItems = [
     { name: 'Notice Board', path: '/student/notice-board', icon: ClipboardList },
     { name: 'Digital Notice Board', path: '/student/announcements', icon: Megaphone },
+    { name: 'Polls', path: '/student/polls', icon: Vote },
     { name: 'Registered', path: '/student/registered', icon: ClipboardCheck },
     { name: 'Saved', path: '/student/saved', icon: Bookmark },
     { name: 'OIA', path: '/student/oia', icon: Building2 },
