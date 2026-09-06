@@ -7,9 +7,7 @@ import {
   Vote, 
   CheckCircle2, 
   AlertCircle, 
-  Clock, 
-  Inbox, 
-  Layers
+  Inbox
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,8 +15,8 @@ export const Polls: React.FC = () => {
   const { profile } = useAuth();
   const { data: polls = [], isLoading, error } = useStudentPolls(profile);
 
-  const [activeTab, setActiveTab] = useState<'active' | 'closed'>('active');
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'unvoted' | 'voted'>('all');
 
   // Toast feedback state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -27,20 +25,20 @@ export const Polls: React.FC = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
-  // Filter polls by search query
+  // Filter polls
   const filteredPolls = polls.filter(p => {
     const q = searchQuery.toLowerCase();
-    const matchesQuery = p.question.toLowerCase().includes(q) || (p.description && p.description.toLowerCase().includes(q));
-    return matchesQuery;
+    const matchesSearch = p.question.toLowerCase().includes(q);
+    const hasVoted = !!p.user_vote;
+
+    if (!matchesSearch) return false;
+    if (filterType === 'unvoted') return !hasVoted;
+    if (filterType === 'voted') return hasVoted;
+    return true;
   });
 
-  const activePolls = filteredPolls.filter(p => p.status === 'active');
-  const closedPolls = filteredPolls.filter(p => p.status === 'closed');
-
-  const displayedPolls = activeTab === 'active' ? activePolls : closedPolls;
-
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-16 px-4 sm:px-0 select-none">
+    <div className="max-w-2xl mx-auto space-y-6 pb-20 px-4 sm:px-0 select-none">
       
       {/* Toast Notification */}
       <AnimatePresence>
@@ -66,32 +64,28 @@ export const Polls: React.FC = () => {
       </AnimatePresence>
 
       {/* Header Banner */}
-      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-7 shadow-sm relative overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm">
+        <div className="flex items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="p-2 bg-[#0B3C5D]/10 rounded-xl text-[#0B3C5D]">
-                <Vote className="w-6 h-6 text-[#0B3C5D]" />
+                <Vote className="w-5 h-5 text-[#0B3C5D]" />
               </span>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight uppercase">
+              <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase">
                 Student Polls
               </h1>
             </div>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-xl">
-              Participate in placement preference surveys and department interest checks. Each student is allocated one verified response per poll.
+            <p className="text-xs text-slate-500 font-medium">
+              Cast your vote on placement polls and preference surveys.
             </p>
           </div>
 
-          {/* Student Batch/Section Info Chip */}
           {profile && (
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 sm:text-right shrink-0">
-              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 block">
-                Target Section
+            <div className="hidden sm:block text-right">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                {profile.branch} • {profile.section || 'All Sections'}
               </span>
-              <span className="text-xs font-black text-slate-800">
-                {profile.branch} • {profile.section || 'Unassigned'}
-              </span>
-              <span className="text-[10px] text-slate-500 font-medium block">
+              <span className="text-[10px] text-slate-400 font-bold block">
                 Batch {profile.batch || '2023-2027'}
               </span>
             </div>
@@ -99,44 +93,25 @@ export const Polls: React.FC = () => {
         </div>
       </div>
 
-      {/* Search & Tabs Controls */}
+      {/* Search & Filter Toolbar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        {/* Tabs */}
-        <div className="flex items-center p-1 bg-slate-200/70 rounded-2xl">
-          <button
-            type="button"
-            onClick={() => setActiveTab('active')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-              activeTab === 'active'
-                ? 'bg-white text-[#0B3C5D] shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Clock className="w-3.5 h-3.5 text-amber-500" />
-            <span>Active Polls</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-100 text-amber-800 font-bold">
-              {activePolls.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('closed')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-              activeTab === 'closed'
-                ? 'bg-white text-[#0B3C5D] shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5 text-slate-400" />
-            <span>Past / Closed</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-600 font-bold">
-              {closedPolls.length}
-            </span>
-          </button>
+        <div className="flex items-center p-1 bg-slate-200/60 rounded-2xl">
+          {(['all', 'unvoted', 'voted'] as const).map(f => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFilterType(f)}
+              className={`px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                filterType === f
+                  ? 'bg-white text-[#0B3C5D] shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {f === 'all' ? 'All' : f === 'unvoted' ? 'Need Vote' : 'Voted'}
+            </button>
+          ))}
         </div>
 
-        {/* Search Bar */}
         <div className="sm:max-w-xs w-full">
           <SearchBar onSearchChange={setSearchQuery} placeholder="Search polls..." />
         </div>
@@ -154,20 +129,15 @@ export const Polls: React.FC = () => {
       {isLoading && (
         <div className="space-y-4">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-44 bg-white border border-slate-200 rounded-2xl p-6 animate-pulse">
-              <div className="h-4 w-28 bg-slate-200 rounded-full mb-3" />
-              <div className="h-6 w-3/4 bg-slate-200 rounded-lg mb-2" />
-              <div className="h-4 w-1/2 bg-slate-100 rounded-lg mb-6" />
-              <div className="h-10 w-full bg-slate-100 rounded-xl" />
-            </div>
+            <div key={i} className="h-44 bg-white border border-slate-200 rounded-2xl p-6 animate-pulse" />
           ))}
         </div>
       )}
 
-      {/* POLLS LIST */}
-      {!isLoading && !error && displayedPolls.length > 0 && (
+      {/* POLLS FEED */}
+      {!isLoading && !error && filteredPolls.length > 0 && (
         <div className="space-y-4">
-          {displayedPolls.map(poll => (
+          {filteredPolls.map(poll => (
             <StudentPollCard
               key={poll.id}
               poll={poll}
@@ -179,18 +149,20 @@ export const Polls: React.FC = () => {
       )}
 
       {/* EMPTY STATE */}
-      {!isLoading && !error && displayedPolls.length === 0 && (
+      {!isLoading && !error && filteredPolls.length === 0 && (
         <div className="bg-white border border-slate-200/80 rounded-3xl p-12 text-center shadow-sm">
           <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-slate-400">
             <Inbox className="w-7 h-7" />
           </div>
           <h3 className="text-base font-black text-slate-800 uppercase tracking-tight">
-            {activeTab === 'active' ? 'No Active Polls Available' : 'No Closed Polls'}
+            No Polls Available
           </h3>
           <p className="text-xs text-slate-500 font-medium max-w-sm mx-auto mt-1">
-            {activeTab === 'active'
-              ? 'There are currently no active placement polls targeted to your section. Check back later for new survey updates.'
-              : 'You have not participated in any closed or archived polls yet.'}
+            {searchQuery
+              ? 'No polls match your search query.'
+              : filterType === 'unvoted'
+              ? 'You have voted on all active polls!'
+              : 'There are currently no polls posted.'}
           </p>
         </div>
       )}

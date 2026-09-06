@@ -4,13 +4,13 @@ import type { PollWithDetails, UserProfile } from '../../../types';
 
 export const useStudentPolls = (studentProfile: UserProfile | null) => {
   return useQuery<PollWithDetails[], Error>({
-    queryKey: ['studentPolls', studentProfile?.id, studentProfile?.section],
+    queryKey: ['studentPolls', studentProfile?.id],
     queryFn: () => {
-      if (!studentProfile) return Promise.resolve([]);
-      return pollService.getStudentPolls(studentProfile);
+      if (!studentProfile?.id) return Promise.resolve([]);
+      return pollService.getStudentPolls(studentProfile.id);
     },
     enabled: !!studentProfile?.id && studentProfile?.role === 'student',
-    staleTime: 1000 * 60, // 1 minute
+    staleTime: 1000 * 30,
   });
 };
 

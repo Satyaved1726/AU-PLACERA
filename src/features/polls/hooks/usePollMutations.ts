@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { pollService } from '../pollService';
-import type { CreatePollPayload, UpdatePollPayload } from '../../../types';
+import type { CreatePollPayload } from '../../../types';
 
 export const useSubmitVote = () => {
   const queryClient = useQueryClient();
@@ -24,27 +24,6 @@ export const useSubmitVote = () => {
   });
 };
 
-export const useUpdateVote = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      responseId,
-      optionIds
-    }: {
-      responseId: string;
-      optionIds: string[];
-      pollId: string;
-    }) => pollService.updateVote(responseId, optionIds),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['studentPolls'] });
-      queryClient.invalidateQueries({ queryKey: ['pollDetail', variables.pollId] });
-      queryClient.invalidateQueries({ queryKey: ['pollAnalytics', variables.pollId] });
-      queryClient.invalidateQueries({ queryKey: ['adminPolls'] });
-    },
-  });
-};
-
 export const useCreatePoll = () => {
   const queryClient = useQueryClient();
 
@@ -54,35 +33,6 @@ export const useCreatePoll = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminPolls'] });
       queryClient.invalidateQueries({ queryKey: ['studentPolls'] });
-    },
-  });
-};
-
-export const useUpdatePoll = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ pollId, payload }: { pollId: string; payload: Partial<UpdatePollPayload> }) =>
-      pollService.updatePoll(pollId, payload),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['adminPolls'] });
-      queryClient.invalidateQueries({ queryKey: ['studentPolls'] });
-      queryClient.invalidateQueries({ queryKey: ['pollDetail', variables.pollId] });
-      queryClient.invalidateQueries({ queryKey: ['pollAnalytics', variables.pollId] });
-    },
-  });
-};
-
-export const useClosePoll = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (pollId: string) => pollService.closePoll(pollId),
-    onSuccess: (_, pollId) => {
-      queryClient.invalidateQueries({ queryKey: ['adminPolls'] });
-      queryClient.invalidateQueries({ queryKey: ['studentPolls'] });
-      queryClient.invalidateQueries({ queryKey: ['pollDetail', pollId] });
-      queryClient.invalidateQueries({ queryKey: ['pollAnalytics', pollId] });
     },
   });
 };

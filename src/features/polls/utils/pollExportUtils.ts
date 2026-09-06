@@ -2,10 +2,9 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { PollAnalyticsSummary } from '../../../types';
-import { formatSectionLabel } from '../pollService';
 
 /**
- * Trigger file download helper
+ * Helper to trigger browser file download
  */
 const triggerDownload = (blob: Blob, filename: string) => {
   const url = URL.createObjectURL(blob);
@@ -18,9 +17,6 @@ const triggerDownload = (blob: Blob, filename: string) => {
   URL.revokeObjectURL(url);
 };
 
-/**
- * Generates a clean filename safe string from text
- */
 const cleanFileName = (text: string): string => {
   return text
     .toLowerCase()
@@ -30,38 +26,26 @@ const cleanFileName = (text: string): string => {
 };
 
 /**
- * Export Poll Results to a multi-sheet Excel (.xlsx) file
+ * Multi-sheet Excel export for WhatsApp-Style Poll Analytics
  */
 export const exportPollToExcel = (analytics: PollAnalyticsSummary) => {
-  const { poll, total_eligible, total_responses, not_responded, response_rate, option_breakdown, section_breakdown, student_responses, non_responders } = analytics;
+  const { poll, total_students, students_voted, not_responded, response_rate, option_breakdown, section_breakdown, student_responses, non_responders } = analytics;
   const wb = XLSX.utils.book_new();
 
   // --------------------------------------------------------------------------
   // SHEET 1: Poll Summary
   // --------------------------------------------------------------------------
-  const targetSections = poll.audience.map(a => formatSectionLabel(a.section)).join(', ') || 'All Sections';
-  const createdByName = poll.profiles?.full_name || 'Placement Administrator';
-
   const summaryData = [
     ['AU PLACERA — STUDENT POLL SUMMARY REPORT'],
     [],
     ['Poll Question', poll.question],
-    ['Description', poll.description || 'N/A'],
-    ['Created By', createdByName],
     ['Created Date', new Date(poll.created_at).toLocaleString()],
-    ['Poll Status', poll.status.toUpperCase()],
-    ['Start Date', poll.start_date ? new Date(poll.start_date).toLocaleString() : 'N/A'],
-    ['End Date (Deadline)', poll.end_date ? new Date(poll.end_date).toLocaleString() : 'Open until closed by admin'],
-    ['Allow Response Change', poll.allow_response_change ? 'Yes' : 'No'],
-    [],
-    ['TARGET AUDIENCE'],
-    ['Department', poll.department],
-    ['Batch', poll.batch],
-    ['Target Sections', targetSections],
+    ['Poll Type', poll.allow_multiple_answers ? 'Multiple Answers' : 'Single Answer'],
+    ['Multiple Answers Allowed', poll.allow_multiple_answers ? 'Yes' : 'No'],
     [],
     ['OVERALL METRICS'],
-    ['Total Eligible Students', total_eligible],
-    ['Total Responses', total_responses],
+    ['Total Students', total_students],
+    ['Students Voted', students_voted],
     ['Not Responded', not_responded],
     ['Response Rate', `${response_rate}%`],
     [],
@@ -69,35 +53,32 @@ export const exportPollToExcel = (analytics: PollAnalyticsSummary) => {
   ];
 
   const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
-  wsSummary['!cols'] = [{ wch: 28 }, { wch: 65 }];
+  wsSummary['!cols'] = [{ wch: 28 }, { wch: 60 }];
   XLSX.utils.book_append_sheet(wb, wsSummary, 'Poll Summary');
 
   // --------------------------------------------------------------------------
   // SHEET 2: Overall Results
   // --------------------------------------------------------------------------
   const overallRows: any[][] = [
-    ['Option', 'Votes Count', 'Percentage (%)']
+    ['Option', 'Students Selected', 'Percentage (%)']
   ];
 
   option_breakdown.forEach(opt => {
     overallRows.push([opt.option_text, opt.votes, `${opt.percentage}%`]);
   });
 
-  overallRows.push([]);
-  overallRows.push(['Total Votes Cast', total_responses, '100%']);
-
   const wsOverall = XLSX.utils.aoa_to_sheet(overallRows);
-  wsOverall['!cols'] = [{ wch: 35 }, { wch: 15 }, { wch: 18 }];
+  wsOverall['!cols'] = [{ wch: 35 }, { wch: 20 }, { wch: 18 }];
   XLSX.utils.book_append_sheet(wb, wsOverall, 'Overall Results');
 
   // --------------------------------------------------------------------------
-  // SHEET 3: Section-wise Results
+  // SHEET 3: Section-wise Results (Dynamic Columns based on Poll Options)
   // --------------------------------------------------------------------------
   const sectionHeaders = ['Section'];
   poll.options.forEach(opt => {
-    sectionHeaders.push(`${opt.option_text} Count`);
+    sectionHeaders.push(opt.option_text);
   });
-  sectionHeaders.push('Total Responses', 'Eligible Students', 'Response Rate (%)');
+  sectionHeaders.push('Students Voted', 'Eligible Students', 'Response Rate (%)');
 
   const sectionRows: any[][] = [sectionHeaders];
 
@@ -106,7 +87,7 @@ export const exportPollToExcel = (analytics: PollAnalyticsSummary) => {
     poll.options.forEach(opt => {
       row.push(sec.option_counts[opt.id] || 0);
     });
-    row.push(sec.total_responses, sec.eligible_students, `${sec.response_rate}%`);
+    row.push(sec.students_voted, sec.eligible_students, `${sec.response_rate}%`);
     sectionRows.push(row);
   });
 
@@ -118,7 +99,7 @@ export const exportPollToExcel = (analytics: PollAnalyticsSummary) => {
   // SHEET 4: Student Responses
   // --------------------------------------------------------------------------
   const studentRows: any[][] = [
-    ['S.No', 'Roll Number', 'Student Name', 'Section', 'Response Chosen', 'Responded At']
+    ['S.No', 'Roll Number', 'Student Name', 'Section', 'Selected Answer(s)', 'Voted At']
   ];
 
   student_responses.forEach((resp, idx) => {
@@ -127,8 +108,8 @@ export const exportPollToExcel = (analytics: PollAnalyticsSummary) => {
       resp.roll_number,
       resp.student_name,
       resp.section,
-      resp.option_text,
-      new Date(resp.responded_at).toLocaleString()
+      resp.selected_options.join(', '),
+      new Date(resp.voted_at).toLocaleString()
     ]);
   });
 
@@ -138,16 +119,16 @@ export const exportPollToExcel = (analytics: PollAnalyticsSummary) => {
     { wch: 18 },
     { wch: 30 },
     { wch: 16 },
-    { wch: 25 },
+    { wch: 35 },
     { wch: 25 }
   ];
   XLSX.utils.book_append_sheet(wb, wsStudents, 'Student Responses');
 
   // --------------------------------------------------------------------------
-  // SHEET 5: Non-Responders
+  // SHEET 5: Not Responded
   // --------------------------------------------------------------------------
   const nonResponderRows: any[][] = [
-    ['S.No', 'Roll Number', 'Student Name', 'Section', 'Status']
+    ['S.No', 'Roll Number', 'Student Name', 'Section']
   ];
 
   non_responders.forEach((nr, idx) => {
@@ -155,8 +136,7 @@ export const exportPollToExcel = (analytics: PollAnalyticsSummary) => {
       idx + 1,
       nr.roll_number,
       nr.student_name,
-      nr.section,
-      nr.status
+      nr.section
     ]);
   });
 
@@ -165,12 +145,11 @@ export const exportPollToExcel = (analytics: PollAnalyticsSummary) => {
     { wch: 8 },
     { wch: 18 },
     { wch: 30 },
-    { wch: 16 },
-    { wch: 18 }
+    { wch: 16 }
   ];
-  XLSX.utils.book_append_sheet(wb, wsNonResponders, 'Non-Responders');
+  XLSX.utils.book_append_sheet(wb, wsNonResponders, 'Not Responded');
 
-  // Write Excel file and trigger download
+  // Generate Excel file
   const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
   const blob = new Blob([excelBuffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -181,10 +160,10 @@ export const exportPollToExcel = (analytics: PollAnalyticsSummary) => {
 };
 
 /**
- * Export Poll Results to a branded, high-quality PDF report
+ * Professional PDF Report Generator
  */
 export const exportPollToPdf = (analytics: PollAnalyticsSummary) => {
-  const { poll, total_eligible, total_responses, not_responded, response_rate, option_breakdown, section_breakdown } = analytics;
+  const { poll, total_students, students_voted, not_responded, response_rate, option_breakdown, section_breakdown } = analytics;
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -200,15 +179,15 @@ export const exportPollToPdf = (analytics: PollAnalyticsSummary) => {
   doc.setTextColor(255, 255, 255);
   doc.setFont('Helvetica', 'bold');
   doc.setFontSize(14);
-  doc.text('ANURAG UNIVERSITY — PLACEMENTS PORTAL', 15, 12);
+  doc.text('AU PLACERA', 15, 11);
 
   doc.setFontSize(9);
   doc.setFont('Helvetica', 'normal');
-  doc.text('OFFICIAL STUDENT POLL & ANALYTICS REPORT', 15, 18);
+  doc.text('POLL REPORT', 15, 18);
 
   const exportDate = new Date().toLocaleString();
   doc.setFontSize(8);
-  doc.text(`EXPORT DATE: ${exportDate}`, pageWidth - 15, 15, { align: 'right' });
+  doc.text(`GENERATED: ${exportDate}`, pageWidth - 15, 15, { align: 'right' });
 
   // 2. Poll Details Section
   let currentY = 32;
@@ -224,42 +203,20 @@ export const exportPollToPdf = (analytics: PollAnalyticsSummary) => {
   currentY += 8;
   doc.setTextColor(30, 41, 59);
   doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.text('Question:', 15, currentY);
   doc.setFont('Helvetica', 'normal');
   const splitQuestion = doc.splitTextToSize(poll.question, pageWidth - 45);
   doc.text(splitQuestion, 35, currentY);
-  currentY += splitQuestion.length * 4.5 + 2;
+  currentY += splitQuestion.length * 5 + 3;
 
-  if (poll.description) {
-    doc.setFont('Helvetica', 'bold');
-    doc.text('Description:', 15, currentY);
-    doc.setFont('Helvetica', 'normal');
-    const splitDesc = doc.splitTextToSize(poll.description, pageWidth - 45);
-    doc.text(splitDesc, 35, currentY);
-    currentY += splitDesc.length * 4 + 2;
-  }
-
-  // Metadata inline table
-  const targetSections = poll.audience.map(a => formatSectionLabel(a.section)).join(', ') || 'All Sections';
+  // Metadata Table
   const metadataRows = [
     [
-      { content: 'Status:', styles: { fontStyle: 'bold' } },
-      poll.status.toUpperCase(),
-      { content: 'Target Audience:', styles: { fontStyle: 'bold' } },
-      `${poll.department} | ${poll.batch} (${targetSections})`
-    ],
-    [
-      { content: 'Created By:', styles: { fontStyle: 'bold' } },
-      poll.profiles?.full_name || 'Placement Admin',
       { content: 'Created Date:', styles: { fontStyle: 'bold' } },
-      new Date(poll.created_at).toLocaleDateString()
-    ],
-    [
-      { content: 'Deadline:', styles: { fontStyle: 'bold' } },
-      poll.end_date ? new Date(poll.end_date).toLocaleString() : 'Open until closed',
-      { content: 'Response Changes:', styles: { fontStyle: 'bold' } },
-      poll.allow_response_change ? 'Permitted' : 'Locked upon submission'
+      new Date(poll.created_at).toLocaleDateString(),
+      { content: 'Poll Type:', styles: { fontStyle: 'bold' } },
+      poll.allow_multiple_answers ? 'Multiple Answers Allowed' : 'Single Answer Only'
     ]
   ];
 
@@ -267,11 +224,11 @@ export const exportPollToPdf = (analytics: PollAnalyticsSummary) => {
     startY: currentY,
     body: metadataRows as any,
     theme: 'plain',
-    styles: { fontSize: 8, cellPadding: 1 },
+    styles: { fontSize: 8.5, cellPadding: 1 },
     columnStyles: {
-      0: { cellWidth: 28 },
-      1: { cellWidth: 55 },
-      2: { cellWidth: 32 },
+      0: { cellWidth: 30 },
+      1: { cellWidth: 50 },
+      2: { cellWidth: 28 },
       3: { cellWidth: 65 }
     },
     margin: { left: 15, right: 15 }
@@ -279,7 +236,7 @@ export const exportPollToPdf = (analytics: PollAnalyticsSummary) => {
 
   currentY = (doc as any).lastAutoTable.finalY + 8;
 
-  // 3. Overall Statistics
+  // 3. Overall Statistics Table
   doc.setTextColor(11, 60, 93);
   doc.setFont('Helvetica', 'bold');
   doc.setFontSize(11);
@@ -289,14 +246,14 @@ export const exportPollToPdf = (analytics: PollAnalyticsSummary) => {
 
   const statsTableRows = [
     [
-      { content: 'Eligible Students', styles: { halign: 'center', fontStyle: 'bold' } },
-      { content: 'Total Responses', styles: { halign: 'center', fontStyle: 'bold' } },
+      { content: 'Total Students', styles: { halign: 'center', fontStyle: 'bold' } },
+      { content: 'Students Voted', styles: { halign: 'center', fontStyle: 'bold' } },
       { content: 'Not Responded', styles: { halign: 'center', fontStyle: 'bold' } },
       { content: 'Response Rate', styles: { halign: 'center', fontStyle: 'bold' } }
     ],
     [
-      { content: String(total_eligible), styles: { halign: 'center', fontStyle: 'bold', fontSize: 13, textColor: [11, 60, 93] } },
-      { content: String(total_responses), styles: { halign: 'center', fontStyle: 'bold', fontSize: 13, textColor: [16, 185, 129] } },
+      { content: String(total_students), styles: { halign: 'center', fontStyle: 'bold', fontSize: 13, textColor: [11, 60, 93] } },
+      { content: String(students_voted), styles: { halign: 'center', fontStyle: 'bold', fontSize: 13, textColor: [16, 185, 129] } },
       { content: String(not_responded), styles: { halign: 'center', fontStyle: 'bold', fontSize: 13, textColor: [239, 68, 68] } },
       { content: `${response_rate}%`, styles: { halign: 'center', fontStyle: 'bold', fontSize: 13, textColor: [217, 179, 16] } }
     ]
@@ -313,15 +270,15 @@ export const exportPollToPdf = (analytics: PollAnalyticsSummary) => {
 
   currentY = (doc as any).lastAutoTable.finalY + 8;
 
-  // 4. Option-wise Results Table
+  // 4. Option Results
   doc.setTextColor(11, 60, 93);
   doc.setFont('Helvetica', 'bold');
   doc.setFontSize(11);
-  doc.text('OPTION-WISE RESULTS', 15, currentY);
+  doc.text('OPTION RESULTS', 15, currentY);
   doc.line(15, currentY + 2, pageWidth - 15, currentY + 2);
   currentY += 6;
 
-  const optionHeaders = ['Option Choice', 'Votes Count', 'Percentage (%)'];
+  const optionHeaders = ['Option Choice', 'Students Selected', 'Percentage (%)'];
   const optionRows = option_breakdown.map(opt => [
     opt.option_text,
     String(opt.votes),
@@ -345,8 +302,7 @@ export const exportPollToPdf = (analytics: PollAnalyticsSummary) => {
 
   currentY = (doc as any).lastAutoTable.finalY + 8;
 
-  // 5. Section-wise Results Table
-  // If remaining space on page is small, add new page
+  // 5. Section-wise Results Table (Dynamic Columns)
   if (currentY > 210) {
     doc.addPage();
     currentY = 20;
@@ -355,7 +311,7 @@ export const exportPollToPdf = (analytics: PollAnalyticsSummary) => {
   doc.setTextColor(11, 60, 93);
   doc.setFont('Helvetica', 'bold');
   doc.setFontSize(11);
-  doc.text('SECTION-WISE ANALYTICS', 15, currentY);
+  doc.text('SECTION-WISE RESULTS', 15, currentY);
   doc.line(15, currentY + 2, pageWidth - 15, currentY + 2);
   currentY += 6;
 
@@ -363,14 +319,14 @@ export const exportPollToPdf = (analytics: PollAnalyticsSummary) => {
   poll.options.forEach(opt => {
     secHeaders.push(opt.option_text);
   });
-  secHeaders.push('Responses', 'Eligible', 'Rate (%)');
+  secHeaders.push('Voted', 'Eligible', 'Rate (%)');
 
   const secTableRows = section_breakdown.map(sec => {
     const row = [sec.display_section];
     poll.options.forEach(opt => {
       row.push(String(sec.option_counts[opt.id] || 0));
     });
-    row.push(String(sec.total_responses), String(sec.eligible_students), `${sec.response_rate}%`);
+    row.push(String(sec.students_voted), String(sec.eligible_students), `${sec.response_rate}%`);
     return row;
   });
 
@@ -382,7 +338,7 @@ export const exportPollToPdf = (analytics: PollAnalyticsSummary) => {
     styles: { fontSize: 8, cellPadding: 2, halign: 'center' },
     headStyles: { fillColor: [50, 140, 193], textColor: 255, fontStyle: 'bold' },
     columnStyles: {
-      0: { cellWidth: 32, fontStyle: 'bold', halign: 'left' }
+      0: { cellWidth: 30, fontStyle: 'bold', halign: 'left' }
     },
     margin: { left: 15, right: 15 }
   });
@@ -395,7 +351,7 @@ export const exportPollToPdf = (analytics: PollAnalyticsSummary) => {
     doc.setFont('Helvetica', 'normal');
     doc.setTextColor(148, 163, 184);
     doc.line(15, 285, pageWidth - 15, 285);
-    doc.text('AU PLACERA — Confidential Departmental Placement Document', 15, 290);
+    doc.text('Generated by AU Placera — Anurag University', 15, 290);
     doc.text(`Page ${i} of ${pageCount}`, pageWidth - 15, 290, { align: 'right' });
   }
 

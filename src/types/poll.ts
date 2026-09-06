@@ -1,22 +1,11 @@
-// TypeScript definitions for AU Placera Polls System
-
-export type PollType = 'single_choice' | 'multiple_choice';
-export type PollStatus = 'draft' | 'active' | 'closed';
+// TypeScript definitions for WhatsApp-Style AU Placera Polls System
 
 export interface Poll {
   id: string;
   question: string;
-  description?: string | null;
-  poll_type: PollType;
-  status: PollStatus;
+  allow_multiple_answers: boolean;
   created_by: string | null;
-  department: string;
-  batch: string;
-  start_date?: string | null;
-  end_date?: string | null;
-  allow_response_change: boolean;
   created_at: string;
-  updated_at: string;
   profiles?: {
     full_name: string;
     role: string;
@@ -32,21 +21,11 @@ export interface PollOption {
   created_at: string;
 }
 
-export interface PollAudience {
-  id: string;
-  poll_id: string;
-  department: string;
-  batch: string;
-  section: string; // 'ALL' or 'AIML-A', 'AIML-B', ...
-  created_at: string;
-}
-
 export interface PollResponse {
   id: string;
   poll_id: string;
   student_id: string;
-  responded_at: string;
-  updated_at: string;
+  voted_at: string;
 }
 
 export interface PollResponseOption {
@@ -59,30 +38,29 @@ export interface PollResponseOption {
 export interface StudentPollVote {
   response_id: string;
   option_ids: string[];
-  responded_at: string;
+  voted_at: string;
 }
 
 export interface PollWithDetails extends Poll {
   options: PollOption[];
-  audience: PollAudience[];
   user_vote?: StudentPollVote | null;
-  total_responses?: number;
+  total_voted?: number;
 }
 
 export interface OptionVoteCount {
   option_id: string;
   option_text: string;
   votes: number;
-  percentage: number;
+  percentage: number; // percentage of students who selected this option
 }
 
 export interface SectionAnalytics {
   section: string; // 'AIML-A'
   display_section: string; // 'Section A'
-  option_counts: Record<string, number>; // option_id -> count
-  total_responses: number;
+  option_counts: Record<string, number>; // option_id -> count of votes in this section
+  students_voted: number;
   eligible_students: number;
-  response_rate: number; // e.g. 74.5 (%)
+  response_rate: number; // percentage
 }
 
 export interface StudentResponseRow {
@@ -90,9 +68,8 @@ export interface StudentResponseRow {
   roll_number: string;
   student_name: string;
   section: string;
-  option_text: string;
-  option_id: string;
-  responded_at: string;
+  selected_options: string[]; // option texts
+  voted_at: string;
 }
 
 export interface NonResponderRow {
@@ -105,8 +82,8 @@ export interface NonResponderRow {
 
 export interface PollAnalyticsSummary {
   poll: PollWithDetails;
-  total_eligible: number;
-  total_responses: number;
+  total_students: number;
+  students_voted: number;
   not_responded: number;
   response_rate: number;
   option_breakdown: OptionVoteCount[];
@@ -117,18 +94,6 @@ export interface PollAnalyticsSummary {
 
 export interface CreatePollPayload {
   question: string;
-  description?: string;
-  poll_type: PollType;
-  status: PollStatus;
-  department: string;
-  batch: string;
-  sections: string[]; // ['ALL'] or ['AIML-A', 'AIML-B', ...]
-  options: string[]; // minimum 2 option texts
-  start_date?: string | null;
-  end_date?: string | null;
-  allow_response_change: boolean;
-}
-
-export interface UpdatePollPayload extends Partial<CreatePollPayload> {
-  id: string;
+  options: string[]; // Minimum 2 options, user-provided
+  allow_multiple_answers: boolean;
 }
