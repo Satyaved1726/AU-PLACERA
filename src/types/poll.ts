@@ -5,6 +5,9 @@ export interface Poll {
   question: string;
   allow_multiple_answers: boolean;
   is_priority?: boolean;
+  priority_started_at?: string | null;
+  priority_expires_at?: string | null;
+  priority_duration?: '24_hours' | '3_days' | '7_days' | 'custom' | 'manual' | string | null;
   created_by: string | null;
   created_at: string;
   profiles?: {
@@ -100,5 +103,7 @@ export interface CreatePollPayload {
   options: string[]; // Minimum 2 options, user-provided
   allow_multiple_answers: boolean;
   is_priority?: boolean;
+  priority_duration?: '24_hours' | '3_days' | '7_days' | 'custom' | 'manual';
+  priority_expires_at?: string | null;
   notify_students?: boolean;
 }

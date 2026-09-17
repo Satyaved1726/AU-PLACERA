@@ -6,6 +6,7 @@ import { useOiaPosts } from '../../features/posts/hooks/useOiaPosts';
 import { useAnnouncements } from '../../features/announcements/hooks/useAnnouncements';
 import { PostCard } from '../../features/posts/components/PostCard';
 import { PostDetail } from '../../features/posts/components/PostDetail';
+import { isPriorityActive } from '../../features/posts/post.types';
 import type { Post, DigitalAnnouncement } from '../../types';
 import { 
   Building2, 
@@ -86,8 +87,8 @@ export const Oia: React.FC = () => {
     visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' as any } }
   };
 
-  const priorityNotices = filteredPosts.filter(n => n.is_top_priority);
-  const normalNotices = filteredPosts.filter(n => !n.is_top_priority);
+  const priorityNotices = filteredPosts.filter(n => isPriorityActive(n));
+  const normalNotices = filteredPosts.filter(n => !isPriorityActive(n));
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12 select-none px-4 sm:px-0">

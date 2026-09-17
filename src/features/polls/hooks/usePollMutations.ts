@@ -50,3 +50,26 @@ export const useDeletePoll = () => {
     },
   });
 };
+
+export const useSetPollPriority = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      pollId,
+      isPriority,
+      duration = '24_hours',
+      customExpiresAt
+    }: {
+      pollId: string;
+      isPriority: boolean;
+      duration?: '24_hours' | '3_days' | '7_days' | 'custom' | 'manual';
+      customExpiresAt?: string | null;
+    }) => pollService.setPriority(pollId, isPriority, duration, customExpiresAt),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminPolls'] });
+      queryClient.invalidateQueries({ queryKey: ['studentPolls'] });
+    },
+  });
+};
+

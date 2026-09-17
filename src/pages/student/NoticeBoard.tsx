@@ -13,6 +13,7 @@ import { supabase } from '../../lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { useStudentPolls } from '../../features/polls/hooks/usePolls';
+import { isPriorityActive } from '../../features/posts/post.types';
 
 type UnifiedFeedItem = 
   | { type: 'post'; id: string; data: Post; created_at: string; isPriority: boolean }
@@ -110,7 +111,7 @@ export const NoticeBoard: React.FC = () => {
     const matchesSearch = text.includes(searchQuery.toLowerCase());
     
     let matchesTab = true;
-    if (activeTab === 'priority') matchesTab = Boolean(n.is_top_priority);
+    if (activeTab === 'priority') matchesTab = isPriorityActive(n);
     else if (activeTab === 'opportunity') matchesTab = n.post_type === 'opportunity';
     else if (activeTab === 'announcement') matchesTab = n.post_type === 'announcement';
 
@@ -123,7 +124,7 @@ export const NoticeBoard: React.FC = () => {
     const text = (p.question + ' ' + optionsText).toLowerCase();
     const matchesSearch = text.includes(searchQuery.toLowerCase());
 
-    if (activeTab === 'priority') return matchesSearch && Boolean(p.is_priority);
+    if (activeTab === 'priority') return matchesSearch && isPriorityActive(p);
     if (activeTab === 'all') return matchesSearch;
     return false; // Polls don't belong in opportunities or announcements tabs
   });
@@ -135,26 +136,32 @@ export const NoticeBoard: React.FC = () => {
       id: `post-${post.id}`,
       data: post,
       created_at: post.created_at,
-      isPriority: Boolean(post.is_top_priority)
+      isPriority: isPriorityActive(post)
     })),
     ...filteredPolls.map(poll => ({
       type: 'poll' as const,
       id: `poll-${poll.id}`,
       data: poll,
       created_at: poll.created_at,
-      isPriority: Boolean(poll.is_priority)
+      isPriority: isPriorityActive(poll)
     }))
   ];
 
   // Unified Sorting:
-  // 1. Priority items at the top (Priority Posts, Priority Opportunities, Priority Polls)
-  // 2. Normal items following
-  // 3. Within each tier, newest items appear first (created_at DESC)
+  // 1. Active Priority items at the top (Priority Posts, Priority Opportunities, Priority Polls)
+  // 2. Normal items and expired priority items follow in newest-first chronological order
+  // 3. Within priority tier, newest priority items appear first
   const sortedFeedItems = feedItems.sort((a, b) => {
     if (a.isPriority !== b.isPriority) {
       return a.isPriority ? -1 : 1;
     }
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    const aDate = a.isPriority
+      ? ((a.data as any).priority_started_at || a.created_at)
+      : a.created_at;
+    const bDate = b.isPriority
+      ? ((b.data as any).priority_started_at || b.created_at)
+      : b.created_at;
+    return new Date(bDate).getTime() - new Date(aDate).getTime();
   });
 
   const isLoading = isPostsLoading || isPollsLoading;

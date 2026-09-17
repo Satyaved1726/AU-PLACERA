@@ -172,10 +172,14 @@ export const Admins: React.FC = () => {
 
       if (error) {
         console.error('[SUPER_ADMIN] create_admin_user RPC failed:', error);
-        if (error.message.includes('already exists') || error.message.includes('unique') || error.code === '23505') {
-          setFormError('An administrator/account with this email already exists.');
+        if (error.message.includes('Employee ID already exists') || error.message.includes('Employee ID')) {
+          setFormError('An administrator with this Employee ID already exists.');
+        } else if (error.message.includes('already exists') || error.message.includes('unique') || error.code === '23505') {
+          setFormError('An account with this email already exists.');
+        } else if (error.message.includes('Unauthorized')) {
+          setFormError('Unauthorized: Only super admins can manage administrators.');
         } else {
-          setFormError(`Administrator creation failed: ${error.message || 'Unknown database error'}`);
+          setFormError('Administrator creation failed. Please try again.');
         }
         return;
       }
@@ -185,10 +189,12 @@ export const Admins: React.FC = () => {
       fetchAdmins();
     } catch (err: any) {
       console.error('[SUPER_ADMIN] exception during create_admin_user:', err);
-      if (err.message?.includes('already exists') || err.message?.includes('unique') || err.code === '23505') {
-        setFormError('An administrator/account with this email already exists.');
+      if (err.message?.includes('Employee ID already exists') || err.message?.includes('Employee ID')) {
+        setFormError('An administrator with this Employee ID already exists.');
+      } else if (err.message?.includes('already exists') || err.message?.includes('unique') || err.code === '23505') {
+        setFormError('An account with this email already exists.');
       } else {
-        setFormError(`Administrator creation failed: ${err.message || 'Connection error'}`);
+        setFormError('Administrator creation failed. Please try again.');
       }
     } finally {
       setSubmitting(false);

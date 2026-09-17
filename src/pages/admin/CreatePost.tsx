@@ -4,6 +4,7 @@ import { useCreatePost } from '../../features/posts/hooks/useCreatePost';
 import { postService } from '../../features/posts/postService';
 import { postParser } from '../../features/posts/postParser';
 import type { ParsedPost } from '../../features/posts/post.types';
+import { calculatePriorityExpiresAt } from '../../features/posts/post.types';
 import { PostReviewCard } from '../../features/posts/components/PostReviewCard';
 import { useAuth } from '../../features/auth/useAuth';
 import { supabase } from '../../lib/supabase';
@@ -158,16 +159,26 @@ export const CreatePost: React.FC = () => {
       }
     }
 
-    const payload = parsedItems.map(item => ({
-      original_content: item.originalContent || '',
-      post_type: item.postType,
-      company_name: item.postType === 'opportunity' ? (item.companyName || null) : null,
-      opportunity_title: item.opportunityTitle || null,
-      is_top_priority: item.isTopPriority || false,
-      created_by: profile.id,
-      is_active: true,
-      audience: item.audience || 'general'
-    }));
+    const payload = parsedItems.map(item => {
+      const isPri = Boolean(item.isTopPriority);
+      const duration = item.priorityDuration || '24_hours';
+      const expiresAt = isPri ? calculatePriorityExpiresAt(duration, item.priorityExpiresAt) : null;
+
+      return {
+        original_content: item.originalContent || '',
+        post_type: item.postType,
+        company_name: item.postType === 'opportunity' ? (item.companyName || null) : null,
+        opportunity_title: item.opportunityTitle || null,
+        is_top_priority: isPri,
+        is_priority: isPri,
+        priority_started_at: isPri ? new Date().toISOString() : null,
+        priority_expires_at: expiresAt,
+        priority_duration: isPri ? duration : null,
+        created_by: profile.id,
+        is_active: true,
+        audience: item.audience || 'general'
+      };
+    });
 
     try {
       setPublishingStatus('Publishing notices...');

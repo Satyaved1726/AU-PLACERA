@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../features/auth/useAuth';
 import { useCreatePoll } from '../../features/polls/hooks/usePollMutations';
+import { PrioritySelector } from '../../components/common/PrioritySelector';
+import type { PriorityDuration } from '../../features/posts/post.types';
 import { 
   Vote, 
   ArrowLeft, 
@@ -28,8 +30,10 @@ export const CreatePoll: React.FC = () => {
   // Allow multiple answers checkbox
   const [allowMultipleAnswers, setAllowMultipleAnswers] = useState<boolean>(false);
 
-  // Priority Poll checkbox
+  // Priority Poll state
   const [isPriority, setIsPriority] = useState<boolean>(false);
+  const [priorityDuration, setPriorityDuration] = useState<PriorityDuration>('24_hours');
+  const [customExpiresAt, setCustomExpiresAt] = useState<string>('');
 
   // Notify students push notification checkbox
   const [notifyStudents, setNotifyStudents] = useState<boolean>(true);
@@ -94,6 +98,17 @@ export const CreatePoll: React.FC = () => {
       return;
     }
 
+    if (isPriority && priorityDuration === 'custom') {
+      if (!customExpiresAt) {
+        showToast('Please select a custom expiration date & time.', 'error');
+        return;
+      }
+      if (new Date(customExpiresAt).getTime() <= Date.now()) {
+        showToast('Custom expiration date must be in the future.', 'error');
+        return;
+      }
+    }
+
     try {
       await createPollMutation.mutateAsync({
         payload: {
@@ -101,6 +116,8 @@ export const CreatePoll: React.FC = () => {
           options: cleanOptions,
           allow_multiple_answers: allowMultipleAnswers,
           is_priority: isPriority,
+          priority_duration: isPriority ? priorityDuration : undefined,
+          priority_expires_at: isPriority && priorityDuration === 'custom' ? new Date(customExpiresAt).toISOString() : undefined,
           notify_students: notifyStudents
         },
         adminId: profile.id
@@ -277,32 +294,17 @@ export const CreatePoll: React.FC = () => {
             />
           </div>
 
-          {/* Priority Poll Checkbox */}
-          <div
-            className={`flex items-center justify-between p-3.5 border rounded-xl cursor-pointer transition-colors ${
-              isPriority
-                ? 'bg-amber-50/70 border-amber-300 ring-1 ring-amber-300/40'
-                : 'bg-slate-50 border-slate-200/70 hover:bg-slate-100/60'
-            }`}
-            onClick={() => setIsPriority(!isPriority)}
-          >
-            <div>
-              <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
-                <span>🚨 Priority Poll</span>
-              </span>
-              <span className="text-[10px] text-amber-700/80 font-medium block">
-                Highlights poll at the top of the Student Notice Stream.
-              </span>
-            </div>
-
-            <input
-              type="checkbox"
-              checked={isPriority}
-              onChange={e => setIsPriority(e.target.checked)}
-              onClick={e => e.stopPropagation()}
-              className="w-4.5 h-4.5 rounded text-amber-600 focus:ring-amber-500 cursor-pointer accent-amber-600"
-            />
-          </div>
+          {/* Priority Toggle & Duration Selector */}
+          <PrioritySelector
+            isPriority={isPriority}
+            onTogglePriority={setIsPriority}
+            duration={priorityDuration}
+            onDurationChange={setPriorityDuration}
+            customExpiresAt={customExpiresAt}
+            onCustomExpiresAtChange={setCustomExpiresAt}
+            label="Priority Poll"
+            description="Highlights this poll above normal feed content while priority is active."
+          />
 
           {/* Notify Students Checkbox */}
           <div

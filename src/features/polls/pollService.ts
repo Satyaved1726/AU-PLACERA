@@ -354,13 +354,39 @@ export const pollService = {
       throw new Error('Duplicate options detected. Each option must be distinct.');
     }
 
-    // 1. Insert poll
+    // 1. Calculate Priority Fields
+    const isPri = payload.is_priority ?? false;
+    let priorityStartedAt: string | null = null;
+    let priorityExpiresAt: string | null = null;
+    let priorityDuration: string | null = null;
+
+    if (isPri) {
+      priorityStartedAt = new Date().toISOString();
+      priorityDuration = payload.priority_duration || '24_hours';
+      const now = Date.now();
+      if (priorityDuration === '24_hours') {
+        priorityExpiresAt = new Date(now + 24 * 60 * 60 * 1000).toISOString();
+      } else if (priorityDuration === '3_days') {
+        priorityExpiresAt = new Date(now + 3 * 24 * 60 * 60 * 1000).toISOString();
+      } else if (priorityDuration === '7_days') {
+        priorityExpiresAt = new Date(now + 7 * 24 * 60 * 60 * 1000).toISOString();
+      } else if (priorityDuration === 'custom') {
+        priorityExpiresAt = payload.priority_expires_at || new Date(now + 24 * 60 * 60 * 1000).toISOString();
+      } else if (priorityDuration === 'manual') {
+        priorityExpiresAt = null;
+      }
+    }
+
+    // 2. Insert poll
     const { data: poll, error: pollError } = await supabase
       .from('polls')
       .insert({
         question: payload.question.trim(),
         allow_multiple_answers: payload.allow_multiple_answers ?? false,
-        is_priority: payload.is_priority ?? false,
+        is_priority: isPri,
+        priority_started_at: priorityStartedAt,
+        priority_expires_at: priorityExpiresAt,
+        priority_duration: priorityDuration,
         created_by: adminId
       })
       .select()
@@ -368,7 +394,7 @@ export const pollService = {
 
     if (pollError) throw pollError;
 
-    // 2. Insert options
+    // 3. Insert options
     const optionRows = cleanOptions.map((optText, idx) => ({
       poll_id: poll.id,
       option_text: optText,
@@ -378,7 +404,7 @@ export const pollService = {
     const { error: optError } = await supabase.from('poll_options').insert(optionRows);
     if (optError) throw optError;
 
-    // 3. Dispatch Push Notification if requested
+    // 4. Dispatch Push Notification if requested
     if (payload.notify_students !== false) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -394,6 +420,24 @@ export const pollService = {
     }
 
     return poll;
+  },
+
+  /**
+   * Set or toggle poll priority via secure RPC.
+   */
+  async setPriority(
+    pollId: string,
+    isPriority: boolean,
+    duration: '24_hours' | '3_days' | '7_days' | 'custom' | 'manual' = '24_hours',
+    customExpiresAt?: string | null
+  ): Promise<void> {
+    const { error } = await supabase.rpc('set_poll_priority', {
+      p_poll_id: pollId,
+      p_is_priority: isPriority,
+      p_duration: duration,
+      p_custom_expires_at: customExpiresAt || null
+    });
+    if (error) throw error;
   },
 
   /**

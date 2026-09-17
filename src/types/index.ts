@@ -29,6 +29,10 @@ export interface Post {
   company_name: string | null;
   opportunity_title: string | null;
   is_top_priority: boolean;
+  is_priority?: boolean;
+  priority_started_at?: string | null;
+  priority_expires_at?: string | null;
+  priority_duration?: '24_hours' | '3_days' | '7_days' | 'custom' | 'manual' | string | null;
   created_by: string | null;
   created_at: string;
   updated_at?: string;

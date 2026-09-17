@@ -3,14 +3,16 @@ import { Card, CardHeader, CardBody } from '../../../components/common/Card';
 import { Badge } from '../../../components/common/Badge';
 import { Star, Calendar, Edit2, Trash2, Eye, Users } from 'lucide-react';
 import { useRegistrations } from '../../../features/registrations/hooks/useRegistrations';
+import { isPriorityActive } from '../post.types';
 import type { Post } from '../../../types';
 
 interface AdminPostCardProps {
   post: Post;
   onEdit: (post: Post) => void;
   onDelete: (id: string) => void;
-  onTogglePriority: (id: string, currentVal: boolean) => void;
-  onToggleArchive: (id: string, currentVal: boolean) => void;
+  onManagePriority: (post: Post) => void;
+  onTogglePriority?: (id: string, currentVal: boolean) => void;
+  onToggleArchive?: (id: string, currentVal: boolean) => void;
   onViewRegistrations: (post: Post) => void;
   onViewDetails: (post: Post) => void;
 }
@@ -19,21 +21,24 @@ export const AdminPostCard: React.FC<AdminPostCardProps> = ({
   post,
   onEdit,
   onDelete,
+  onManagePriority,
   onViewRegistrations,
   onViewDetails
 }) => {
   const isOpportunity = post.post_type === 'opportunity';
+  const hasActivePriority = isPriorityActive(post);
+  const wasPriorityExpired = !hasActivePriority && Boolean(post.is_top_priority || post.is_priority);
 
   // Load registration counts dynamically
   const { data: registrations = [] } = useRegistrations(isOpportunity ? post.id : undefined);
 
   return (
     <Card 
-      elevation={post.is_top_priority ? 3 : 2}
+      elevation={hasActivePriority ? 3 : 2}
       className={`overflow-hidden border transition-all relative rounded-2xl ${
         !post.is_active 
           ? 'border-slate-200 bg-slate-50/50 opacity-70 shadow-none' 
-          : post.is_top_priority 
+          : hasActivePriority 
             ? 'border-amber-300 shadow-[0_4px_16px_-4px_rgba(217,179,16,0.06)] bg-amber-50/[0.01]' 
             : 'border-slate-200/80 bg-white hover:border-slate-300'
       }`}
@@ -41,13 +46,35 @@ export const AdminPostCard: React.FC<AdminPostCardProps> = ({
       
       {/* Header */}
       <CardHeader className="bg-slate-50/20 px-5 py-3 flex items-center justify-between border-b border-slate-100">
-        <div className="flex items-center gap-1.5">
-          {post.is_top_priority && (
-            <Badge variant="warning" className="py-0.5 flex items-center gap-1">
-              <Star className="h-2.5 w-2.5 fill-current text-amber-500" />
-              <span>Priority</span>
-            </Badge>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {hasActivePriority && (
+            <button
+              type="button"
+              onClick={() => onManagePriority(post)}
+              className="cursor-pointer hover:opacity-80 transition-opacity"
+              title="Click to manage priority"
+            >
+              <Badge variant="warning" className="py-0.5 flex items-center gap-1">
+                <Star className="h-2.5 w-2.5 fill-current text-amber-500" />
+                <span>Priority</span>
+              </Badge>
+            </button>
           )}
+
+          {wasPriorityExpired && (
+            <button
+              type="button"
+              onClick={() => onManagePriority(post)}
+              className="cursor-pointer hover:opacity-80 transition-opacity"
+              title="Priority expired. Click to renew."
+            >
+              <Badge variant="neutral" className="py-0.5 flex items-center gap-1 bg-slate-100 text-slate-500 border-slate-200">
+                <Star className="h-2.5 w-2.5 text-slate-400" />
+                <span>Expired Priority</span>
+              </Badge>
+            </button>
+          )}
+
           {isOpportunity ? (
             <Badge variant="primary" className="py-0.5">Opportunity</Badge>
           ) : post.post_type === 'oia' ? (
@@ -109,6 +136,25 @@ export const AdminPostCard: React.FC<AdminPostCardProps> = ({
               <span>{registrations.length} Reg</span>
             </button>
           )}
+
+          {/* Quick Priority Toggle / Modal Button */}
+          <button
+            type="button"
+            onClick={() => onManagePriority(post)}
+            className={`p-1.5 h-8 px-2.5 rounded-xl border flex items-center gap-1 text-[9px] font-black uppercase tracking-wider transition-all shadow-sm ${
+              hasActivePriority
+                ? 'border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800'
+                : wasPriorityExpired
+                ? 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600'
+                : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-500'
+            }`}
+            title="Set Priority Status & Duration"
+          >
+            <Star className={`h-3.5 w-3.5 ${hasActivePriority ? 'fill-amber-500 text-amber-500' : 'text-slate-400'}`} />
+            <span className="hidden sm:inline">
+              {hasActivePriority ? 'Priority' : wasPriorityExpired ? 'Renew Priority' : 'Priority'}
+            </span>
+          </button>
 
           <button
             type="button"

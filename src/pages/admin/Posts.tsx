@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useAdminPosts } from '../../features/posts/hooks/useAdminPosts';
 import { useUpdatePost } from '../../features/posts/hooks/useUpdatePost';
 import { useDeletePost } from '../../features/posts/hooks/useDeletePost';
+import { useSetPostPriority } from '../../features/posts/hooks/useSetPostPriority';
 import { AdminPostCard } from '../../features/posts/components/AdminPostCard';
 import { DeletePostDialog } from '../../features/posts/components/DeletePostDialog';
+import { AdminPriorityModal } from '../../components/common/AdminPriorityModal';
+import { isPriorityActive, type PriorityDuration } from '../../features/posts/post.types';
 import type { Post, PostType } from '../../types';
 import { 
   X, Star, CheckCircle2, AlertCircle, 
@@ -154,9 +157,12 @@ export const Posts: React.FC = () => {
   const { data: posts, isLoading, error } = useAdminPosts();
   const updatePostMutation = useUpdatePost();
   const deletePostMutation = useDeletePost();
+  const setPostPriorityMutation = useSetPostPriority();
   const queryClient = useQueryClient();
   const { profile } = useAuth();
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+
+  const [priorityModalPost, setPriorityModalPost] = useState<Post | null>(null);
 
   const handleInlineAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -235,14 +241,35 @@ export const Posts: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Run updates
+  // Priority update handler
+  const handleSavePriority = async (
+    isPriority: boolean,
+    duration?: PriorityDuration,
+    customExpiresAt?: string | null
+  ) => {
+    if (!priorityModalPost) return;
+    try {
+      await setPostPriorityMutation.mutateAsync({
+        id: priorityModalPost.id,
+        isPriority,
+        duration: duration || '24_hours',
+        customExpiresAt
+      });
+      triggerToast(isPriority ? 'Priority status updated.' : 'Priority removed.');
+    } catch (err: any) {
+      triggerToast(err?.message || 'Failed to update priority.');
+      throw err;
+    }
+  };
+
   const handleTogglePriority = async (id: string, currentVal: boolean) => {
     try {
-      await updatePostMutation.mutateAsync({
+      await setPostPriorityMutation.mutateAsync({
         id,
-        updates: { is_top_priority: !currentVal }
+        isPriority: !currentVal,
+        duration: '24_hours'
       });
-      triggerToast(!currentVal ? 'Post marked as Top Priority.' : 'Priority removed.');
+      triggerToast(!currentVal ? 'Post marked as Priority (24h).' : 'Priority removed.');
     } catch {
       triggerToast('Failed to update priority.');
     }
@@ -468,6 +495,7 @@ export const Posts: React.FC = () => {
               post={post}
               onEdit={handleOpenEdit}
               onDelete={setDeletingPostId}
+              onManagePriority={(p) => setPriorityModalPost(p)}
               onTogglePriority={handleTogglePriority}
               onToggleArchive={handleToggleArchive}
               onViewRegistrations={setViewingRegistrationsPost}
@@ -746,6 +774,17 @@ export const Posts: React.FC = () => {
       <PostDetail
         post={selectedPost}
         onClose={() => setSelectedPost(null)}
+      />
+
+      {/* ADMIN PRIORITY MODAL */}
+      <AdminPriorityModal
+        isOpen={priorityModalPost !== null}
+        onClose={() => setPriorityModalPost(null)}
+        title={priorityModalPost?.company_name ? `${priorityModalPost.company_name} — ${priorityModalPost.opportunity_title}` : (priorityModalPost?.opportunity_title || 'Post')}
+        isCurrentlyPriority={isPriorityActive(priorityModalPost)}
+        currentDuration={priorityModalPost?.priority_duration}
+        currentExpiresAt={priorityModalPost?.priority_expires_at}
+        onSavePriority={handleSavePriority}
       />
 
     </div>

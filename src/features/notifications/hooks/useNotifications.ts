@@ -192,40 +192,44 @@ export const useNotifications = () => {
       }
       
       logDev('[FCM] Authenticated user = YES');
-      logDev('[FCM] Supabase upsert started');
+      logDev('[FCM] Supabase token registration started');
 
-      const { data: upsertData, error: upsertError } = await supabase
-        .from('fcm_tokens')
-        .upsert(
-          {
-            user_id: user.id,
-            token: fcmToken,
-            updated_at: new Date().toISOString()
-          },
-          { onConflict: 'token' }
-        )
-        .select();
+      // Attempt registration via SECURITY DEFINER RPC first (handles cross-session device token assignment)
+      const { data: rpcData, error: rpcError } = await supabase.rpc('register_fcm_token', {
+        p_token: fcmToken
+      });
 
-      if (upsertError) {
-        console.error('[FCM] Supabase token upsert failed:', {
-          message: upsertError.message,
-          code: upsertError.code,
-          details: upsertError.details,
-          hint: upsertError.hint
-        });
-        throw upsertError;
+      if (rpcError) {
+        logDev('[FCM] register_fcm_token RPC failed, attempting direct upsert fallback...');
+        const { error: upsertError } = await supabase
+          .from('fcm_tokens')
+          .upsert(
+            {
+              user_id: user.id,
+              token: fcmToken,
+              updated_at: new Date().toISOString()
+            },
+            { onConflict: 'token' }
+          );
+
+        if (upsertError) {
+          console.warn('[FCM] Failed to register FCM token (best effort):', upsertError.message);
+          return;
+        }
+      } else if (rpcData && (rpcData as any).success === false) {
+        console.warn('[FCM] register_fcm_token returned failure:', (rpcData as any).error);
+        return;
       }
 
-      logDev('[FCM] Supabase upsert success = YES');
-      logDev(`[FCM] Database row returned = ${upsertData && upsertData.length > 0 ? 'YES' : 'NO'}`);
+      logDev('[FCM] Supabase token registration success = YES');
       logDev('[FCM] Token saved successfully');
 
       localStorage.setItem('au_fcm_token', fcmToken);
       globalToken = fcmToken;
       registeredUserId = user.id;
       setToken(fcmToken);
-    } catch (err) {
-      console.error('[FCM] Failed to register FCM token with database:', err);
+    } catch (err: any) {
+      console.warn('[FCM] Failed to register FCM token with database (non-blocking):', err?.message || err);
     }
   }, []);
 

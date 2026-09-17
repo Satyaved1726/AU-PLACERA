@@ -84,6 +84,22 @@ export const postService = {
     return data;
   },
 
+  // Set or toggle post priority via secure RPC
+  async setPriority(
+    id: string,
+    isPriority: boolean,
+    duration: '24_hours' | '3_days' | '7_days' | 'custom' | 'manual' = '24_hours',
+    customExpiresAt?: string | null
+  ): Promise<void> {
+    const { error } = await supabase.rpc('set_post_priority', {
+      p_post_id: id,
+      p_is_priority: isPriority,
+      p_duration: duration,
+      p_custom_expires_at: customExpiresAt || null
+    });
+    if (error) throw error;
+  },
+
   // Delete post permanently
   async deletePost(id: string): Promise<void> {
     // 1. Fetch all associated attachments to delete them from storage

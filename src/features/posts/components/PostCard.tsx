@@ -22,6 +22,7 @@ import { useIsSaved } from '../../../features/saved/hooks/useIsSaved';
 import { useSavePost } from '../../../features/saved/hooks/useSavePost';
 import { useUnsavePost } from '../../../features/saved/hooks/useUnsavePost';
 import type { Post } from '../../../types';
+import { isPriorityActive } from '../post.types';
 import { supabase } from '../../../lib/supabase';
 
 interface PostCardProps {
@@ -163,15 +164,17 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onViewDetail }) => {
     }
   };
 
+  const hasActivePriority = isPriorityActive(post);
+
   return (
     <div 
       onClick={() => onViewDetail(post)}
       className="cursor-pointer group select-none"
     >
       <Card 
-        elevation={post.is_top_priority ? 3 : 2}
+        elevation={hasActivePriority ? 3 : 2}
         className={`overflow-hidden border transition-all duration-300 rounded-2xl ${
-          post.is_top_priority 
+          hasActivePriority 
             ? 'border-amber-300 shadow-[0_4px_16px_-4px_rgba(217,179,16,0.06),0_1px_4px_-2px_rgba(217,179,16,0.04)] bg-amber-50/[0.01]' 
             : 'border-slate-100 hover:border-slate-200 hover:shadow-soft bg-white'
         }`}
@@ -208,7 +211,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onViewDetail }) => {
               )}
 
               {/* Priority Alert Badge */}
-              {post.is_top_priority && (
+              {hasActivePriority && (
                 <span className="inline-flex items-center gap-1 bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-wider">
                   <Star className="h-3 w-3 fill-current text-[#F59E0B]" />
                   <span>Priority</span>

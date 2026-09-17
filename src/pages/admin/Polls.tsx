@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminPolls } from '../../features/polls/hooks/usePolls';
-import { useDeletePoll } from '../../features/polls/hooks/usePollMutations';
+import { useDeletePoll, useSetPollPriority } from '../../features/polls/hooks/usePollMutations';
 import { SearchBar } from '../../components/common/SearchBar';
+import { AdminPriorityModal } from '../../components/common/AdminPriorityModal';
+import { isPriorityActive, type PriorityDuration } from '../../features/posts/post.types';
 import { 
   Vote, 
   Plus, 
@@ -11,6 +13,7 @@ import {
   Calendar, 
   CheckCircle2, 
   AlertCircle,
+  Star,
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,15 +23,37 @@ export const Polls: React.FC = () => {
   const navigate = useNavigate();
   const { data: polls = [], isLoading, error } = useAdminPolls();
   const deletePollMutation = useDeletePoll();
+  const setPollPriorityMutation = useSetPollPriority();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [pollToDelete, setPollToDelete] = useState<PollWithDetails | null>(null);
+  const [priorityModalPoll, setPriorityModalPoll] = useState<PollWithDetails | null>(null);
 
   // Toast
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  const handleSavePriority = async (
+    isPriority: boolean,
+    duration?: PriorityDuration,
+    customExpiresAt?: string | null
+  ) => {
+    if (!priorityModalPoll) return;
+    try {
+      await setPollPriorityMutation.mutateAsync({
+        pollId: priorityModalPoll.id,
+        isPriority,
+        duration: duration || '24_hours',
+        customExpiresAt
+      });
+      showToast(isPriority ? 'Poll priority updated successfully.' : 'Poll priority removed.');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to update priority.', 'error');
+      throw err;
+    }
   };
 
   // Filter polls by search query
@@ -130,20 +155,49 @@ export const Polls: React.FC = () => {
         <div className="space-y-3.5">
           {filteredPolls.map(poll => {
             const voterCount = poll.total_voted || 0;
+            const hasActivePriority = isPriorityActive(poll);
+            const wasPriorityExpired = !hasActivePriority && Boolean(poll.is_priority);
 
             return (
               <div
                 key={poll.id}
-                className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:border-slate-300 transition-all space-y-3"
+                className={`bg-white border rounded-2xl p-5 shadow-sm transition-all space-y-3 ${
+                  hasActivePriority
+                    ? 'border-amber-300 shadow-[0_4px_16px_-4px_rgba(217,179,16,0.06)] bg-amber-50/[0.01]'
+                    : 'border-slate-200/80 hover:border-slate-300'
+                }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div className="space-y-1 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {poll.is_priority && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300">
-                          🚨 Priority Poll
-                        </span>
+                      {hasActivePriority && (
+                        <button
+                          type="button"
+                          onClick={() => setPriorityModalPoll(poll)}
+                          className="cursor-pointer hover:opacity-80 transition-opacity"
+                          title="Click to manage priority duration"
+                        >
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300">
+                            <Star className="w-2.5 h-2.5 fill-current text-amber-600" />
+                            <span>Priority</span>
+                          </span>
+                        </button>
                       )}
+
+                      {wasPriorityExpired && (
+                        <button
+                          type="button"
+                          onClick={() => setPriorityModalPoll(poll)}
+                          className="cursor-pointer hover:opacity-80 transition-opacity"
+                          title="Priority expired. Click to renew."
+                        >
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">
+                            <Star className="w-2.5 h-2.5 text-slate-400" />
+                            <span>Expired Priority</span>
+                          </span>
+                        </button>
+                      )}
+
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200">
                         {poll.allow_multiple_answers ? 'Multiple Answers' : 'Single Answer'}
                       </span>
@@ -176,6 +230,25 @@ export const Polls: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {/* Priority Manage Button */}
+                    <button
+                      type="button"
+                      onClick={() => setPriorityModalPoll(poll)}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-black uppercase tracking-wider transition-all shadow-sm active:scale-95 ${
+                        hasActivePriority
+                          ? 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100'
+                          : wasPriorityExpired
+                          ? 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                      title="Set Priority Status & Duration"
+                    >
+                      <Star className={`w-3.5 h-3.5 ${hasActivePriority ? 'fill-amber-500 text-amber-500' : 'text-slate-400'}`} />
+                      <span className="hidden sm:inline">
+                        {hasActivePriority ? 'Priority' : wasPriorityExpired ? 'Renew Priority' : 'Priority'}
+                      </span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => navigate(`/admin/polls/${poll.id}`)}
@@ -276,6 +349,17 @@ export const Polls: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* ADMIN PRIORITY MODAL */}
+      <AdminPriorityModal
+        isOpen={priorityModalPoll !== null}
+        onClose={() => setPriorityModalPoll(null)}
+        title={priorityModalPoll?.question || 'Poll'}
+        isCurrentlyPriority={isPriorityActive(priorityModalPoll)}
+        currentDuration={priorityModalPoll?.priority_duration}
+        currentExpiresAt={priorityModalPoll?.priority_expires_at}
+        onSavePriority={handleSavePriority}
+      />
     </div>
   );
 };

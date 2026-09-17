@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardBody } from '../../../components/common/Card';
-import type { ParsedPost } from '../post.types';
+import type { ParsedPost, PriorityDuration } from '../post.types';
+import { PrioritySelector } from '../../../components/common/PrioritySelector';
 import { Trash2, Star, ChevronDown, ChevronUp, Plus, X, FileText, FileSpreadsheet, Image } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -140,26 +141,19 @@ export const PostReviewCard: React.FC<PostReviewCardProps> = ({
                     </button>
                   </div>
                 </div>
-
-                {/* Priority */}
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                    Priority Alert
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => handleFieldChange('isTopPriority', !post.isTopPriority)}
-                    className={`w-full py-1.5 px-3 border rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
-                      post.isTopPriority 
-                        ? 'bg-amber-50 border-amber-200 text-amber-600' 
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <Star className={`h-3.5 w-3.5 ${post.isTopPriority ? 'fill-current text-amber-500' : ''}`} />
-                    <span>{post.isTopPriority ? 'Top Priority' : 'Normal Priority'}</span>
-                  </button>
-                </div>
               </div>
+
+              {/* Priority Toggle & Duration Selector */}
+              <PrioritySelector
+                isPriority={Boolean(post.isTopPriority)}
+                onTogglePriority={(val) => handleFieldChange('isTopPriority', val)}
+                duration={post.priorityDuration || '24_hours'}
+                onDurationChange={(d: PriorityDuration) => handleFieldChange('priorityDuration', d)}
+                customExpiresAt={post.priorityExpiresAt || ''}
+                onCustomExpiresAtChange={(val: string) => handleFieldChange('priorityExpiresAt', val)}
+                label="Priority Notice"
+                description="Keep this notice pinned above normal chronological updates."
+              />
 
               {/* Title & Company inputs */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

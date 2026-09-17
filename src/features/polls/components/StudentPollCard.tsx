@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { PollWithDetails } from '../../../types';
 import { useSaveVote } from '../hooks/usePollMutations';
+import { isPriorityActive } from '../../posts/post.types';
 import { 
   Vote, 
   Check, 
@@ -23,6 +24,7 @@ export const StudentPollCard: React.FC<StudentPollCardProps> = ({
   onToast,
   isHighlighted = false
 }) => {
+  const hasActivePriority = isPriorityActive(poll);
   const saveVoteMutation = useSaveVote();
   const userVote = poll.user_vote;
 
@@ -111,7 +113,7 @@ export const StudentPollCard: React.FC<StudentPollCardProps> = ({
       className={`transition-all duration-200 rounded-2xl p-5 sm:p-6 select-none relative overflow-hidden bg-white ${
         isHighlighted
           ? 'border-2 border-[#0B3C5D] shadow-md ring-2 ring-[#0B3C5D]/20'
-          : poll.is_priority
+          : hasActivePriority
           ? 'border border-amber-300 shadow-[0_4px_16px_-4px_rgba(217,179,16,0.08),0_1px_4px_-2px_rgba(217,179,16,0.04)] bg-amber-50/[0.02]'
           : 'border border-slate-100 hover:border-slate-200 shadow-soft'
       }`}
@@ -119,7 +121,7 @@ export const StudentPollCard: React.FC<StudentPollCardProps> = ({
       {/* Card Header: Badges & Relative Timestamp */}
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 flex-wrap">
-          {poll.is_priority ? (
+          {hasActivePriority ? (
             <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-800 border border-amber-300/70 text-[10px] font-black uppercase tracking-wider">
               <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
               <span>PRIORITY</span>
