@@ -94,12 +94,19 @@ export const TeamView: React.FC = () => {
                     <CardBody className="p-5 sm:p-6 flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-7">
                       
                       {/* Section tag / Label Badge */}
-                      <div className="w-full sm:w-auto shrink-0 flex sm:flex-col items-center gap-2 pb-3 sm:pb-0 border-b sm:border-b-0 sm:border-r border-slate-100 sm:pr-6 min-w-[120px]">
+                      <div className="w-full sm:w-28 shrink-0 flex sm:flex-col items-center sm:justify-center gap-2 pb-3 sm:pb-0 border-b sm:border-b-0 sm:border-r border-slate-100 sm:pr-5 text-center">
                         <div className="p-1.5 bg-[#0B3C5D]/5 rounded-lg text-[#0B3C5D] shrink-0">
                           <User className="h-4 w-4" />
                         </div>
-                        <span className="text-[11px] font-black text-[#0B3C5D] uppercase tracking-wider">
-                          {categoryLabels[member.category] || 'Advisor'}
+                        <span className="text-[10px] sm:text-[11px] font-black text-[#0B3C5D] uppercase tracking-wider text-center leading-tight">
+                          {member.category === 'placement_coordinator' ? (
+                            <>
+                              <span className="inline sm:block">PLACEMENT</span>{' '}
+                              <span className="inline sm:block">COORDINATOR</span>
+                            </>
+                          ) : (
+                            categoryLabels[member.category] || 'Advisor'
+                          )}
                         </span>
                       </div>
 
