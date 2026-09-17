@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { UserRole } from '../types';
+import { useJemmi, JemmiFloatingButton, JemmiPanel } from '../features/jemmi';
 
 interface AppLayoutProps {
   role: UserRole;
@@ -47,6 +48,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
   const userRole = profile?.role || role;
   const shouldReduceMotion = useReducedMotion();
   const { initPushNotifications } = useNotifications();
+  const jemmi = useJemmi();
 
   // Initialize push notifications silently for students if permission is already granted
   useEffect(() => {
@@ -291,6 +293,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
 
       {/* Raksha Bandhan Promotional Popup */}
       <RakshaBandhanPopup />
+
+      {/* Jemmi AI Assistant for Students */}
+      {userRole === 'student' && (
+        <>
+          <JemmiFloatingButton onClick={jemmi.toggleOpen} isOpen={jemmi.isOpen} />
+          <JemmiPanel jemmi={jemmi} />
+        </>
+      )}
     </div>
   );
 };
