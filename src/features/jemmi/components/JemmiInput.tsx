@@ -81,9 +81,9 @@ export const JemmiInput: React.FC<JemmiInputProps> = ({
               <button
                 type="button"
                 onClick={onToggleVoice}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-200/60 hover:bg-amber-200 text-amber-900 text-[10px] font-bold transition-all cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-200/80 hover:bg-amber-300 text-amber-950 text-[11px] font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
               >
-                <RotateCcw className="w-2.5 h-2.5" />
+                <RotateCcw className="w-3 h-3" />
                 <span>Try Again</span>
               </button>
             )}
@@ -91,10 +91,10 @@ export const JemmiInput: React.FC<JemmiInputProps> = ({
               <button
                 type="button"
                 onClick={onOpenSettings}
-                className="inline-flex items-center gap-1 text-[10px] text-amber-800 hover:underline font-semibold cursor-pointer"
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-amber-900 hover:bg-amber-100 font-semibold cursor-pointer transition-colors"
               >
-                <Settings className="w-2.5 h-2.5" />
-                <span>Mic Settings</span>
+                <Settings className="w-3 h-3" />
+                <span>How to Allow</span>
               </button>
             )}
           </div>

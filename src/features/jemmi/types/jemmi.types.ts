@@ -62,6 +62,7 @@ export interface JemmiVoiceErrorDetails {
     | 'SPEECH_SERVICE_UNAVAILABLE'
     | 'NO_SPEECH'
     | 'NETWORK_ERROR'
+    | 'INSECURE_CONTEXT'
     | 'UNSUPPORTED_BROWSER'
     | 'GENERIC_ERROR';
   message: string;
@@ -98,12 +99,17 @@ export interface StudentContextData {
 }
 
 export interface MicrophoneDiagnosticResult {
-  speechRecognitionSupported: boolean;
   mediaDevicesSupported: boolean;
+  getUserMediaSupported: boolean;
+  speechRecognitionSupported: boolean;
   permissionState: 'granted' | 'denied' | 'prompt' | 'unknown';
-  hardwareMicrophoneFound: boolean;
+  microphoneAvailable: boolean;
   deviceList: Array<{ deviceId: string; label: string }>;
   canRecordAudio: boolean;
   cloudSpeechServiceWorking: boolean | null;
+  isSecureContext: boolean;
+  protocol: string;
+  host: string;
+  browserName: string;
   timestamp: string;
 }

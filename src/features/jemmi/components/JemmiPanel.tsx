@@ -118,6 +118,7 @@ export const JemmiPanel: React.FC<JemmiPanelProps> = ({ jemmi }) => {
         availableDevices={voice.availableDevices}
         selectedDeviceId={voice.selectedDeviceId}
         onSelectDevice={voice.setDevice}
+        onRetryVoice={voice.retry}
       />
     </>
   );

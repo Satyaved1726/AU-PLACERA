@@ -8,6 +8,7 @@ import type {
   SpeechRecognitionErrorEvent
 } from '../types/speech.types';
 import { LANGUAGE_CONFIG } from '../utils/jemmiLanguage';
+import { isSecureContextEnvironment } from '../services/jemmiVoiceDiagnostic';
 
 function getSpeechRecognitionConstructor(): ISpeechRecognitionConstructor | null {
   if (typeof window === 'undefined') return null;
@@ -46,11 +47,13 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
   const languageRef = useRef<JemmiLanguage>(language);
   const onTranscriptRef = useRef<(text: string) => void>(onTranscript);
   const activeDeviceIdRef = useRef<string | undefined>(state.selectedDeviceId);
+  const availableDevicesRef = useRef<Array<{ deviceId: string; label: string }>>([]);
 
   // Synchronize refs
   languageRef.current = language;
   onTranscriptRef.current = onTranscript;
   activeDeviceIdRef.current = state.selectedDeviceId;
+  availableDevicesRef.current = state.availableDevices;
 
   // Enumerate microphones
   const refreshDevices = useCallback(async () => {
@@ -63,9 +66,10 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
           deviceId: d.deviceId,
           label: d.label || `Microphone ${index + 1}`
         }));
+      availableDevicesRef.current = audioInputs;
       setState((prev) => ({ ...prev, availableDevices: audioInputs }));
-    } catch {
-      // ignore
+    } catch (e) {
+      if (import.meta.env?.DEV) console.warn('[Jemmi Voice] enumerateDevices error:', e);
     }
   }, []);
 
@@ -103,7 +107,13 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
       audioContextRef.current = null;
     }
     if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+      mediaStreamRef.current.getTracks().forEach((t) => {
+        try {
+          t.stop();
+        } catch {
+          // ignore
+        }
+      });
       mediaStreamRef.current = null;
     }
     setState((prev) => ({ ...prev, audioLevel: 0 }));
@@ -126,7 +136,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
     setState((prev) => ({ ...prev, isListening: false, phase: 'IDLE' }));
   }, [stopAudioAnalysis]);
 
-  // Start listening with multi-layer fallback
+  // Start listening with clean two-layer verification
   const startListening = useCallback(async () => {
     if (isListeningRef.current || isStartingRef.current) {
       stopListening();
@@ -137,77 +147,187 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
     clearError();
     setState((prev) => ({ ...prev, phase: 'CHECKING_MICROPHONE' }));
 
-    // Layer 1: Hardware Access & Audio Monitor Verification
+    const isSecure = isSecureContextEnvironment();
+    const hasMediaDevices = typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia);
+    const SpeechRecognitionClass = getSpeechRecognitionConstructor();
+
+    if (import.meta.env?.DEV) {
+      console.log('[Jemmi Voice] Protocol:', typeof window !== 'undefined' ? window.location.protocol : '');
+      console.log('[Jemmi Voice] Host:', typeof window !== 'undefined' ? window.location.host : '');
+      console.log('[Jemmi Voice] Secure context:', isSecure);
+      console.log('[Jemmi Voice] getUserMedia support:', hasMediaDevices);
+      console.log('[Jemmi Voice] SpeechRecognition support:', Boolean(SpeechRecognitionClass));
+    }
+
+    // 0. Check Secure Context
+    if (!isSecure) {
+      isStartingRef.current = false;
+      isListeningRef.current = false;
+      setState((prev) => ({
+        ...prev,
+        isListening: false,
+        phase: 'ERROR',
+        error: {
+          type: 'INSECURE_CONTEXT',
+          message: 'Voice input requires a secure connection.',
+          actionHint: 'Open AU Placera using HTTPS or localhost to enable microphone access.',
+          canRetry: false
+        }
+      }));
+      return;
+    }
+
+    // 1. Check Browser Permission state if query API is supported
+    let permState: PermissionState | 'unknown' = 'unknown';
+    if (navigator?.permissions?.query) {
+      try {
+        const perm = await navigator.permissions.query({ name: 'microphone' as any });
+        permState = perm.state;
+      } catch {
+        permState = 'unknown';
+      }
+    }
+
+    if (import.meta.env?.DEV) {
+      console.log('[Jemmi Voice] Permission:', permState);
+    }
+
+    // If permanently denied at browser site level
+    if (permState === 'denied') {
+      isStartingRef.current = false;
+      isListeningRef.current = false;
+      setState((prev) => ({
+        ...prev,
+        isListening: false,
+        phase: 'ERROR',
+        error: {
+          type: 'PERMISSION_DENIED',
+          message: '🎙 Microphone access is blocked for AU Placera.',
+          actionHint: 'Allow microphone access for this site in your browser\'s site settings, then click Try Again.',
+          canRetry: true
+        }
+      }));
+      return;
+    }
+
+    // LAYER A: Physical Hardware & Browser Site Permission (getUserMedia)
     let stream: MediaStream | null = null;
-    if (navigator?.mediaDevices?.getUserMedia) {
+    let micAccessGranted = false;
+
+    if (hasMediaDevices) {
       try {
         setState((prev) => ({ ...prev, phase: 'REQUESTING_PERMISSION' }));
+
+        // Check if saved device exists in current list to prevent OverconstrainedError
+        const requestedDeviceId = activeDeviceIdRef.current;
+        const deviceExists = requestedDeviceId && availableDevicesRef.current.some((d) => d.deviceId === requestedDeviceId);
+
         const constraints: MediaStreamConstraints = {
-          audio: activeDeviceIdRef.current ? { deviceId: { exact: activeDeviceIdRef.current } } : true
+          audio: deviceExists ? { deviceId: { exact: requestedDeviceId } } : true
         };
+
         stream = await navigator.mediaDevices.getUserMedia(constraints);
         mediaStreamRef.current = stream;
+        micAccessGranted = true;
 
-        // Refresh device list now that permissions are confirmed
+        if (import.meta.env?.DEV) {
+          console.log('[Jemmi Voice] getUserMedia result: PASS (Access Granted)');
+        }
+
+        // Refresh devices now that permission is granted
         refreshDevices();
 
-        // Attach live audio level analyzer
+        // Setup audio level analyzer for live visual feedback
         const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
         if (AudioContextClass) {
-          const audioCtx = new AudioContextClass();
-          audioContextRef.current = audioCtx;
-          const source = audioCtx.createMediaStreamSource(stream);
-          const analyser = audioCtx.createAnalyser();
-          analyser.fftSize = 256;
-          source.connect(analyser);
+          try {
+            const audioCtx = new AudioContextClass();
+            audioContextRef.current = audioCtx;
+            const source = audioCtx.createMediaStreamSource(stream);
+            const analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
 
-          const dataArray = new Uint8Array(analyser.frequencyBinCount);
-          const checkVolume = () => {
-            if (!isListeningRef.current) return;
-            analyser.getByteFrequencyData(dataArray);
-            let sum = 0;
-            for (let i = 0; i < dataArray.length; i++) {
-              sum += dataArray[i];
-            }
-            const average = sum / dataArray.length;
-            const level = Math.min(100, Math.round((average / 128) * 100));
-            setState((prev) => ({ ...prev, audioLevel: level }));
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            const checkVolume = () => {
+              if (!isListeningRef.current) return;
+              analyser.getByteFrequencyData(dataArray);
+              let sum = 0;
+              for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+              }
+              const average = sum / dataArray.length;
+              const level = Math.min(100, Math.round((average / 128) * 100));
+              setState((prev) => ({ ...prev, audioLevel: level }));
+              animationFrameRef.current = requestAnimationFrame(checkVolume);
+            };
             animationFrameRef.current = requestAnimationFrame(checkVolume);
-          };
-          animationFrameRef.current = requestAnimationFrame(checkVolume);
+          } catch {
+            // non-critical audio analyzer error
+          }
         }
       } catch (mediaErr: any) {
+        if (import.meta.env?.DEV) {
+          console.log('[Jemmi Voice] getUserMedia result: FAIL', mediaErr?.name, mediaErr?.message);
+        }
+
         isStartingRef.current = false;
         isListeningRef.current = false;
         stopAudioAnalysis();
 
         let errorDetails: JemmiVoiceErrorDetails;
-        if (mediaErr.name === 'NotAllowedError' || mediaErr.name === 'PermissionDeniedError') {
+        const errName = mediaErr?.name || '';
+
+        if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
           errorDetails = {
             type: 'PERMISSION_DENIED',
-            message: 'Microphone permission was denied.',
-            actionHint: 'Click the padlock/site settings icon in your browser URL bar and allow Microphone access.',
+            message: '🎙 Microphone access is blocked for AU Placera.',
+            actionHint: 'Allow microphone access for this site in your browser\'s site settings, then click Try Again.',
             canRetry: true
           };
-        } else if (mediaErr.name === 'NotFoundError' || mediaErr.name === 'DevicesNotFoundError') {
+        } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
           errorDetails = {
             type: 'DEVICE_NOT_FOUND',
-            message: 'No microphone was found.',
+            message: 'No microphone detected.',
             actionHint: 'Please connect a microphone or headset and try again.',
             canRetry: true
           };
-        } else if (mediaErr.name === 'NotReadableError' || mediaErr.name === 'TrackStartError') {
+        } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
           errorDetails = {
             type: 'DEVICE_BUSY',
-            message: 'Microphone is in use by another app.',
-            actionHint: 'Close any active video/call apps (Zoom, Teams, Meet) and retry.',
+            message: 'The microphone is currently unavailable or being used by another application.',
+            actionHint: 'Close other applications using your microphone (Zoom, Teams, Meet) and try again.',
+            canRetry: true
+          };
+        } else if (errName === 'OverconstrainedError') {
+          // Reset to default device
+          activeDeviceIdRef.current = undefined;
+          localStorage.removeItem('au_jemmi_mic_device');
+          errorDetails = {
+            type: 'GENERIC_ERROR',
+            message: 'Jemmi couldn\'t use the selected microphone.',
+            actionHint: 'Switched to default microphone. Click Try Again.',
+            canRetry: true
+          };
+        } else if (errName === 'SecurityError') {
+          errorDetails = {
+            type: 'GENERIC_ERROR',
+            message: 'Microphone access is blocked by the browser security policy.',
+            actionHint: 'Please check your browser security settings or open via HTTPS.',
+            canRetry: true
+          };
+        } else if (errName === 'AbortError') {
+          errorDetails = {
+            type: 'GENERIC_ERROR',
+            message: 'Microphone access was interrupted. Please try again.',
+            actionHint: 'Please try again.',
             canRetry: true
           };
         } else {
           errorDetails = {
             type: 'GENERIC_ERROR',
-            message: 'Could not access microphone.',
-            actionHint: 'Please check your microphone permissions and try again.',
+            message: 'Jemmi couldn\'t access the microphone. Please try again.',
+            actionHint: 'Please check your microphone connection and permissions.',
             canRetry: true
           };
         }
@@ -222,9 +342,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
       }
     }
 
-    // Layer 2: Browser Speech Recognition
-    const SpeechRecognitionClass = getSpeechRecognitionConstructor();
-
+    // LAYER B: Speech Recognition Service Availability
     if (SpeechRecognitionClass) {
       try {
         if (recognitionRef.current) {
@@ -242,7 +360,12 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
         recognition.continuous = false;
         recognition.interimResults = true;
         recognition.maxAlternatives = 1;
+        // Language must be set BEFORE start()
         recognition.lang = locale;
+
+        if (import.meta.env?.DEV) {
+          console.log('[Jemmi Voice] Recognition start with locale:', locale);
+        }
 
         recognition.onstart = () => {
           isStartingRef.current = false;
@@ -270,6 +393,10 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
           }
 
           const combined = (finalTranscript || interimTranscript).trim();
+          if (import.meta.env?.DEV) {
+            console.log('[Jemmi Voice] Recognition result:', combined);
+          }
+
           setState((prev) => ({ ...prev, transcript: combined }));
 
           if (combined && onTranscriptRef.current) {
@@ -279,7 +406,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
 
         recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
           if (import.meta.env?.DEV) {
-            console.warn('[Jemmi Voice] SpeechRecognition error:', event.error);
+            console.log('[Jemmi Voice] Recognition error:', event.error);
           }
 
           if (event.error === 'aborted') {
@@ -302,16 +429,51 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
             return;
           }
 
-          // If speech recognition cloud service failed but hardware mic was verified
-          if (event.error === 'not-allowed' || event.error === 'service-not-allowed' || event.error === 'network') {
+          // If speech recognition cloud service failed, but getUserMedia already succeeded:
+          if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            stopListening();
             setState((prev) => ({
               ...prev,
-              isListening: true,
-              phase: 'LISTENING',
+              isListening: false,
+              phase: 'ERROR',
               error: {
                 type: 'SPEECH_SERVICE_UNAVAILABLE',
-                message: 'Browser cloud speech service is restricted.',
-                actionHint: 'Your microphone is working. You can speak or type your question.',
+                message: micAccessGranted
+                  ? 'Your microphone is working, but browser speech recognition is unavailable.'
+                  : 'Microphone access is blocked for this site or speech service is restricted.',
+                actionHint: micAccessGranted
+                  ? 'Your physical microphone is connected. You can type your query in the input box below.'
+                  : 'Check browser site settings to allow microphone access.',
+                canRetry: true
+              }
+            }));
+            return;
+          }
+
+          if (event.error === 'network') {
+            stopListening();
+            setState((prev) => ({
+              ...prev,
+              phase: 'ERROR',
+              error: {
+                type: 'NETWORK_ERROR',
+                message: 'Speech recognition network error.',
+                actionHint: 'Please check your internet connection and try again.',
+                canRetry: true
+              }
+            }));
+            return;
+          }
+
+          if (event.error === 'audio-capture') {
+            stopListening();
+            setState((prev) => ({
+              ...prev,
+              phase: 'ERROR',
+              error: {
+                type: 'DEVICE_BUSY',
+                message: 'Audio capture failed. Please check your microphone.',
+                actionHint: 'Ensure your microphone is connected and not in use by another app.',
                 canRetry: true
               }
             }));
@@ -332,6 +494,9 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
         };
 
         recognition.onend = () => {
+          if (import.meta.env?.DEV) {
+            console.log('[Jemmi Voice] Recognition end');
+          }
           isStartingRef.current = false;
           isListeningRef.current = false;
           stopAudioAnalysis();
@@ -343,23 +508,27 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
         return;
       } catch (speechErr) {
         if (import.meta.env?.DEV) {
-          console.warn('[Jemmi Voice] SpeechRecognition.start() error:', speechErr);
+          console.warn('[Jemmi Voice] SpeechRecognition.start() exception:', speechErr);
         }
       }
     }
 
-    // Fallback: If SpeechRecognition is completely unavailable but getUserMedia stream is active
+    // Fallback: If SpeechRecognition is completely unavailable in the browser but getUserMedia succeeded
     isStartingRef.current = false;
-    isListeningRef.current = true;
+    isListeningRef.current = false;
+    stopAudioAnalysis();
+
     setState((prev) => ({
       ...prev,
-      isListening: true,
-      phase: 'LISTENING',
+      isListening: false,
+      phase: 'ERROR',
       error: {
         type: 'SPEECH_SERVICE_UNAVAILABLE',
-        message: 'Browser Speech API unavailable. Microphone input active.',
-        actionHint: 'Please speak into your microphone or type your question.',
-        canRetry: true
+        message: micAccessGranted
+          ? 'Your microphone is working, but browser speech recognition isn\'t supported in this browser.'
+          : 'Voice recognition is not supported in this browser.',
+        actionHint: 'Use Google Chrome or Microsoft Edge for voice recognition, or type your query.',
+        canRetry: false
       }
     }));
   }, [clearError, refreshDevices, stopAudioAnalysis, stopListening]);
@@ -372,6 +541,13 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
       startListening();
     }
   }, [startListening, stopListening]);
+
+  // Retry voice input flow cleanly
+  const retry = useCallback(() => {
+    stopListening();
+    clearError();
+    startListening();
+  }, [clearError, startListening, stopListening]);
 
   // Unmount cleanup
   useEffect(() => {
@@ -394,6 +570,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
     startListening,
     stopListening,
     toggleListening,
+    retry,
     clearError,
     setDevice,
     refreshDevices
