@@ -101,6 +101,8 @@ export const JemmiPanel: React.FC<JemmiPanelProps> = ({ jemmi }) => {
           isListening={voice.isListening}
           onToggleVoice={voice.toggleListening}
           voiceSupported={voice.isSupported}
+          voiceError={voice.error}
+          onClearVoiceError={voice.clearError}
           isLoading={isProcessing}
         />
       </div>

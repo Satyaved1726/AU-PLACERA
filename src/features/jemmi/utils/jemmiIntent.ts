@@ -28,7 +28,7 @@ const INTENT_RULES: IntentRule[] = [
   {
     intent: 'WHAT_DID_I_MISS',
     patterns: [
-      /(what\s+did\s+i\s+miss|did\s+i\s+miss\s+anything|recent\s+updates|latest\s+updates|new\s+posts|recent\s+announcements|what\'s\s+new|kya\s+(choot|chhoota|miss)\s+hua|nenu\s+miss\s+ayyinda|nenu\s+em\s+miss\s+ayyanu)/i,
+      /(what\s+did\s+i\s+miss|did\s+i\s+miss\s+anything|recent\s+updates|latest\s+updates|new\s+posts|recent\s+announcements|what's\s+new|kya\s+(choot|chhoota|miss)\s+hua|nenu\s+miss\s+ayyinda|nenu\s+em\s+miss\s+ayyanu)/i,
       /(నేను\s+ఏమి\s+మిస్\s+అయ్యాను|ఇటీవలి\s+అప్‌డేట్లు|కొత్త\s+అంశాలు|తాజా\s+సమాచారం)/i,
       /(क्या\s+छूट\s+गया|हाल\s+के\s+अपडेट|नया\s+क्या\s+है)/i
     ],
