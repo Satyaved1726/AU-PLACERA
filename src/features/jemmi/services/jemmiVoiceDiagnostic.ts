@@ -1,4 +1,4 @@
-// Diagnostic and Device Utility for Jemmi Voice System
+// Authoritative Diagnostic and Device Utility for Jemmi Voice System
 import type { MicrophoneDiagnosticResult } from '../types/jemmi.types';
 
 export function detectBrowser(): string {
@@ -23,10 +23,10 @@ export function isSecureContextEnvironment(): boolean {
 }
 
 /**
- * Perform a full diagnostic of the browser's audio and speech capabilities.
- * Safe to call in development or from Voice Settings.
+ * Perform an authoritative diagnostic of the browser's audio and speech capabilities.
+ * Directly tests getUserMedia and device enumeration.
  */
-export async function checkMicrophoneStatus(): Promise<MicrophoneDiagnosticResult> {
+export async function checkMicrophoneAccess(): Promise<MicrophoneDiagnosticResult> {
   const isSecure = isSecureContextEnvironment();
   const protocol = typeof window !== 'undefined' ? window.location.protocol : '';
   const host = typeof window !== 'undefined' ? window.location.host : '';
@@ -50,11 +50,11 @@ export async function checkMicrophoneStatus(): Promise<MicrophoneDiagnosticResul
 
   if (typeof window === 'undefined') return result;
 
-  // 1. Check SpeechRecognition API
+  // A. Check SpeechRecognition API
   const win = window as any;
   result.speechRecognitionSupported = Boolean(win.SpeechRecognition || win.webkitSpeechRecognition);
 
-  // 2. Check Permissions API for microphone
+  // B. Supplementary Permissions API check (never overrides getUserMedia)
   if (navigator?.permissions?.query) {
     try {
       const perm = await navigator.permissions.query({ name: 'microphone' as any });
@@ -64,7 +64,38 @@ export async function checkMicrophoneStatus(): Promise<MicrophoneDiagnosticResul
     }
   }
 
-  // 3. Enumerate Devices
+  // C. Authoritative Test: Call getUserMedia directly
+  if (result.getUserMediaSupported) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      result.canRecordAudio = true;
+      result.permissionState = 'granted';
+      result.microphoneAvailable = true;
+
+      if (import.meta.env?.DEV) {
+        console.log('[Jemmi Voice] Microphone access confirmed via getUserMedia');
+      }
+
+      // Stop the diagnostic tracks immediately
+      stream.getTracks().forEach((track) => {
+        try {
+          track.stop();
+        } catch {
+          // ignore
+        }
+      });
+    } catch (err: any) {
+      result.canRecordAudio = false;
+      const errName = err?.name || '';
+      if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
+        result.permissionState = 'denied';
+      } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
+        result.microphoneAvailable = false;
+      }
+    }
+  }
+
+  // D. Enumerate audio devices
   if (navigator?.mediaDevices?.enumerateDevices) {
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
@@ -75,46 +106,15 @@ export async function checkMicrophoneStatus(): Promise<MicrophoneDiagnosticResul
           label: d.label || `Microphone ${index + 1}`
         }));
       result.deviceList = audioInputs;
-      result.microphoneAvailable = audioInputs.length > 0;
+      if (audioInputs.length > 0) {
+        result.microphoneAvailable = true;
+      }
     } catch (e) {
       if (import.meta.env?.DEV) console.warn('[Jemmi Diagnostic] enumerateDevices error:', e);
-    }
-  }
-
-  // 4. Test Live Audio Capture via getUserMedia
-  if (result.getUserMediaSupported) {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      result.canRecordAudio = true;
-      result.permissionState = 'granted';
-      result.microphoneAvailable = true;
-
-      // Refresh device labels with granted permissions
-      if (navigator.mediaDevices.enumerateDevices) {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const audioInputs = devices
-          .filter((d) => d.kind === 'audioinput')
-          .map((d, index) => ({
-            deviceId: d.deviceId,
-            label: d.label || `Microphone ${index + 1}`
-          }));
-        result.deviceList = audioInputs;
-      }
-
-      // Stop tracks immediately after diagnostic test
-      stream.getTracks().forEach((track) => track.stop());
-    } catch (err: any) {
-      result.canRecordAudio = false;
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        result.permissionState = 'denied';
-      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        result.microphoneAvailable = false;
-      }
     }
   }
 
   return result;
 }
 
-// Alias for backward compatibility
-export const checkMicrophoneAccess = checkMicrophoneStatus;
+export const checkMicrophoneStatus = checkMicrophoneAccess;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Mic, CheckCircle2, XCircle, RefreshCw, X, HelpCircle, ShieldAlert, ArrowRight } from 'lucide-react';
-import { checkMicrophoneStatus, detectBrowser } from '../services/jemmiVoiceDiagnostic';
+import { checkMicrophoneAccess, detectBrowser } from '../services/jemmiVoiceDiagnostic';
 import type { MicrophoneDiagnosticResult } from '../types/jemmi.types';
 
 interface JemmiVoiceSettingsModalProps {
@@ -27,7 +27,7 @@ export const JemmiVoiceSettingsModal: React.FC<JemmiVoiceSettingsModalProps> = (
   const runDiagnostic = async () => {
     setIsRunningDiagnostic(true);
     try {
-      const res = await checkMicrophoneStatus();
+      const res = await checkMicrophoneAccess();
       setDiagnosticResult(res);
     } catch {
       // ignore
@@ -82,7 +82,7 @@ export const JemmiVoiceSettingsModal: React.FC<JemmiVoiceSettingsModalProps> = (
             <ol className="list-decimal pl-5 text-[11px] space-y-1 text-amber-900/90 dark:text-amber-200/90 leading-relaxed">
               <li>Click the <strong>padlock / site settings icon (🔒 or 🎛)</strong> beside the address bar.</li>
               <li>Find <strong>Microphone</strong> in the permissions list.</li>
-              <li>Select <strong>Allow</strong>.</li>
+              <li>Select <strong>Allow</strong> or <strong>Allow this time</strong>.</li>
               <li>Return here and click <strong>Try Again</strong> below.</li>
             </ol>
             <p className="text-[10px] text-amber-800 dark:text-amber-300/80 italic pt-0.5">
@@ -125,11 +125,11 @@ export const JemmiVoiceSettingsModal: React.FC<JemmiVoiceSettingsModalProps> = (
                   </span>
                 </div>
 
-                {/* 2. Site Microphone Permission */}
+                {/* 2. Microphone Permission */}
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-600 dark:text-slate-400 text-[11px]">2. AU Placera Site Access</span>
+                  <span className="text-slate-600 dark:text-slate-400 text-[11px]">2. Microphone Permission</span>
                   <span className="font-semibold text-[11px]">
-                    {diagnosticResult.canRecordAudio ? (
+                    {diagnosticResult.canRecordAudio || diagnosticResult.permissionState === 'granted' ? (
                       <span className="text-emerald-600 flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Granted
                       </span>
@@ -167,7 +167,7 @@ export const JemmiVoiceSettingsModal: React.FC<JemmiVoiceSettingsModalProps> = (
                   <span className="font-semibold text-[11px]">
                     {diagnosticResult.speechRecognitionSupported ? (
                       <span className="text-emerald-600 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Available (WebKit/Chrome)
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Available ({browserName})
                       </span>
                     ) : (
                       <span className="text-amber-500 flex items-center gap-1">
