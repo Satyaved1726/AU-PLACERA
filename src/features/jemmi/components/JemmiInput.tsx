@@ -50,40 +50,33 @@ export const JemmiInput: React.FC<JemmiInputProps> = ({
 
   return (
     <div className="p-2.5 sm:p-3 bg-white border-t border-slate-100 rounded-b-2xl flex-shrink-0">
-      {/* Clear Inline Voice Error Notification with Full Instructions */}
+      {/* Clean, Non-Intrusive Voice Error Notification */}
       {voiceError && (
-        <div className="mb-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200/90 text-amber-900 animate-in fade-in duration-150 space-y-1.5">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-start gap-1.5 min-w-0">
-              <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div className="text-[11px] leading-relaxed">
-                <p className="font-semibold text-amber-950">{voiceError.message}</p>
-                <p className="text-[10px] text-amber-800/90 mt-0.5">
-                  Click the <strong>lock icon (🔒)</strong> in your browser address bar → set <strong>Microphone to "Allow"</strong> → click <strong>Retry</strong>.
-                </p>
-              </div>
-            </div>
+        <div className="mb-2 p-2 rounded-xl bg-amber-50 border border-amber-200/90 text-amber-900 animate-in fade-in duration-150 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <AlertCircle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+            <span className="text-[11px] font-medium leading-snug">{voiceError.message}</span>
+          </div>
 
-            <div className="flex items-center gap-1.5 flex-shrink-0 ml-1">
-              {voiceError.canRetry && (
-                <button
-                  type="button"
-                  onClick={onToggleVoice}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-200/90 hover:bg-amber-300 text-amber-950 text-[11px] font-bold cursor-pointer transition-colors shadow-2xs active:scale-95"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Retry</span>
-                </button>
-              )}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {voiceError.canRetry && (
               <button
                 type="button"
-                onClick={onClearVoiceError}
-                className="text-amber-600 hover:text-amber-900 p-1 rounded-lg hover:bg-amber-100 cursor-pointer"
-                title="Dismiss"
+                onClick={onToggleVoice}
+                className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded bg-amber-200/90 hover:bg-amber-300 text-amber-950 text-[10px] font-bold cursor-pointer transition-colors shadow-2xs active:scale-95"
               >
-                <X className="w-3.5 h-3.5" />
+                <RotateCcw className="w-2.5 h-2.5" />
+                <span>Retry</span>
               </button>
-            </div>
+            )}
+            <button
+              type="button"
+              onClick={onClearVoiceError}
+              className="text-amber-600 hover:text-amber-900 p-0.5 rounded hover:bg-amber-100 cursor-pointer"
+              title="Dismiss"
+            >
+              <X className="w-3 h-3" />
+            </button>
           </div>
         </div>
       )}

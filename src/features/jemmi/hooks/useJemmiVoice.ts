@@ -1,4 +1,4 @@
-// Resilient SpeechRecognition Hook for Jemmi AI — Direct Student Voice Experience
+// Direct Native SpeechRecognition Hook for Jemmi AI
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { JemmiLanguage, JemmiVoiceState } from '../types/jemmi.types';
 import type {
@@ -72,8 +72,8 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
     }
   }, [language, stopListening]);
 
-  // Start SpeechRecognition with resilient fallback
-  const startListening = useCallback(async () => {
+  // Direct SpeechRecognition start
+  const startListening = useCallback(() => {
     if (isListeningRef.current || isStartingRef.current) {
       stopListening();
       return;
@@ -89,36 +89,16 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
         phase: 'ERROR',
         error: {
           type: 'UNSUPPORTED_BROWSER',
-          message: "Voice input isn't supported in this browser. You can still type your question.",
+          message: 'Voice input is not supported in this browser.',
           canRetry: false
         }
       }));
       return;
     }
 
-    isStartingRef.current = true;
-
-    // Optional: Pre-warm microphone permission context without blocking on errors
-    if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach((track) => {
-          try {
-            track.stop();
-          } catch {
-            // ignore
-          }
-        });
-      } catch (mediaErr: any) {
-        if (import.meta.env?.DEV) {
-          console.log('[Jemmi Voice] getUserMedia pre-check status:', mediaErr?.name);
-        }
-        // Do not abort on getUserMedia pre-check — continue directly to SpeechRecognition
-      }
-    }
-
-    // Direct SpeechRecognition invocation
     try {
+      isStartingRef.current = true;
+
       if (recognitionRef.current) {
         try {
           recognitionRef.current.abort();
@@ -132,20 +112,20 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
       const currentLang = languageRef.current;
       const locale = LANGUAGE_CONFIG[currentLang]?.locale || 'en-IN';
 
-      recognition.continuous = true;
+      recognition.continuous = false;
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
       recognition.lang = locale;
 
       if (import.meta.env?.DEV) {
-        console.log('[Jemmi Voice] Starting SpeechRecognition with locale:', locale);
+        console.log('[Jemmi Voice] Initializing recognition with language:', locale);
       }
 
       recognition.onstart = () => {
         isStartingRef.current = false;
         isListeningRef.current = true;
         if (import.meta.env?.DEV) {
-          console.log('[Jemmi Voice] SpeechRecognition started successfully');
+          console.log('[Jemmi Voice] Recognition started successfully');
         }
         setState((prev) => ({
           ...prev,
@@ -158,13 +138,13 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
 
       recognition.onresult = (event: SpeechRecognitionEvent) => {
         let transcript = '';
-        for (let i = 0; i < event.results.length; i++) {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
           transcript += event.results[i][0].transcript;
         }
 
         const cleanTranscript = transcript.trim();
         if (import.meta.env?.DEV) {
-          console.log('[Jemmi Voice] Transcript update:', cleanTranscript);
+          console.log('[Jemmi Voice] Captured transcript:', cleanTranscript);
         }
 
         if (cleanTranscript) {
@@ -175,7 +155,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
 
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         if (import.meta.env?.DEV) {
-          console.warn('[Jemmi Voice] SpeechRecognition error event:', event.error);
+          console.warn('[Jemmi Voice] Recognition error event:', event.error);
         }
 
         isStartingRef.current = false;
@@ -193,35 +173,21 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
             phase: 'ERROR',
             error: {
               type: 'NO_SPEECH',
-              message: 'No speech detected. Please tap the microphone and speak.',
+              message: "Didn't hear anything. Try again.",
               canRetry: true
             }
           }));
           return;
         }
 
-        if (event.error === 'not-allowed') {
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
           stopListening();
           setState((prev) => ({
             ...prev,
             phase: 'ERROR',
             error: {
               type: 'PERMISSION_DENIED',
-              message: 'Microphone access is blocked in your browser settings. Please allow microphone access for AU Placera and try again.',
-              canRetry: true
-            }
-          }));
-          return;
-        }
-
-        if (event.error === 'service-not-allowed') {
-          stopListening();
-          setState((prev) => ({
-            ...prev,
-            phase: 'ERROR',
-            error: {
-              type: 'SPEECH_SERVICE_UNAVAILABLE',
-              message: 'Browser speech recognition service is unavailable right now. You can type your question.',
+              message: 'Voice input could not start. Check your browser microphone access.',
               canRetry: true
             }
           }));
@@ -235,7 +201,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
             phase: 'ERROR',
             error: {
               type: 'DEVICE_BUSY',
-              message: 'Your microphone could not be accessed. Please ensure no other application is using it.',
+              message: 'No microphone was detected.',
               canRetry: true
             }
           }));
@@ -249,7 +215,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
             phase: 'ERROR',
             error: {
               type: 'NETWORK_ERROR',
-              message: 'Speech recognition network error. Please check your internet connection.',
+              message: 'Voice recognition is temporarily unavailable.',
               canRetry: true
             }
           }));
@@ -262,7 +228,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
           phase: 'ERROR',
           error: {
             type: 'GENERIC_ERROR',
-            message: 'Voice recognition stopped. Please tap the microphone to try again.',
+            message: 'Voice recognition stopped. Please try again.',
             canRetry: true
           }
         }));
@@ -270,7 +236,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
 
       recognition.onend = () => {
         if (import.meta.env?.DEV) {
-          console.log('[Jemmi Voice] SpeechRecognition onend');
+          console.log('[Jemmi Voice] Recognition ended');
         }
         isStartingRef.current = false;
         isListeningRef.current = false;
@@ -281,7 +247,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
       recognition.start();
     } catch (err) {
       if (import.meta.env?.DEV) {
-        console.error('[Jemmi Voice] exception on recognition.start():', err);
+        console.error('[Jemmi Voice] Exception during recognition.start():', err);
       }
       isStartingRef.current = false;
       isListeningRef.current = false;
