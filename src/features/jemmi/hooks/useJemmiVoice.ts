@@ -73,7 +73,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
   }, [language, stopListening]);
 
   // Start direct SpeechRecognition
-  const startListening = useCallback(() => {
+  const startListening = useCallback(async () => {
     if (isListeningRef.current || isStartingRef.current) {
       stopListening();
       return;
@@ -96,8 +96,44 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
       return;
     }
 
+    isStartingRef.current = true;
+
+    // 1. Establish microphone access via browser getUserMedia to unlock Chrome permission context
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Immediately release the track so WebKit/Chrome SpeechRecognition gets clean exclusive audio access
+        stream.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch {
+            // ignore
+          }
+        });
+      } catch (mediaErr: any) {
+        if (import.meta.env?.DEV) {
+          console.warn('[Jemmi Voice] getUserMedia error:', mediaErr?.name);
+        }
+
+        if (mediaErr?.name === 'NotAllowedError' || mediaErr?.name === 'PermissionDeniedError') {
+          isStartingRef.current = false;
+          setState((prev) => ({
+            ...prev,
+            isListening: false,
+            phase: 'ERROR',
+            error: {
+              type: 'PERMISSION_DENIED',
+              message: 'Microphone access is blocked by your browser. Allow microphone access for AU Placera and try again.',
+              canRetry: true
+            }
+          }));
+          return;
+        }
+      }
+    }
+
+    // 2. Start SpeechRecognition
     try {
-      isStartingRef.current = true;
       setState((prev) => ({ ...prev, isListening: true, phase: 'LISTENING', transcript: '', error: null }));
 
       if (recognitionRef.current) {
