@@ -1,4 +1,4 @@
-// Robust Browser Speech Recognition Hook for Jemmi Voice Input
+// Direct Browser Speech Recognition Hook for Jemmi Voice Input
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { JemmiLanguage, JemmiVoiceState } from '../types/jemmi.types';
 import type {
@@ -66,28 +66,20 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
     }
   }, [language, stopListening]);
 
-  // Start listening safely
-  const startListening = useCallback(async () => {
-    if (typeof window !== 'undefined' && window.isSecureContext === false && window.location.hostname !== 'localhost') {
-      setState((prev) => ({
-        ...prev,
-        error: 'Voice recognition requires a secure HTTPS connection or localhost.'
-      }));
-      return;
-    }
-
+  // Start recognition directly without interfering with audio hardware pipes
+  const startListening = useCallback(() => {
     const SpeechRecognitionClass = getSpeechRecognitionConstructor();
 
     if (!SpeechRecognitionClass) {
       setState((prev) => ({
         ...prev,
         isSupported: false,
-        error: "Voice input isn't supported in this browser. Please use Chrome or Edge."
+        error: "Voice input isn't supported in this browser. Please use Google Chrome or Microsoft Edge."
       }));
       return;
     }
 
-    // Prevent double-start
+    // Toggle off if already active
     if (isListeningRef.current || isStartingRef.current) {
       stopListening();
       return;
@@ -96,20 +88,8 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
     isStartingRef.current = true;
     clearError();
 
-    // Optional warmup: request mic stream to prompt OS permission if not yet established
-    if (navigator?.mediaDevices?.getUserMedia) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach((track) => track.stop());
-      } catch (mediaErr: any) {
-        if (import.meta.env?.DEV) {
-          console.warn('[Jemmi Voice] getUserMedia warmup error:', mediaErr);
-        }
-      }
-    }
-
-    // Initialize SpeechRecognition
     try {
+      // Abort any old instance
       if (recognitionRef.current) {
         try {
           recognitionRef.current.abort();
@@ -128,7 +108,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
       recognition.lang = locale;
 
       if (import.meta.env?.DEV) {
-        console.log(`[Jemmi Voice] Initializing recognition (lang: ${locale})`);
+        console.log(`[Jemmi Voice] Starting SpeechRecognition directly with locale: ${locale}`);
       }
 
       recognition.onstart = () => {
@@ -141,7 +121,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
           error: null
         });
         if (import.meta.env?.DEV) {
-          console.log('[Jemmi Voice] Recognition started');
+          console.log('[Jemmi Voice] Microphone capture active');
         }
       };
 
@@ -161,7 +141,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
         const combined = (finalTranscript || interimTranscript).trim();
 
         if (import.meta.env?.DEV) {
-          console.log('[Jemmi Voice] Transcript chunk:', combined);
+          console.log('[Jemmi Voice] Received transcript:', combined);
         }
 
         setState((prev) => ({ ...prev, transcript: combined }));
@@ -181,17 +161,17 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
           case 'not-allowed':
           case 'service-not-allowed':
             friendlyError =
-              "Microphone access blocked by Windows or browser. In Windows Settings ➜ Privacy & Security ➜ Microphone, turn ON 'Let desktop apps access your microphone'.";
+              'Microphone access is blocked or speech service is disabled. Please check your browser microphone settings or type your query.';
             break;
           case 'no-speech':
-            friendlyError = 'No speech detected. Tap the microphone and speak again.';
+            friendlyError = 'No speech detected. Tap the microphone and try again.';
             break;
           case 'network':
             friendlyError =
-              'Speech recognition service is temporarily unreachable. You can type your question instead.';
+              'Voice recognition is temporarily unavailable. You can type your question instead.';
             break;
           case 'audio-capture':
-            friendlyError = 'No microphone detected on your device. Please plug in a microphone.';
+            friendlyError = 'No microphone was found on your device.';
             break;
           case 'aborted':
             friendlyError = null;
@@ -202,7 +182,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
         }
 
         if (import.meta.env?.DEV) {
-          console.warn('[Jemmi Voice] Error:', event.error);
+          console.warn('[Jemmi Voice] Error event:', event.error);
         }
 
         setState((prev) => ({
@@ -217,7 +197,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
         isListeningRef.current = false;
         setState((prev) => ({ ...prev, isListening: false }));
         if (import.meta.env?.DEV) {
-          console.log('[Jemmi Voice] Recognition ended');
+          console.log('[Jemmi Voice] Recognition session finished');
         }
       };
 
@@ -226,12 +206,11 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
     } catch (err: any) {
       isStartingRef.current = false;
       isListeningRef.current = false;
-      console.warn('[Jemmi Voice] Start failed:', err);
+      console.warn('[Jemmi Voice] Direct start failed:', err);
       setState((prev) => ({
         ...prev,
         isListening: false,
-        error:
-          "Microphone is blocked by Windows. Open Windows Settings ➜ Privacy & Security ➜ Microphone ➜ Turn ON 'Let desktop apps access your microphone'."
+        error: 'Unable to start speech recognition. Please try again or type your question.'
       }));
     }
   }, [clearError, stopListening]);
