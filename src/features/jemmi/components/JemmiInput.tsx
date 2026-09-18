@@ -14,9 +14,9 @@ interface JemmiInputProps {
 }
 
 const PLACEHOLDERS: Record<JemmiLanguage, string> = {
-  en: 'Ask Jemmi about opportunities, polls, or notices...',
-  te: 'అవకాశాలు, పోల్స్ లేదా నోటీసుల గురించి అడగండి...',
-  hi: 'अवसरों, पोल या नोटिस के बारे में पूछें...'
+  en: 'Ask about opportunities, polls, notices...',
+  te: 'అవకాశాలు, పోల్స్ గురించి అడగండి...',
+  hi: 'अवसरों, पोल के बारे में पूछें...'
 };
 
 export const JemmiInput: React.FC<JemmiInputProps> = ({
@@ -45,35 +45,35 @@ export const JemmiInput: React.FC<JemmiInputProps> = ({
   }, [isListening]);
 
   return (
-    <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800 rounded-b-2xl">
+    <div className="p-2.5 sm:p-3 bg-white border-t border-slate-100 rounded-b-2xl flex-shrink-0">
       {/* Listening Status Bar */}
       {isListening && (
-        <div className="mb-2 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 flex items-center justify-between text-xs text-red-600 dark:text-red-400 animate-pulse">
-          <div className="flex items-center gap-2">
+        <div className="mb-2 px-2.5 py-1 rounded-lg bg-red-50 border border-red-200 flex items-center justify-between text-xs text-red-600 animate-pulse">
+          <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-            <span className="font-medium">Listening ({language.toUpperCase()})... Speak now</span>
+            <span className="font-semibold text-[11px]">Listening ({language.toUpperCase()})... Speak now</span>
           </div>
           <button
             type="button"
             onClick={onToggleVoice}
-            className="text-[11px] underline font-semibold hover:text-red-700"
+            className="text-[11px] font-bold text-red-700 hover:underline cursor-pointer"
           >
             Done
           </button>
         </div>
       )}
 
-      <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-xl px-2.5 py-1.5 border border-slate-200/80 dark:border-slate-700/80 focus-within:border-[#0B3C5D] dark:focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-[#0B3C5D]/10 dark:focus-within:ring-amber-400/10 transition-all">
+      <div className="flex items-center gap-1.5 bg-[#F8FAFC] rounded-xl px-2 py-1 border border-slate-200 focus-within:border-[#0B3C5D] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0B3C5D]/10 transition-all">
         {/* Voice Input Button */}
         {voiceSupported && (
           <button
             type="button"
             onClick={onToggleVoice}
             disabled={isLoading}
-            className={`p-2 rounded-lg transition-all flex-shrink-0 ${
+            className={`p-1.5 rounded-lg transition-all flex-shrink-0 cursor-pointer ${
               isListening
-                ? 'bg-red-500 text-white shadow-md shadow-red-500/30 animate-bounce'
-                : 'text-slate-500 dark:text-slate-400 hover:text-[#FF6A00] dark:hover:text-amber-400 hover:bg-slate-200/60 dark:hover:bg-slate-700/60'
+                ? 'bg-red-500 text-white shadow-xs animate-pulse'
+                : 'text-slate-400 hover:text-[#0B3C5D] hover:bg-slate-100'
             }`}
             title={isListening ? 'Stop Listening' : 'Speak with Voice'}
             aria-label="Toggle Voice Input"
@@ -91,7 +91,7 @@ export const JemmiInput: React.FC<JemmiInputProps> = ({
           onKeyDown={handleKeyDown}
           placeholder={isListening ? 'Listening...' : PLACEHOLDERS[language]}
           disabled={isLoading}
-          className="flex-1 bg-transparent text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden px-1 py-1 min-w-0"
+          className="flex-1 bg-transparent text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-hidden px-1 py-1 min-w-0"
         />
 
         {/* Send Button */}
@@ -99,10 +99,10 @@ export const JemmiInput: React.FC<JemmiInputProps> = ({
           type="button"
           onClick={onSend}
           disabled={!value.trim() || isLoading}
-          className={`p-2 rounded-lg flex-shrink-0 transition-all ${
+          className={`p-1.5 rounded-lg flex-shrink-0 transition-all cursor-pointer ${
             value.trim() && !isLoading
-              ? 'bg-gradient-to-r from-[#FF6A00] to-[#E55D00] text-white shadow-sm hover:opacity-90 active:scale-95'
-              : 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
+              ? 'bg-[#0B3C5D] hover:bg-[#082a42] text-white shadow-xs active:scale-95'
+              : 'text-slate-300 cursor-not-allowed'
           }`}
           title="Send Message"
           aria-label="Send Message"

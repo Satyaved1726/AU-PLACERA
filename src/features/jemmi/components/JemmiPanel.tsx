@@ -44,8 +44,8 @@ export const JemmiPanel: React.FC<JemmiPanelProps> = ({ jemmi }) => {
         onClick={closeJemmi}
       />
 
-      {/* Main Floating Panel / Mobile Bottom Sheet */}
-      <div className="fixed inset-x-0 bottom-0 sm:bottom-6 sm:right-6 sm:left-auto z-50 sm:w-[420px] max-h-[85vh] sm:max-h-[640px] h-[85vh] sm:h-[600px] flex flex-col bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800 animate-in slide-in-from-bottom-5 duration-200 overflow-hidden">
+      {/* Main Floating Panel — Responsive & Strictly Contained */}
+      <div className="fixed inset-x-3 bottom-20 top-16 sm:top-auto sm:left-auto sm:bottom-6 sm:right-6 sm:w-[380px] sm:h-[540px] sm:max-h-[80vh] z-50 flex flex-col bg-white rounded-2xl shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
         {/* Header */}
         <JemmiHeader
           language={language}
@@ -57,7 +57,7 @@ export const JemmiPanel: React.FC<JemmiPanelProps> = ({ jemmi }) => {
         />
 
         {/* Message Scroll View */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-1 bg-gradient-to-b from-slate-50/50 to-white dark:from-slate-950/40 dark:to-slate-900">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-1 bg-[#F8FAFC]/60">
           {messages.map((msg) => (
             <JemmiMessage
               key={msg.id}
@@ -72,10 +72,11 @@ export const JemmiPanel: React.FC<JemmiPanelProps> = ({ jemmi }) => {
           {/* Processing / Thinking indicator */}
           {isProcessing && (
             <div className="flex justify-start mb-3">
-              <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-2.5 flex items-center gap-1.5 border border-slate-200/60 dark:border-slate-700/60">
-                <span className="w-2 h-2 rounded-full bg-[#FF6A00] animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 rounded-full bg-[#FF6A00] animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 rounded-full bg-[#FF6A00] animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="bg-white rounded-2xl px-3.5 py-2 flex items-center gap-1.5 border border-slate-200 shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF6A00] animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF6A00] animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF6A00] animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="text-[11px] font-semibold text-slate-500 ml-1">Jemmi is thinking...</span>
               </div>
             </div>
           )}
