@@ -1,9 +1,8 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { JemmiHeader } from './JemmiHeader';
 import { JemmiMessage } from './JemmiMessage';
 import { JemmiQuickActions } from './JemmiQuickActions';
 import { JemmiInput } from './JemmiInput';
-import { JemmiVoiceSettingsModal } from './JemmiVoiceSettingsModal';
 import { useJemmi } from '../hooks/useJemmi';
 
 interface JemmiPanelProps {
@@ -27,7 +26,6 @@ export const JemmiPanel: React.FC<JemmiPanelProps> = ({ jemmi }) => {
     quickActions
   } = jemmi;
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -94,7 +92,7 @@ export const JemmiPanel: React.FC<JemmiPanelProps> = ({ jemmi }) => {
           disabled={isProcessing}
         />
 
-        {/* Input Field with Rich Voice Controls */}
+        {/* Direct Voice & Text Input */}
         <JemmiInput
           value={inputText}
           onChange={setInputText}
@@ -106,20 +104,9 @@ export const JemmiPanel: React.FC<JemmiPanelProps> = ({ jemmi }) => {
           onToggleVoice={voice.toggleListening}
           voiceError={voice.error}
           onClearVoiceError={voice.clearError}
-          onOpenSettings={() => setSettingsOpen(true)}
           isLoading={isProcessing}
         />
       </div>
-
-      {/* Voice & Microphone Settings Modal */}
-      <JemmiVoiceSettingsModal
-        isOpen={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        availableDevices={voice.availableDevices}
-        selectedDeviceId={voice.selectedDeviceId}
-        onSelectDevice={voice.setDevice}
-        onRetryVoice={voice.retry}
-      />
     </>
   );
 };
