@@ -44,11 +44,40 @@ export interface JemmiQuickAction {
   intent: JemmiIntent;
 }
 
+export type JemmiVoicePhase =
+  | 'IDLE'
+  | 'REQUESTING_PERMISSION'
+  | 'CHECKING_MICROPHONE'
+  | 'LOADING_MODEL'
+  | 'LISTENING'
+  | 'PROCESSING'
+  | 'SUCCESS'
+  | 'ERROR';
+
+export interface JemmiVoiceErrorDetails {
+  type:
+    | 'PERMISSION_DENIED'
+    | 'DEVICE_NOT_FOUND'
+    | 'DEVICE_BUSY'
+    | 'SPEECH_SERVICE_UNAVAILABLE'
+    | 'NO_SPEECH'
+    | 'NETWORK_ERROR'
+    | 'UNSUPPORTED_BROWSER'
+    | 'GENERIC_ERROR';
+  message: string;
+  canRetry: boolean;
+  actionHint?: string;
+}
+
 export interface JemmiVoiceState {
   isListening: boolean;
+  phase: JemmiVoicePhase;
   transcript: string;
   isSupported: boolean;
-  error: string | null;
+  error: JemmiVoiceErrorDetails | null;
+  audioLevel?: number;
+  selectedDeviceId?: string;
+  availableDevices: Array<{ deviceId: string; label: string }>;
 }
 
 export interface JemmiSpeechState {
@@ -66,4 +95,15 @@ export interface StudentContextData {
   batch?: string;
   cgpa?: number | string;
   oiaEligible?: boolean;
+}
+
+export interface MicrophoneDiagnosticResult {
+  speechRecognitionSupported: boolean;
+  mediaDevicesSupported: boolean;
+  permissionState: 'granted' | 'denied' | 'prompt' | 'unknown';
+  hardwareMicrophoneFound: boolean;
+  deviceList: Array<{ deviceId: string; label: string }>;
+  canRecordAudio: boolean;
+  cloudSpeechServiceWorking: boolean | null;
+  timestamp: string;
 }
