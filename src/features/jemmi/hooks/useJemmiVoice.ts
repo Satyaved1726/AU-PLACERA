@@ -35,6 +35,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
   const isStartingRef = useRef<boolean>(false);
   const languageRef = useRef<JemmiLanguage>(language);
   const onTranscriptRef = useRef<(text: string) => void>(onTranscript);
+  const hadHardwareAccessRef = useRef<boolean>(false);
 
   // Keep refs synchronized
   languageRef.current = language;
@@ -66,15 +67,23 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
     }
   }, [language, stopListening]);
 
-  // Start listening safely with all error cases handled
-  const startListening = useCallback(() => {
+  // Start listening safely with two-stage permission validation
+  const startListening = useCallback(async () => {
+    if (typeof window !== 'undefined' && window.isSecureContext === false && window.location.hostname !== 'localhost') {
+      setState((prev) => ({
+        ...prev,
+        error: 'Voice recognition requires a secure HTTPS connection or localhost.'
+      }));
+      return;
+    }
+
     const SpeechRecognitionClass = getSpeechRecognitionConstructor();
 
     if (!SpeechRecognitionClass) {
       setState((prev) => ({
         ...prev,
         isSupported: false,
-        error: "Voice input isn't supported in this browser. Please use a supported browser or type your question."
+        error: "Voice input isn't supported in this browser. Please use Chrome/Edge or type your question."
       }));
       return;
     }
@@ -88,8 +97,34 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
     isStartingRef.current = true;
     clearError();
 
+    // Stage 1: Explicitly verify microphone hardware permission via getUserMedia
+    hadHardwareAccessRef.current = false;
+    if (navigator?.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        hadHardwareAccessRef.current = true;
+        // Release hardware stream immediately so SpeechRecognition can bind to it
+        stream.getTracks().forEach((track) => track.stop());
+      } catch (mediaErr: any) {
+        isStartingRef.current = false;
+        isListeningRef.current = false;
+        console.warn('[Jemmi Voice] getUserMedia failed:', mediaErr);
+
+        let msg = 'Microphone access was denied. Please allow microphone permission in your browser & Windows settings.';
+        if (mediaErr.name === 'NotFoundError' || mediaErr.name === 'DevicesNotFoundError') {
+          msg = 'No microphone detected on your device. Please plug in a microphone.';
+        }
+        setState((prev) => ({
+          ...prev,
+          isListening: false,
+          error: msg
+        }));
+        return;
+      }
+    }
+
+    // Stage 2: Initialize SpeechRecognition
     try {
-      // Abort any lingering instance
       if (recognitionRef.current) {
         try {
           recognitionRef.current.abort();
@@ -160,21 +195,26 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
         switch (event.error) {
           case 'not-allowed':
           case 'service-not-allowed':
-            friendlyError =
-              'Microphone access was denied. Please allow microphone permission in your browser settings.';
+            if (hadHardwareAccessRef.current) {
+              friendlyError =
+                'Browser speech service is unavailable or blocked (common in Brave/Firefox). Please enable Google Speech in browser settings or type your question.';
+            } else {
+              friendlyError =
+                'Microphone access was denied. Please allow microphone permission in browser settings and Windows Privacy settings.';
+            }
             break;
           case 'no-speech':
-            friendlyError = 'No speech detected. Tap the microphone and try again.';
+            friendlyError = 'No speech detected. Tap the microphone and speak again.';
             break;
           case 'network':
             friendlyError =
-              'Voice recognition is temporarily unavailable. You can type your question instead.';
+              'Speech recognition service is temporarily unreachable. You can type your question instead.';
             break;
           case 'audio-capture':
             friendlyError = 'No microphone detected on your device.';
             break;
           case 'aborted':
-            // Clean user stop — do not show scary error
+            // Clean user stop — do not show error
             friendlyError = null;
             break;
           default:
@@ -211,10 +251,7 @@ export function useJemmiVoice({ language, onTranscript }: UseJemmiVoiceOptions) 
       setState((prev) => ({
         ...prev,
         isListening: false,
-        error:
-          err.name === 'NotAllowedError'
-            ? 'Microphone access was denied. Please allow microphone permission in your browser settings.'
-            : 'Could not start microphone. Please check your browser permissions.'
+        error: 'Could not start microphone. Please check your browser permissions.'
       }));
     }
   }, [clearError, stopListening]);
