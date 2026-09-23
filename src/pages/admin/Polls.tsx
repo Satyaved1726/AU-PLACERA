@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminPolls } from '../../features/polls/hooks/usePolls';
-import { useDeletePoll, useSetPollPriority } from '../../features/polls/hooks/usePollMutations';
+import { useDeletePoll, useSetPollPriority, useSendPollReminder } from '../../features/polls/hooks/usePollMutations';
 import { SearchBar } from '../../components/common/SearchBar';
 import { AdminPriorityModal } from '../../components/common/AdminPriorityModal';
+import { EditPollModal } from '../../features/polls/components/EditPollModal';
 import { isPriorityActive, type PriorityDuration } from '../../features/posts/post.types';
 import { 
   Vote, 
@@ -14,6 +15,8 @@ import {
   CheckCircle2, 
   AlertCircle,
   Star,
+  Pencil,
+  Bell,
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,10 +27,13 @@ export const Polls: React.FC = () => {
   const { data: polls = [], isLoading, error } = useAdminPolls();
   const deletePollMutation = useDeletePoll();
   const setPollPriorityMutation = useSetPollPriority();
+  const sendPollReminderMutation = useSendPollReminder();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [pollToDelete, setPollToDelete] = useState<PollWithDetails | null>(null);
   const [priorityModalPoll, setPriorityModalPoll] = useState<PollWithDetails | null>(null);
+  const [editPollModalPoll, setEditPollModalPoll] = useState<PollWithDetails | null>(null);
+  const [reminderModalPoll, setReminderModalPoll] = useState<PollWithDetails | null>(null);
 
   // Toast
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -229,7 +235,7 @@ export const Polls: React.FC = () => {
                     <span>Created {new Date(poll.created_at).toLocaleDateString()}</span>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap">
                     {/* Priority Manage Button */}
                     <button
                       type="button"
@@ -249,6 +255,29 @@ export const Polls: React.FC = () => {
                       </span>
                     </button>
 
+                    {/* Edit Poll Button */}
+                    <button
+                      type="button"
+                      onClick={() => setEditPollModalPoll(poll)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-black uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-95"
+                      title="Edit Poll"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Edit</span>
+                    </button>
+
+                    {/* Send Reminder Button */}
+                    <button
+                      type="button"
+                      onClick={() => setReminderModalPoll(poll)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50/70 hover:bg-amber-100/80 border border-amber-200/80 text-amber-900 text-[11px] font-black uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-95"
+                      title="Send Push Notification Reminder to Eligible Students"
+                    >
+                      <Bell className="w-3.5 h-3.5 text-amber-600" />
+                      <span className="hidden sm:inline">Send Reminder</span>
+                    </button>
+
+                    {/* View Results Button */}
                     <button
                       type="button"
                       onClick={() => navigate(`/admin/polls/${poll.id}`)}
@@ -258,6 +287,7 @@ export const Polls: React.FC = () => {
                       <span>View Results</span>
                     </button>
 
+                    {/* Delete Button */}
                     <button
                       type="button"
                       onClick={() => setPollToDelete(poll)}
@@ -360,6 +390,92 @@ export const Polls: React.FC = () => {
         currentExpiresAt={priorityModalPoll?.priority_expires_at}
         onSavePriority={handleSavePriority}
       />
+
+      {/* EDIT POLL MODAL */}
+      {editPollModalPoll && (
+        <EditPollModal
+          isOpen={Boolean(editPollModalPoll)}
+          onClose={() => setEditPollModalPoll(null)}
+          poll={editPollModalPoll}
+          onSuccessToast={msg => showToast(msg, 'success')}
+          onErrorToast={msg => showToast(msg, 'error')}
+        />
+      )}
+
+      {/* SEND REMINDER CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {reminderModalPoll && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 select-none">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5 text-amber-700">
+                  <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700">
+                    <Bell className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-base font-black uppercase tracking-tight text-slate-900">
+                    Send Poll Reminder?
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  disabled={sendPollReminderMutation.isPending}
+                  onClick={() => setReminderModalPoll(null)}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                Students will receive a notification reminding them to participate in the poll:{' '}
+                <strong className="text-slate-900 font-bold">"{reminderModalPoll.question}"</strong>.
+              </p>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  disabled={sendPollReminderMutation.isPending}
+                  onClick={() => setReminderModalPoll(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all uppercase tracking-wider"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={sendPollReminderMutation.isPending}
+                  onClick={async () => {
+                    try {
+                      await sendPollReminderMutation.mutateAsync(reminderModalPoll.id);
+                      showToast('Poll reminder sent successfully.');
+                      setReminderModalPoll(null);
+                    } catch (err: any) {
+                      showToast(err?.message || 'Failed to send poll reminder.', 'error');
+                    }
+                  }}
+                  className="px-4 py-2 bg-[#0B3C5D] hover:bg-[#082d47] text-white text-xs font-bold rounded-xl transition-all uppercase tracking-wider shadow-md shadow-blue-900/10 flex items-center gap-2 disabled:opacity-50"
+                >
+                  {sendPollReminderMutation.isPending ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Sending...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Bell className="w-3.5 h-3.5 text-[#D9B310]" />
+                      <span>Send Reminder</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

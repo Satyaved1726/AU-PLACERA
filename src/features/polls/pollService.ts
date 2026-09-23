@@ -254,17 +254,26 @@ export const pollService = {
 
     const pollIds = polls.map(p => p.id);
 
-    const [optionsRes, responsesCountRes] = await Promise.all([
+    const [optionsRes, responsesCountRes, responseOptionsRes] = await Promise.all([
       supabase.from('poll_options').select('*').in('poll_id', pollIds).order('option_order', { ascending: true }),
-      supabase.from('poll_responses').select('id, poll_id')
+      supabase.from('poll_responses').select('id, poll_id'),
+      supabase.from('poll_response_options').select('option_id')
     ]);
 
     if (optionsRes.error) throw optionsRes.error;
     if (responsesCountRes.error) throw responsesCountRes.error;
 
+    const optionVoteCounts = (responseOptionsRes.data || []).reduce<Record<string, number>>((acc, row) => {
+      acc[row.option_id] = (acc[row.option_id] || 0) + 1;
+      return acc;
+    }, {});
+
     const optionsByPoll = (optionsRes.data || []).reduce<Record<string, PollOption[]>>((acc, opt) => {
       if (!acc[opt.poll_id]) acc[opt.poll_id] = [];
-      acc[opt.poll_id].push(opt);
+      acc[opt.poll_id].push({
+        ...opt,
+        vote_count: optionVoteCounts[opt.id] || 0
+      });
       return acc;
     }, {});
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { PollAnalyticsSummary } from '../../../types';
+import type { PollAnalyticsSummary, PollWithDetails, PollOption } from '../../../types';
 import { useUpdatePoll } from '../hooks/usePollMutations';
 import { PrioritySelector } from '../../../components/common/PrioritySelector';
 import type { PriorityDuration } from '../../posts/post.types';
@@ -21,7 +21,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface EditPollModalProps {
   isOpen: boolean;
   onClose: () => void;
-  analytics: PollAnalyticsSummary;
+  poll?: PollWithDetails | null;
+  analytics?: PollAnalyticsSummary | null;
   onSuccessToast: (message: string) => void;
   onErrorToast: (message: string) => void;
 }
@@ -36,15 +37,17 @@ interface LocalOption {
 export const EditPollModal: React.FC<EditPollModalProps> = ({
   isOpen,
   onClose,
+  poll,
   analytics,
   onSuccessToast,
   onErrorToast
 }) => {
-  const { poll, option_breakdown } = analytics;
+  const activePoll = analytics?.poll || poll;
+  const optionBreakdown = analytics?.option_breakdown;
   const updatePollMutation = useUpdatePoll();
 
   // Question state
-  const [question, setQuestion] = useState(poll.question);
+  const [question, setQuestion] = useState(activePoll?.question || '');
 
   // Options state
   const [options, setOptions] = useState<LocalOption[]>([]);
@@ -54,15 +57,15 @@ export const EditPollModal: React.FC<EditPollModalProps> = ({
   const [optionToDelete, setOptionToDelete] = useState<{ index: number; option: LocalOption } | null>(null);
 
   // Multiple answers state
-  const [allowMultipleAnswers, setAllowMultipleAnswers] = useState<boolean>(poll.allow_multiple_answers);
+  const [allowMultipleAnswers, setAllowMultipleAnswers] = useState<boolean>(activePoll?.allow_multiple_answers || false);
 
   // Priority state
-  const [isPriority, setIsPriority] = useState<boolean>(isPriorityActive(poll));
+  const [isPriority, setIsPriority] = useState<boolean>(activePoll ? isPriorityActive(activePoll) : false);
   const [priorityDuration, setPriorityDuration] = useState<PriorityDuration>(
-    (poll.priority_duration as PriorityDuration) || '24_hours'
+    (activePoll?.priority_duration as PriorityDuration) || '24_hours'
   );
   const [customExpiresAt, setCustomExpiresAt] = useState<string>(
-    poll.priority_expires_at ? new Date(poll.priority_expires_at).toISOString().slice(0, 16) : ''
+    activePoll?.priority_expires_at ? new Date(activePoll.priority_expires_at).toISOString().slice(0, 16) : ''
   );
 
   // Notify students toggle
@@ -70,36 +73,38 @@ export const EditPollModal: React.FC<EditPollModalProps> = ({
 
   // Initialize modal state whenever opened or poll data changes
   useEffect(() => {
-    if (isOpen) {
-      setQuestion(poll.question);
-      setAllowMultipleAnswers(poll.allow_multiple_answers);
-      setIsPriority(isPriorityActive(poll));
-      setPriorityDuration((poll.priority_duration as PriorityDuration) || '24_hours');
+    if (isOpen && activePoll) {
+      setQuestion(activePoll.question);
+      setAllowMultipleAnswers(activePoll.allow_multiple_answers);
+      setIsPriority(isPriorityActive(activePoll));
+      setPriorityDuration((activePoll.priority_duration as PriorityDuration) || '24_hours');
       setCustomExpiresAt(
-        poll.priority_expires_at ? new Date(poll.priority_expires_at).toISOString().slice(0, 16) : ''
+        activePoll.priority_expires_at ? new Date(activePoll.priority_expires_at).toISOString().slice(0, 16) : ''
       );
       setNotifyStudents(false);
       setDeletedOptionIds([]);
       setOptionToDelete(null);
 
-      // Map existing options with their vote counts from option_breakdown
+      // Map existing options with their vote counts from option_breakdown or option.vote_count
       const voteMap = new Map<string, number>();
-      (option_breakdown || []).forEach(opt => {
-        voteMap.set(opt.option_id, opt.votes);
-      });
+      if (optionBreakdown) {
+        optionBreakdown.forEach(opt => {
+          voteMap.set(opt.option_id, opt.votes);
+        });
+      }
 
-      const initialOpts: LocalOption[] = (poll.options || []).map(opt => ({
+      const initialOpts: LocalOption[] = (activePoll.options || []).map((opt: PollOption) => ({
         id: opt.id,
         option_text: opt.option_text,
         initialText: opt.option_text,
-        votes: voteMap.get(opt.id) || 0
+        votes: voteMap.has(opt.id) ? (voteMap.get(opt.id) || 0) : (opt.vote_count || 0)
       }));
 
       setOptions(initialOpts);
     }
-  }, [isOpen, poll, option_breakdown]);
+  }, [isOpen, activePoll, optionBreakdown]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !activePoll) return null;
 
   const handleAddOption = () => {
     setOptions([
@@ -193,7 +198,7 @@ export const EditPollModal: React.FC<EditPollModalProps> = ({
     try {
       await updatePollMutation.mutateAsync({
         payload: {
-          pollId: poll.id,
+          pollId: activePoll.id,
           question: question.trim(),
           allow_multiple_answers: allowMultipleAnswers,
           options: cleanOptions,
@@ -385,7 +390,7 @@ export const EditPollModal: React.FC<EditPollModalProps> = ({
             </div>
 
             {/* Warning if switching from Multiple to Single */}
-            {poll.allow_multiple_answers && !allowMultipleAnswers && (
+            {activePoll.allow_multiple_answers && !allowMultipleAnswers && (
               <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs">
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <span>
