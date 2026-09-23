@@ -17,7 +17,7 @@ const triggerDownload = (blob: Blob, filename: string) => {
   URL.revokeObjectURL(url);
 };
 
-const cleanFileName = (text: string): string => {
+export const cleanFileName = (text: string): string => {
   return text
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
@@ -25,8 +25,167 @@ const cleanFileName = (text: string): string => {
     .replace(/^_|_$/g, '');
 };
 
+export const getCleanSectionLetter = (sectionStr?: string): string => {
+  if (!sectionStr) return '';
+  return sectionStr.replace(/^AIML-/i, '').replace(/^Section\s+/i, '').trim().toUpperCase();
+};
+
 /**
- * Multi-sheet Excel export for WhatsApp-Style Poll Analytics
+ * Natural sort for student rows: by Section ascending, then Roll Number ascending
+ */
+export const naturalSortStudents = <T extends { section?: string; raw_section?: string; roll_number?: string }>(students: T[]): T[] => {
+  return [...students].sort((a, b) => {
+    const secA = getCleanSectionLetter(a.raw_section || a.section);
+    const secB = getCleanSectionLetter(b.raw_section || b.section);
+    const secComp = secA.localeCompare(secB, undefined, { numeric: true, sensitivity: 'base' });
+    if (secComp !== 0) return secComp;
+    return (a.roll_number || '').localeCompare(b.roll_number || '', undefined, { numeric: true, sensitivity: 'base' });
+  });
+};
+
+/**
+ * Natural sort for students within a single section: by Roll Number ascending
+ */
+export const sectionSortStudents = <T extends { roll_number?: string }>(students: T[]): T[] => {
+  return [...students].sort((a, b) => {
+    return (a.roll_number || '').localeCompare(b.roll_number || '', undefined, { numeric: true, sensitivity: 'base' });
+  });
+};
+
+/**
+ * Dedicated Multi-sheet Excel export for Not Responded Students:
+ * Sheets: Overall, Section A, Section B, Section C, Section D, Section E, Section F
+ */
+export const exportNotRespondedToExcel = (analytics: PollAnalyticsSummary) => {
+  const { poll, total_students, students_voted, not_responded, section_breakdown, non_responders } = analytics;
+  const wb = XLSX.utils.book_new();
+
+  // --------------------------------------------------------------------------
+  // SHEET 1: Overall (All Not Responded Students)
+  // --------------------------------------------------------------------------
+  const overallRows: any[][] = [
+    ['POLL:', poll.question],
+    [],
+    ['TOTAL ELIGIBLE STUDENTS:', total_students],
+    ['RESPONDED:', students_voted],
+    ['NOT RESPONDED:', not_responded],
+    [],
+    ['S.No', 'Roll Number', 'Student Name', 'Section', 'Branch', 'Year', 'Batch', 'Status']
+  ];
+
+  const sortedOverall = naturalSortStudents(non_responders);
+
+  sortedOverall.forEach((nr, idx) => {
+    const secLetter = getCleanSectionLetter(nr.raw_section || nr.section) || nr.section;
+    overallRows.push([
+      idx + 1,
+      nr.roll_number,
+      nr.student_name,
+      secLetter,
+      nr.branch || 'AIML',
+      nr.year ?? 3,
+      nr.batch || '2023-2027',
+      'Not Responded'
+    ]);
+  });
+
+  const wsOverall = XLSX.utils.aoa_to_sheet(overallRows);
+  wsOverall['!cols'] = [
+    { wch: 8 },   // S.No
+    { wch: 18 },  // Roll Number
+    { wch: 32 },  // Student Name
+    { wch: 12 },  // Section
+    { wch: 12 },  // Branch
+    { wch: 10 },  // Year
+    { wch: 16 },  // Batch
+    { wch: 18 }   // Status
+  ];
+
+  const overallTotalRows = overallRows.length;
+  wsOverall['!autofilter'] = { ref: `A7:H${Math.max(7, overallTotalRows)}` };
+  wsOverall['!views'] = [{ state: 'frozen', ySplit: 7, xSplit: 0, activePane: 'bottomLeft' }];
+  XLSX.utils.book_append_sheet(wb, wsOverall, 'Overall');
+
+  // --------------------------------------------------------------------------
+  // SECTIONS A through F (Section-wise Sheets)
+  // --------------------------------------------------------------------------
+  // We determine all sections from section_breakdown or fallback to A-F
+  const sectionsToExport = section_breakdown.length > 0
+    ? section_breakdown
+    : ['A', 'B', 'C', 'D', 'E', 'F'].map(letter => ({
+        section: `AIML-${letter}`,
+        display_section: `Section ${letter}`,
+        option_counts: {},
+        students_voted: 0,
+        eligible_students: 0,
+        response_rate: 0
+      }));
+
+  sectionsToExport.forEach(sec => {
+    const secLetter = getCleanSectionLetter(sec.section || sec.display_section);
+    const sheetName = `Section ${secLetter}`;
+
+    // Filter non-responders strictly belonging to this section
+    const secNonResponders = non_responders.filter(nr => {
+      const nrSecLetter = getCleanSectionLetter(nr.raw_section || nr.section);
+      return nrSecLetter === secLetter;
+    });
+
+    const sortedSecStudents = sectionSortStudents(secNonResponders);
+    const secNotResponded = Math.max(0, sec.eligible_students - sec.students_voted);
+
+    const secRows: any[][] = [
+      ['POLL:', poll.question],
+      ['SECTION:', secLetter],
+      [],
+      ['TOTAL ELIGIBLE STUDENTS:', sec.eligible_students],
+      ['RESPONDED:', sec.students_voted],
+      ['NOT RESPONDED:', secNotResponded],
+      [],
+      ['S.No', 'Roll Number', 'Student Name', 'Branch', 'Year', 'Batch', 'Status']
+    ];
+
+    sortedSecStudents.forEach((nr, idx) => {
+      secRows.push([
+        idx + 1,
+        nr.roll_number,
+        nr.student_name,
+        nr.branch || 'AIML',
+        nr.year ?? 3,
+        nr.batch || '2023-2027',
+        'Not Responded'
+      ]);
+    });
+
+    const wsSec = XLSX.utils.aoa_to_sheet(secRows);
+    wsSec['!cols'] = [
+      { wch: 8 },   // S.No
+      { wch: 18 },  // Roll Number
+      { wch: 32 },  // Student Name
+      { wch: 12 },  // Branch
+      { wch: 10 },  // Year
+      { wch: 16 },  // Batch
+      { wch: 18 }   // Status
+    ];
+
+    const secTotalRows = secRows.length;
+    wsSec['!autofilter'] = { ref: `A8:G${Math.max(8, secTotalRows)}` };
+    wsSec['!views'] = [{ state: 'frozen', ySplit: 8, xSplit: 0, activePane: 'bottomLeft' }];
+    XLSX.utils.book_append_sheet(wb, wsSec, sheetName);
+  });
+
+  // Write and trigger download
+  const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([excelBuffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+
+  const fileName = `AU_Placera_Not_Responded_${cleanFileName(poll.question)}.xlsx`;
+  triggerDownload(blob, fileName);
+};
+
+/**
+ * Multi-sheet Excel export for Full WhatsApp-Style Poll Analytics
  */
 export const exportPollToExcel = (analytics: PollAnalyticsSummary) => {
   const { poll, total_students, students_voted, not_responded, response_rate, option_breakdown, section_breakdown, student_responses, non_responders } = analytics;
@@ -99,15 +258,20 @@ export const exportPollToExcel = (analytics: PollAnalyticsSummary) => {
   // SHEET 4: Student Responses
   // --------------------------------------------------------------------------
   const studentRows: any[][] = [
-    ['S.No', 'Roll Number', 'Student Name', 'Section', 'Selected Answer(s)', 'Voted At']
+    ['S.No', 'Roll Number', 'Student Name', 'Section', 'Branch', 'Year', 'Batch', 'Selected Answer(s)', 'Voted At']
   ];
 
-  student_responses.forEach((resp, idx) => {
+  const sortedStudentResponses = naturalSortStudents(student_responses);
+
+  sortedStudentResponses.forEach((resp, idx) => {
     studentRows.push([
       idx + 1,
       resp.roll_number,
       resp.student_name,
-      resp.section,
+      getCleanSectionLetter(resp.raw_section || resp.section) || resp.section,
+      resp.branch || 'AIML',
+      resp.year ?? 3,
+      resp.batch || '2023-2027',
       resp.selected_options.join(', '),
       new Date(resp.voted_at).toLocaleString()
     ]);
@@ -118,25 +282,35 @@ export const exportPollToExcel = (analytics: PollAnalyticsSummary) => {
     { wch: 8 },
     { wch: 18 },
     { wch: 30 },
+    { wch: 12 },
+    { wch: 12 },
+    { wch: 10 },
     { wch: 16 },
     { wch: 35 },
     { wch: 25 }
   ];
+  wsStudents['!autofilter'] = { ref: `A1:I${Math.max(1, studentRows.length)}` };
   XLSX.utils.book_append_sheet(wb, wsStudents, 'Student Responses');
 
   // --------------------------------------------------------------------------
   // SHEET 5: Not Responded
   // --------------------------------------------------------------------------
   const nonResponderRows: any[][] = [
-    ['S.No', 'Roll Number', 'Student Name', 'Section']
+    ['S.No', 'Roll Number', 'Student Name', 'Section', 'Branch', 'Year', 'Batch', 'Status']
   ];
 
-  non_responders.forEach((nr, idx) => {
+  const sortedNonResponders = naturalSortStudents(non_responders);
+
+  sortedNonResponders.forEach((nr, idx) => {
     nonResponderRows.push([
       idx + 1,
       nr.roll_number,
       nr.student_name,
-      nr.section
+      getCleanSectionLetter(nr.raw_section || nr.section) || nr.section,
+      nr.branch || 'AIML',
+      nr.year ?? 3,
+      nr.batch || '2023-2027',
+      'Not Responded'
     ]);
   });
 
@@ -145,8 +319,13 @@ export const exportPollToExcel = (analytics: PollAnalyticsSummary) => {
     { wch: 8 },
     { wch: 18 },
     { wch: 30 },
-    { wch: 16 }
+    { wch: 12 },
+    { wch: 12 },
+    { wch: 10 },
+    { wch: 16 },
+    { wch: 18 }
   ];
+  wsNonResponders['!autofilter'] = { ref: `A1:H${Math.max(1, nonResponderRows.length)}` };
   XLSX.utils.book_append_sheet(wb, wsNonResponders, 'Not Responded');
 
   // Generate Excel file

@@ -64,11 +64,45 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ role }) => {
 
   // Helper to map route path to header title
   const getHeaderTitle = (pathname: string): string => {
+    // 1. Exact & known dynamic route overrides
+    if (pathname === '/admin/polls/create') return 'Create Poll';
+    if (/^\/admin\/polls\/[^/]+\/edit$/.test(pathname)) return 'Edit Poll';
+    if (/^\/admin\/polls\/[^/]+$/.test(pathname)) return 'Poll Analytics';
+    if (pathname === '/admin/polls') return 'Polls';
+    if (pathname === '/admin/posts/create') return 'Create Notice';
+    if (pathname === '/admin/posts') return 'Notice Board';
+    if (pathname === '/admin/announcements') return 'Digital Board';
+    if (pathname === '/admin/materials') return 'Study Materials';
+    if (pathname === '/admin/oia') return 'OIA Hub';
+    if (pathname === '/admin/team') return 'Placement Team';
+
+    if (/^\/student\/polls/.test(pathname)) return 'Polls';
+    if (pathname === '/student/notice-board') return 'Notice Board';
+    if (pathname === '/student/saved') return 'Saved Notices';
+    if (pathname === '/student/registered') return 'Registered Drives';
+    if (pathname === '/student/announcements') return 'Digital Board';
+    if (pathname === '/student/materials') return 'Study Materials';
+    if (pathname === '/student/oia') return 'OIA Hub';
+    if (pathname === '/student/team') return 'Placement Team';
+
+    if (/^\/super-admin\/admins\/[^/]+$/.test(pathname)) return 'Admin Details';
+    if (pathname === '/super-admin/team') return 'Team Management';
+    if (pathname === '/super-admin/team-view') return 'Placement Team';
+    if (pathname === '/super-admin/system') return 'Database System';
+    if (pathname === '/super-admin/activity') return 'Activity Logs';
+
+    // 2. Filter out UUIDs, hex strings, and pure ID segments from dynamic paths
+    const isId = (seg: string) =>
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(seg) ||
+      /^[0-9a-f]{16,}$/i.test(seg) ||
+      /^\d+$/.test(seg);
+
     const segments = pathname.split('/').filter(Boolean);
-    const lastSegment = segments[segments.length - 1] || 'Dashboard';
+    const nonIdSegments = segments.filter(seg => !isId(seg));
+    const targetSegment = nonIdSegments[nonIdSegments.length - 1] || 'Dashboard';
     
     // Capitalize and format
-    return lastSegment
+    return targetSegment
       .split('-')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');

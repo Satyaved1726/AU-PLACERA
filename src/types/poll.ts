@@ -74,6 +74,10 @@ export interface StudentResponseRow {
   roll_number: string;
   student_name: string;
   section: string;
+  raw_section?: string;
+  branch?: string;
+  year?: number | string;
+  batch?: string;
   selected_options: string[]; // option texts
   voted_at: string;
 }
@@ -83,6 +87,10 @@ export interface NonResponderRow {
   roll_number: string;
   student_name: string;
   section: string;
+  raw_section?: string;
+  branch?: string;
+  year?: number | string;
+  batch?: string;
   status: 'Not Responded';
 }
 

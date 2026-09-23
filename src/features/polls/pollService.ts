@@ -463,9 +463,9 @@ export const pollService = {
     // 2. Fetch all AIML student profiles from database
     const { data: allStudents, error: studentsError } = await supabase
       .from('profiles')
-      .select('id, full_name, roll_number, email, section, branch, batch, role')
+      .select('id, full_name, roll_number, email, section, branch, batch, year, role')
       .eq('role', 'student')
-      .order('full_name', { ascending: true });
+      .order('roll_number', { ascending: true });
 
     if (studentsError) throw studentsError;
 
@@ -483,7 +483,10 @@ export const pollService = {
           id,
           full_name,
           roll_number,
-          section
+          section,
+          branch,
+          batch,
+          year
         ),
         poll_response_options (
           option_id,
@@ -573,6 +576,10 @@ export const pollService = {
         roll_number: prof.roll_number || 'N/A',
         student_name: prof.full_name || 'Student User',
         section: formatSectionLabel(prof.section),
+        raw_section: prof.section || '',
+        branch: prof.branch || 'AIML',
+        year: prof.year ?? 3,
+        batch: prof.batch || '2023-2027',
         selected_options: optionTexts,
         voted_at: r.voted_at
       };
@@ -587,7 +594,11 @@ export const pollService = {
         roll_number: student.roll_number || 'N/A',
         student_name: student.full_name || 'Student User',
         section: formatSectionLabel(student.section || ''),
-        status: 'Not Responded'
+        raw_section: student.section || '',
+        branch: student.branch || 'AIML',
+        year: student.year ?? 3,
+        batch: student.batch || '2023-2027',
+        status: 'Not Responded' as const
       }));
 
     return {

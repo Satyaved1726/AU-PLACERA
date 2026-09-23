@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePollAnalytics } from '../../features/polls/hooks/usePollAnalytics';
-import { exportPollToExcel, exportPollToPdf } from '../../features/polls/utils/pollExportUtils';
+import { 
+  exportPollToExcel, 
+  exportPollToPdf, 
+  exportNotRespondedToExcel,
+  naturalSortStudents 
+} from '../../features/polls/utils/pollExportUtils';
 import { SearchBar } from '../../components/common/SearchBar';
 import { 
   BarChart3, 
@@ -14,7 +19,8 @@ import {
   FileText, 
   Percent, 
   UserX, 
-  Info
+  Info,
+  Download
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -76,13 +82,15 @@ export const PollAnalytics: React.FC = () => {
     return matchesSearch && matchesSection && matchesOption;
   });
 
-  // Filter Non-Responders
-  const filteredNonResponders = non_responders.filter(nr => {
-    const q = searchQuery.toLowerCase();
-    const matchesSearch = nr.student_name.toLowerCase().includes(q) || nr.roll_number.toLowerCase().includes(q);
-    const matchesSection = sectionFilter === 'all' || nr.section === sectionFilter;
-    return matchesSearch && matchesSection;
-  });
+  // Filter Non-Responders and naturally sort by Section -> Roll Number
+  const filteredNonResponders = naturalSortStudents(
+    non_responders.filter(nr => {
+      const q = searchQuery.toLowerCase();
+      const matchesSearch = nr.student_name.toLowerCase().includes(q) || nr.roll_number.toLowerCase().includes(q);
+      const matchesSection = sectionFilter === 'all' || nr.section === sectionFilter;
+      return matchesSearch && matchesSection;
+    })
+  );
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-20 px-4 sm:px-0 select-none">
@@ -124,14 +132,26 @@ export const PollAnalytics: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Excel Export */}
+            {/* Export Not Responded Excel */}
+            <button
+              type="button"
+              onClick={() => exportNotRespondedToExcel(analytics)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-95"
+              title="Export complete section-wise workbook for students who have not responded"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export Not Responded</span>
+            </button>
+
+            {/* Excel Export Full Results */}
             <button
               type="button"
               onClick={() => exportPollToExcel(analytics)}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-95"
+              title="Export complete poll analytics report"
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>Export Excel</span>
+              <span>Export All (Excel)</span>
             </button>
 
             {/* PDF Export */}
@@ -139,6 +159,7 @@ export const PollAnalytics: React.FC = () => {
               type="button"
               onClick={() => exportPollToPdf(analytics)}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-95"
+              title="Export visual PDF report"
             >
               <FileText className="w-3.5 h-3.5" />
               <span>Export PDF</span>
@@ -399,9 +420,20 @@ export const PollAnalytics: React.FC = () => {
             )}
 
             {/* Search Input */}
-            <div className="w-full sm:w-48">
+            <div className="w-full sm:w-44">
               <SearchBar onSearchChange={setSearchQuery} placeholder="Filter student..." />
             </div>
+
+            {/* Export Action */}
+            <button
+              type="button"
+              onClick={() => exportNotRespondedToExcel(analytics)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-95 shrink-0"
+              title="Download Excel list of Not Responded students with section-wise sheets"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Export Not Responded</span>
+            </button>
           </div>
         </div>
 
