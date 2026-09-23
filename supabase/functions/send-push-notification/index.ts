@@ -165,7 +165,7 @@ serve(async (req) => {
     }
 
     const reqBody = await req.json()
-    const { postId, pollId } = reqBody
+    const { postId, pollId, isReminder } = reqBody
 
     if (pollId) {
       // 1. Fetch the poll
@@ -205,6 +205,11 @@ serve(async (req) => {
       const tokens = (tokenRows || []).map(r => r.token)
       if (tokens.length > 0) {
         const CHUNK_SIZE = 100
+        const notificationTitle = isReminder ? '📊 Poll Reminder' : '🗳️ New Poll Available'
+        const notificationBody = isReminder 
+          ? `Reminder: Please participate in the poll — ${poll.question || 'Tap to participate.'}`
+          : (poll.question || 'A new poll has been posted. Tap to participate.')
+
         for (let i = 0; i < tokens.length; i += CHUNK_SIZE) {
           const chunk = tokens.slice(i, i + CHUNK_SIZE)
           await Promise.all(
@@ -212,12 +217,13 @@ serve(async (req) => {
               sendFcmMessage(accessToken, projectIdFCM, {
                 token,
                 notification: {
-                  title: '🗳️ New Poll Available',
-                  body: poll.question || 'A new poll has been posted. Tap to participate.'
+                  title: notificationTitle,
+                  body: notificationBody
                 },
                 data: {
                   type: 'poll',
-                  pollId: poll.id
+                  pollId: poll.id,
+                  isReminder: isReminder ? 'true' : 'false'
                 }
               }).then(res => {
                 if (res.status === 'success') successCount++

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { pollService } from '../pollService';
-import type { CreatePollPayload } from '../../../types';
+import type { CreatePollPayload, UpdatePollPayload } from '../../../types';
 
 export const useSaveVote = () => {
   const queryClient = useQueryClient();
@@ -39,6 +39,21 @@ export const useCreatePoll = () => {
   });
 };
 
+export const useUpdatePoll = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ payload, adminId }: { payload: UpdatePollPayload; adminId?: string }) =>
+      pollService.updatePoll(payload, adminId),
+    onSuccess: (updatedPoll) => {
+      queryClient.invalidateQueries({ queryKey: ['adminPolls'] });
+      queryClient.invalidateQueries({ queryKey: ['studentPolls'] });
+      queryClient.invalidateQueries({ queryKey: ['pollDetail', updatedPoll.id] });
+      queryClient.invalidateQueries({ queryKey: ['pollAnalytics', updatedPoll.id] });
+    },
+  });
+};
+
 export const useDeletePoll = () => {
   const queryClient = useQueryClient();
 
@@ -70,6 +85,12 @@ export const useSetPollPriority = () => {
       queryClient.invalidateQueries({ queryKey: ['adminPolls'] });
       queryClient.invalidateQueries({ queryKey: ['studentPolls'] });
     },
+  });
+};
+
+export const useSendPollReminder = () => {
+  return useMutation({
+    mutationFn: (pollId: string) => pollService.sendPollReminder(pollId),
   });
 };
 

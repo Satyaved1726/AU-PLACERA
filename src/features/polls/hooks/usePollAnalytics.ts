@@ -12,6 +12,12 @@ export const usePollAnalytics = (pollId: string) => {
 
     const channel = supabase
       .channel(`public:poll_analytics_${pollId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['pollAnalytics', pollId] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_options' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['pollAnalytics', pollId] });
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_responses' }, () => {
         queryClient.invalidateQueries({ queryKey: ['pollAnalytics', pollId] });
       })

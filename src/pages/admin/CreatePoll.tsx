@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../features/auth/useAuth';
-import { useCreatePoll } from '../../features/polls/hooks/usePollMutations';
+import { useCreatePoll, useUpdatePoll } from '../../features/polls/hooks/usePollMutations';
+import { usePollDetail } from '../../features/polls/hooks/usePollDetail';
 import { PrioritySelector } from '../../components/common/PrioritySelector';
 import type { PriorityDuration } from '../../features/posts/post.types';
+import { isPriorityActive } from '../../features/posts/post.types';
 import { 
   Vote, 
   ArrowLeft, 
@@ -16,16 +18,28 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+interface OptionState {
+  id?: string;
+  text: string;
+}
+
 export const CreatePoll: React.FC = () => {
+  const { id: editPollId } = useParams<{ id?: string }>();
+  const isEditMode = Boolean(editPollId);
   const navigate = useNavigate();
   const { profile } = useAuth();
+  
   const createPollMutation = useCreatePoll();
+  const updatePollMutation = useUpdatePoll();
+
+  const { data: existingPoll } = usePollDetail(editPollId || '', profile?.id);
 
   // Question state (empty initially)
   const [question, setQuestion] = useState('');
 
-  // Options state: initially 2 empty inputs (NO default text, NO presets)
-  const [options, setOptions] = useState<string[]>(['', '']);
+  // Options state
+  const [options, setOptions] = useState<OptionState[]>([{ text: '' }, { text: '' }]);
+  const [deletedOptionIds, setDeletedOptionIds] = useState<string[]>([]);
 
   // Allow multiple answers checkbox
   const [allowMultipleAnswers, setAllowMultipleAnswers] = useState<boolean>(false);
@@ -36,7 +50,7 @@ export const CreatePoll: React.FC = () => {
   const [customExpiresAt, setCustomExpiresAt] = useState<string>('');
 
   // Notify students push notification checkbox
-  const [notifyStudents, setNotifyStudents] = useState<boolean>(true);
+  const [notifyStudents, setNotifyStudents] = useState<boolean>(!isEditMode);
 
   // Toast feedback
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -45,8 +59,24 @@ export const CreatePoll: React.FC = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
+  // Populate data when in edit mode
+  useEffect(() => {
+    if (isEditMode && existingPoll) {
+      setQuestion(existingPoll.question);
+      setAllowMultipleAnswers(existingPoll.allow_multiple_answers);
+      setIsPriority(isPriorityActive(existingPoll));
+      setPriorityDuration((existingPoll.priority_duration as PriorityDuration) || '24_hours');
+      setCustomExpiresAt(
+        existingPoll.priority_expires_at ? new Date(existingPoll.priority_expires_at).toISOString().slice(0, 16) : ''
+      );
+      setOptions(existingPoll.options.map(opt => ({ id: opt.id, text: opt.option_text })));
+      setNotifyStudents(false);
+      setDeletedOptionIds([]);
+    }
+  }, [isEditMode, existingPoll]);
+
   const handleAddOption = () => {
-    setOptions([...options, '']);
+    setOptions([...options, { text: '' }]);
   };
 
   const handleRemoveOption = (index: number) => {
@@ -54,12 +84,16 @@ export const CreatePoll: React.FC = () => {
       showToast('A poll must have at least 2 options.', 'error');
       return;
     }
+    const targetOpt = options[index];
+    if (targetOpt.id) {
+      setDeletedOptionIds(prev => [...prev, targetOpt.id!]);
+    }
     setOptions(options.filter((_, i) => i !== index));
   };
 
   const handleOptionChange = (index: number, val: string) => {
     const nextOptions = [...options];
-    nextOptions[index] = val;
+    nextOptions[index] = { ...nextOptions[index], text: val };
     setOptions(nextOptions);
   };
 
@@ -86,13 +120,20 @@ export const CreatePoll: React.FC = () => {
       return;
     }
 
-    const cleanOptions = options.map(o => o.trim()).filter(Boolean);
+    const cleanOptions = options
+      .map((o, idx) => ({
+        id: o.id,
+        option_text: o.text.trim(),
+        option_order: idx
+      }))
+      .filter(o => o.option_text.length > 0);
+
     if (cleanOptions.length < 2) {
       showToast('Please enter at least 2 non-empty options.', 'error');
       return;
     }
 
-    const uniqueSet = new Set(cleanOptions.map(o => o.toLowerCase()));
+    const uniqueSet = new Set(cleanOptions.map(o => o.option_text.toLowerCase()));
     if (uniqueSet.size !== cleanOptions.length) {
       showToast('Duplicate options detected. Please enter unique options.', 'error');
       return;
@@ -110,29 +151,46 @@ export const CreatePoll: React.FC = () => {
     }
 
     try {
-      await createPollMutation.mutateAsync({
-        payload: {
-          question: question.trim(),
-          options: cleanOptions,
-          allow_multiple_answers: allowMultipleAnswers,
-          is_priority: isPriority,
-          priority_duration: isPriority ? priorityDuration : undefined,
-          priority_expires_at: isPriority && priorityDuration === 'custom' ? new Date(customExpiresAt).toISOString() : undefined,
-          notify_students: notifyStudents
-        },
-        adminId: profile.id
-      });
+      if (isEditMode && editPollId) {
+        await updatePollMutation.mutateAsync({
+          payload: {
+            pollId: editPollId,
+            question: question.trim(),
+            options: cleanOptions,
+            deletedOptionIds,
+            allow_multiple_answers: allowMultipleAnswers,
+            is_priority: isPriority,
+            priority_duration: isPriority ? priorityDuration : undefined,
+            priority_expires_at: isPriority && priorityDuration === 'custom' ? new Date(customExpiresAt).toISOString() : undefined,
+            notify_students: notifyStudents
+          }
+        });
+        showToast('Poll updated successfully!');
+      } else {
+        await createPollMutation.mutateAsync({
+          payload: {
+            question: question.trim(),
+            options: cleanOptions.map(o => o.option_text),
+            allow_multiple_answers: allowMultipleAnswers,
+            is_priority: isPriority,
+            priority_duration: isPriority ? priorityDuration : undefined,
+            priority_expires_at: isPriority && priorityDuration === 'custom' ? new Date(customExpiresAt).toISOString() : undefined,
+            notify_students: notifyStudents
+          },
+          adminId: profile.id
+        });
+        showToast('Poll created successfully!');
+      }
 
-      showToast('Poll created successfully!');
       setTimeout(() => {
-        navigate('/admin/polls');
+        navigate(isEditMode ? `/admin/polls/${editPollId}` : '/admin/polls');
       }, 700);
     } catch (err: any) {
-      showToast(err?.message || 'Failed to create poll.', 'error');
+      showToast(err?.message || (isEditMode ? 'Failed to update poll.' : 'Failed to create poll.'), 'error');
     }
   };
 
-  const isSubmitting = createPollMutation.isPending;
+  const isSubmitting = createPollMutation.isPending || updatePollMutation.isPending;
 
   return (
     <div className="max-w-xl mx-auto space-y-6 pb-20 px-4 sm:px-0 select-none">
@@ -164,7 +222,7 @@ export const CreatePoll: React.FC = () => {
       <div className="flex items-center gap-3 border-b border-slate-200/80 pb-4">
         <button
           type="button"
-          onClick={() => navigate('/admin/polls')}
+          onClick={() => navigate(isEditMode ? `/admin/polls/${editPollId}` : '/admin/polls')}
           className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 transition-all shadow-sm"
           title="Back to Polls"
         >
@@ -173,10 +231,10 @@ export const CreatePoll: React.FC = () => {
         <div>
           <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[#0B3C5D]">
             <Vote className="w-4 h-4 text-[#D9B310]" />
-            <span>CREATE POLL</span>
+            <span>{isEditMode ? 'EDIT POLL' : 'CREATE POLL'}</span>
           </div>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Ask your students a question
+            {isEditMode ? 'Update poll question, choices & voting settings' : 'Ask your students a question'}
           </p>
         </div>
       </div>
@@ -233,7 +291,7 @@ export const CreatePoll: React.FC = () => {
                 <div className="flex-1">
                   <input
                     type="text"
-                    value={opt}
+                    value={opt.text}
                     onChange={e => handleOptionChange(idx, e.target.value)}
                     placeholder={`Option ${idx + 1}`}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0B3C5D]/20 focus:border-[#0B3C5D] placeholder:text-slate-400"
@@ -340,10 +398,10 @@ export const CreatePoll: React.FC = () => {
             {isSubmitting ? (
               <>
                 <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Creating Poll...</span>
+                <span>{isEditMode ? 'Saving Changes...' : 'Creating Poll...'}</span>
               </>
             ) : (
-              <span>Create Poll</span>
+              <span>{isEditMode ? 'Save Changes' : 'Create Poll'}</span>
             )}
           </button>
         </div>

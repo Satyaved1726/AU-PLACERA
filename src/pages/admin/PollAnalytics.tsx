@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../features/auth/useAuth';
 import { usePollAnalytics } from '../../features/polls/hooks/usePollAnalytics';
+import { useSendPollReminder } from '../../features/polls/hooks/usePollMutations';
+import { EditPollModal } from '../../features/polls/components/EditPollModal';
 import { 
   exportPollToExcel, 
   exportPollToPdf, 
@@ -20,15 +23,26 @@ import {
   Percent, 
   UserX, 
   Info,
-  Download
+  Download,
+  Edit3,
+  BellRing,
+  Loader2,
+  X
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const PollAnalytics: React.FC = () => {
   const { id: pollId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { profile } = useAuth();
+  const isAdminOrSuperAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
 
   const { data: analytics, isLoading, error } = usePollAnalytics(pollId || '');
+  const sendReminderMutation = useSendPollReminder();
+
+  // Modals state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
 
   // Active view tab: 'responses' or 'non_responders'
   const [activeTab, setActiveTab] = useState<'responses' | 'non_responders'>('responses');
@@ -37,6 +51,24 @@ export const PollAnalytics: React.FC = () => {
   const [sectionFilter, setSectionFilter] = useState<string>('all');
   const [optionFilter, setOptionFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Toast feedback state
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  const handleSendReminder = async () => {
+    if (!pollId) return;
+    try {
+      await sendReminderMutation.mutateAsync(pollId);
+      showToast('Poll reminder sent successfully.');
+      setIsReminderModalOpen(false);
+    } catch (err: any) {
+      showToast(err?.message || 'Poll updated, but the reminder could not be sent. Please try again.', 'error');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -92,9 +124,34 @@ export const PollAnalytics: React.FC = () => {
     })
   );
 
+  const isSendingReminder = sendReminderMutation.isPending;
+
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-20 px-4 sm:px-0 select-none">
+    <div className="space-y-6 max-w-6xl mx-auto pb-20 px-4 sm:px-0 select-none relative">
       
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`fixed top-6 right-6 z-50 p-4 rounded-2xl shadow-xl text-xs font-bold flex items-center gap-2.5 border ${
+              toast.type === 'error'
+                ? 'bg-red-900 text-white border-red-800'
+                : 'bg-slate-900 text-white border-white/10'
+            }`}
+          >
+            {toast.type === 'error' ? (
+              <AlertCircle className="h-4 w-4 text-red-400 shrink-0" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4 text-[#D9B310] shrink-0" />
+            )}
+            <span>{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Top Header Card */}
       <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-7 shadow-sm space-y-4">
         <div className="flex items-center gap-3">
@@ -132,6 +189,32 @@ export const PollAnalytics: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* Edit Poll Button */}
+            {isAdminOrSuperAdmin && (
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#0B3C5D] hover:bg-[#082d47] text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-95"
+                title="Edit poll question, options, and settings"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-[#D9B310]" />
+                <span>Edit Poll</span>
+              </button>
+            )}
+
+            {/* Send Reminder Button */}
+            {isAdminOrSuperAdmin && (
+              <button
+                type="button"
+                onClick={() => setIsReminderModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-95"
+                title="Send a push notification reminder to eligible students"
+              >
+                <BellRing className="w-3.5 h-3.5" />
+                <span>Send Reminder</span>
+              </button>
+            )}
+
             {/* Export Not Responded Excel */}
             <button
               type="button"
@@ -521,6 +604,92 @@ export const PollAnalytics: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* EDIT POLL MODAL */}
+      <EditPollModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        analytics={analytics}
+        onSuccessToast={msg => showToast(msg, 'success')}
+        onErrorToast={msg => showToast(msg, 'error')}
+      />
+
+      {/* SEND POLL REMINDER CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {isReminderModalOpen && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5 text-[#0B3C5D]">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center">
+                    <BellRing className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-base font-black uppercase tracking-tight text-slate-900">
+                    Send Poll Reminder
+                  </h3>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsReminderModalOpen(false)}
+                  disabled={isSendingReminder}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                Send a push notification reminder to all eligible students reminding them to participate in this poll:
+              </p>
+
+              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                <span className="text-xs font-bold text-slate-900 block leading-snug">
+                  "{poll.question}"
+                </span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mt-1">
+                  Pending Voters: {not_responded} student{not_responded !== 1 ? 's' : ''}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsReminderModalOpen(false)}
+                  disabled={isSendingReminder}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all uppercase tracking-wider"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSendReminder}
+                  disabled={isSendingReminder}
+                  className="inline-flex items-center gap-1.5 px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-amber-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSendingReminder ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Sending Reminder...</span>
+                    </>
+                  ) : (
+                    <>
+                      <BellRing className="w-3.5 h-3.5" />
+                      <span>Send Reminder</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -9,7 +9,9 @@ import type {
   SectionAnalytics,
   StudentResponseRow,
   NonResponderRow,
-  CreatePollPayload
+  CreatePollPayload,
+  UpdatePollPayload,
+  PollOptionInput
 } from '../../types';
 
 export const ALL_SECTIONS = ['AIML-A', 'AIML-B', 'AIML-C', 'AIML-D', 'AIML-E', 'AIML-F'] as const;
@@ -420,6 +422,225 @@ export const pollService = {
     }
 
     return poll;
+  },
+
+  /**
+   * Update an existing poll: question, options (add, edit, delete), allow_multiple_answers, priority settings.
+   */
+  async updatePoll(payload: UpdatePollPayload, _adminId?: string): Promise<PollWithDetails> {
+    if (!payload.pollId) {
+      throw new Error('Poll ID is required.');
+    }
+    if (!payload.question.trim()) {
+      throw new Error('Please enter a poll question.');
+    }
+    if (!payload.options || payload.options.length < 2) {
+      throw new Error('Please enter at least 2 options.');
+    }
+
+    // Clean options
+    const cleanOptions = (payload.options as PollOptionInput[])
+      .map((o: PollOptionInput) => ({
+        id: o.id,
+        option_text: o.option_text.trim(),
+        option_order: o.option_order
+      }))
+      .filter((o: { id?: string; option_text: string; option_order?: number }) => o.option_text.length > 0);
+
+    if (cleanOptions.length < 2) {
+      throw new Error('Options cannot be blank. Please enter at least 2 non-empty options.');
+    }
+
+    const uniqueSet = new Set(cleanOptions.map((o: { option_text: string }) => o.option_text.toLowerCase()));
+    if (uniqueSet.size !== cleanOptions.length) {
+      throw new Error('Duplicate options detected. Each option must be distinct.');
+    }
+
+    // 1. Calculate Priority Fields
+    const isPri = payload.is_priority ?? false;
+    let priorityStartedAt: string | null = null;
+    let priorityExpiresAt: string | null = null;
+    let priorityDuration: string | null = null;
+
+    if (isPri) {
+      priorityStartedAt = new Date().toISOString();
+      priorityDuration = payload.priority_duration || '24_hours';
+      const now = Date.now();
+      if (priorityDuration === '24_hours') {
+        priorityExpiresAt = new Date(now + 24 * 60 * 60 * 1000).toISOString();
+      } else if (priorityDuration === '3_days') {
+        priorityExpiresAt = new Date(now + 3 * 24 * 60 * 60 * 1000).toISOString();
+      } else if (priorityDuration === '7_days') {
+        priorityExpiresAt = new Date(now + 7 * 24 * 60 * 60 * 1000).toISOString();
+      } else if (priorityDuration === 'custom') {
+        priorityExpiresAt = payload.priority_expires_at || new Date(now + 24 * 60 * 60 * 1000).toISOString();
+      } else if (priorityDuration === 'manual') {
+        priorityExpiresAt = null;
+      }
+    }
+
+    // 2. Fetch current poll to check if allow_multiple_answers changed from true to false
+    const { data: currentPoll, error: currentPollError } = await supabase
+      .from('polls')
+      .select('*')
+      .eq('id', payload.pollId)
+      .single();
+
+    if (currentPollError) throw currentPollError;
+
+    // 3. Update polls table
+    const { error: updatePollError } = await supabase
+      .from('polls')
+      .update({
+        question: payload.question.trim(),
+        allow_multiple_answers: payload.allow_multiple_answers,
+        is_priority: isPri,
+        priority_started_at: isPri ? priorityStartedAt : null,
+        priority_expires_at: isPri ? priorityExpiresAt : null,
+        priority_duration: isPri ? priorityDuration : null
+      })
+      .eq('id', payload.pollId);
+
+    if (updatePollError) throw updatePollError;
+
+    // 4. Handle Deleted Options
+    if (payload.deletedOptionIds && payload.deletedOptionIds.length > 0) {
+      // Deleting from poll_options cascades to poll_response_options automatically
+      const { error: delOptError } = await supabase
+        .from('poll_options')
+        .delete()
+        .eq('poll_id', payload.pollId)
+        .in('id', payload.deletedOptionIds);
+
+      if (delOptError) throw delOptError;
+
+      // Clean up any orphan poll_responses that now have 0 selected options
+      const { data: responsesToCheck } = await supabase
+        .from('poll_responses')
+        .select(`
+          id,
+          poll_response_options (id)
+        `)
+        .eq('poll_id', payload.pollId);
+
+      if (responsesToCheck && responsesToCheck.length > 0) {
+        const orphanResponseIds = responsesToCheck
+          .filter((r: any) => !r.poll_response_options || r.poll_response_options.length === 0)
+          .map((r: any) => r.id);
+
+        if (orphanResponseIds.length > 0) {
+          await supabase
+            .from('poll_responses')
+            .delete()
+            .in('id', orphanResponseIds);
+        }
+      }
+    }
+
+    // 5. Update Existing Options & Insert New Options
+    for (let idx = 0; idx < cleanOptions.length; idx++) {
+      const opt = cleanOptions[idx];
+      if (opt.id) {
+        // Update existing option
+        const { error: optUpdErr } = await supabase
+          .from('poll_options')
+          .update({
+            option_text: opt.option_text,
+            option_order: idx
+          })
+          .eq('id', opt.id)
+          .eq('poll_id', payload.pollId);
+
+        if (optUpdErr) throw optUpdErr;
+      } else {
+        // Insert new option
+        const { error: optInsErr } = await supabase
+          .from('poll_options')
+          .insert({
+            poll_id: payload.pollId,
+            option_text: opt.option_text,
+            option_order: idx
+          });
+
+        if (optInsErr) throw optInsErr;
+      }
+    }
+
+    // 6. Multiple -> Single Choice Migration:
+    // If switching from multiple to single, retain only the latest selected option per voter
+    if (currentPoll.allow_multiple_answers && !payload.allow_multiple_answers) {
+      const { data: multiResponses } = await supabase
+        .from('poll_responses')
+        .select(`
+          id,
+          poll_response_options (
+            id,
+            option_id,
+            created_at
+          )
+        `)
+        .eq('poll_id', payload.pollId);
+
+      if (multiResponses) {
+        for (const resp of multiResponses as any[]) {
+          const selOpts = resp.poll_response_options || [];
+          if (selOpts.length > 1) {
+            // Keep the last/most recent option, delete other selections
+            const optionsToDrop = selOpts.slice(0, selOpts.length - 1).map((o: any) => o.id);
+            await supabase
+              .from('poll_response_options')
+              .delete()
+              .in('id', optionsToDrop);
+          }
+        }
+      }
+    }
+
+    // 7. Dispatch push notification if explicitly requested
+    if (payload.notify_students) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        await supabase.functions.invoke('send-push-notification', {
+          body: { pollId: payload.pollId },
+          headers: session?.access_token ? {
+            Authorization: `Bearer ${session.access_token}`
+          } : undefined
+        });
+      } catch (fcmErr) {
+        console.warn('[Poll] Push notification dispatch error:', fcmErr);
+      }
+    }
+
+    return this.getPollById(payload.pollId);
+  },
+
+  /**
+   * Send a poll reminder push notification to students.
+   */
+  async sendPollReminder(pollId: string): Promise<{ success: boolean; dispatched?: number }> {
+    if (!pollId) throw new Error('Poll ID is required');
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      throw new Error('Authentication session required to send reminder.');
+    }
+
+    const { data, error } = await supabase.functions.invoke('send-push-notification', {
+      body: { 
+        pollId,
+        isReminder: true
+      },
+      headers: {
+        Authorization: `Bearer ${session.access_token}`
+      }
+    });
+
+    if (error) {
+      console.error('[Poll Reminder] Edge function error:', error);
+      throw new Error(error.message || 'Failed to dispatch poll reminder notification.');
+    }
+
+    return data || { success: true };
   },
 
   /**

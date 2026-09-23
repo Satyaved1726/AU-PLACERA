@@ -115,3 +115,21 @@ export interface CreatePollPayload {
   priority_expires_at?: string | null;
   notify_students?: boolean;
 }
+
+export interface PollOptionInput {
+  id?: string; // present for existing options
+  option_text: string;
+  option_order?: number;
+}
+
+export interface UpdatePollPayload {
+  pollId: string;
+  question: string;
+  allow_multiple_answers: boolean;
+  options: PollOptionInput[];
+  deletedOptionIds?: string[];
+  is_priority?: boolean;
+  priority_duration?: '24_hours' | '3_days' | '7_days' | 'custom' | 'manual';
+  priority_expires_at?: string | null;
+  notify_students?: boolean;
+}

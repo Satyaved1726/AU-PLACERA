@@ -36,12 +36,14 @@ export const StudentPollCard: React.FC<StudentPollCardProps> = ({
   // Guard against rapid duplicate clicks
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Sync state if remote query updates
+  // Sync state if remote query updates and filter out any deleted option IDs
   useEffect(() => {
     if (!isUpdating) {
-      setSelectedOptionIds(userVote?.option_ids || []);
+      const validOptionIds = new Set(poll.options.map(o => o.id));
+      const currentSelected = (userVote?.option_ids || []).filter(id => validOptionIds.has(id));
+      setSelectedOptionIds(currentSelected);
     }
-  }, [userVote?.option_ids, isUpdating]);
+  }, [userVote?.option_ids, poll.options, isUpdating]);
 
   const hasInteracted = selectedOptionIds.length > 0;
 
@@ -82,7 +84,7 @@ export const StudentPollCard: React.FC<StudentPollCardProps> = ({
       if (nextOptionIds.length === 0) {
         onToast('Your response has been removed.');
       }
-    } catch (_err: any) {
+    } catch {
       // 2. Rollback on failure
       setSelectedOptionIds(previousOptionIds);
       onToast('Unable to update your vote. Please try again.', 'error');
