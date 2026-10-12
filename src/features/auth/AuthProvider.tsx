@@ -97,8 +97,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
 
-      if (import.meta.env.DEV) {
-        console.log('🔔 [Auth State Event]:', event);
+      if (event === 'PASSWORD_RECOVERY') {
+        sessionStorage.setItem('au_recovery_active', 'true');
+        if (typeof window !== 'undefined' && window.location.pathname !== '/reset-password') {
+          window.location.replace('/reset-password' + window.location.hash + window.location.search);
+          return;
+        }
       }
 
       if (session) {

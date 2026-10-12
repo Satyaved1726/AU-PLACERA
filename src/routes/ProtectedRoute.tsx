@@ -18,6 +18,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
+  // If currently in an active password recovery flow, block access to portal and redirect to /reset-password
+  if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('au_recovery_active') === 'true') {
+    return <Navigate to="/reset-password" replace />;
+  }
+
   if (!user) {
     // Redirect to login page and store the original path
     return <Navigate to="/login" state={{ from: location }} replace />;

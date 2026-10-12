@@ -34,7 +34,12 @@ export const Login: React.FC = () => {
     // Intercept any recovery links that land on /login and redirect to /reset-password
     const hash = window.location.hash;
     const search = window.location.search;
-    if (hash.includes('type=recovery') || search.includes('type=recovery')) {
+    if (
+      hash.includes('type=recovery') ||
+      search.includes('type=recovery') ||
+      hash.includes('access_token') ||
+      (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('au_recovery_active') === 'true')
+    ) {
       navigate('/reset-password' + hash + search, { replace: true });
       return;
     }

@@ -46,6 +46,23 @@ import { DatabaseSystem as SuperAdminDatabaseSystem } from '../pages/super-admin
 import { TeamView } from '../pages/shared/TeamView';
 import { TeamManagement } from '../pages/super-admin/TeamManagement';
 
+// Root redirect that preserves recovery hash fragments if landing on root URL
+const RootRedirect: React.FC = () => {
+  const hash = typeof window !== 'undefined' ? window.location.hash : '';
+  const search = typeof window !== 'undefined' ? window.location.search : '';
+
+  if (
+    hash.includes('type=recovery') ||
+    search.includes('type=recovery') ||
+    hash.includes('access_token') ||
+    (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('au_recovery_active') === 'true')
+  ) {
+    return <Navigate to={`/reset-password${hash}${search}`} replace />;
+  }
+
+  return <Navigate to="/login" replace />;
+};
+
 export const router = createBrowserRouter([
   // Public Login Route
   {
@@ -142,7 +159,7 @@ export const router = createBrowserRouter([
   // Default Redirect Layout Root routing
   {
     path: '/',
-    element: <Navigate to="/login" replace />,
+    element: <RootRedirect />,
   },
   
   // Fallback Catch-all Route redirecting to Login

@@ -127,7 +127,7 @@ export const ResetPassword: React.FC = () => {
         setStatus('ready');
       } else if (event === 'SIGNED_IN' && session) {
         const hash = window.location.hash;
-        if (hash.includes('type=recovery') || sessionStorage.getItem('au_recovery_active') === 'true') {
+        if (hash.includes('type=recovery') || hash.includes('access_token') || sessionStorage.getItem('au_recovery_active') === 'true') {
           sessionStorage.setItem('au_recovery_active', 'true');
           cleanUrl();
           setStatus('ready');
