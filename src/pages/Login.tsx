@@ -31,6 +31,20 @@ export const Login: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
+    // Intercept any recovery links that land on /login and redirect to /reset-password
+    const hash = window.location.hash;
+    const search = window.location.search;
+    if (hash.includes('type=recovery') || search.includes('type=recovery')) {
+      navigate('/reset-password' + hash + search, { replace: true });
+      return;
+    }
+
+    // Check if opened with mode=forgot
+    const params = new URLSearchParams(search);
+    if (params.get('mode') === 'forgot') {
+      setMode('forgot');
+    }
+
     if (user && profile) {
       if (profile.role === 'super_admin') {
         navigate('/super-admin/dashboard', { replace: true });
@@ -253,8 +267,15 @@ export const Login: React.FC = () => {
 
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      setErrorMsg('Please enter your email address.');
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setErrorMsg('Please enter your registered email address.');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setErrorMsg('Please enter a valid email address.');
       return;
     }
 
@@ -263,17 +284,18 @@ export const Login: React.FC = () => {
     setSuccessMsg(null);
 
     try {
-      const { error } = await authService.resetPassword(email.trim());
+      const { error } = await authService.resetPassword(trimmedEmail);
       if (error) {
-        setErrorMsg(error);
+        setErrorMsg(translateAuthError(error));
         setIsLoading(false);
         return;
       }
-      setSuccessMsg('If this account exists, a password reset link has been sent.');
+      setSuccessMsg(
+        'If an account exists for this email address, a password reset link will be sent to it. Please check your inbox and spam folder.'
+      );
       setEmail('');
-      setMode('login');
     } catch (err: any) {
-      setErrorMsg('Unable to trigger password reset request.');
+      setErrorMsg('Unable to trigger password reset request. Please check your connection.');
     } finally {
       setIsLoading(false);
     }
@@ -578,14 +600,14 @@ export const Login: React.FC = () => {
             <div className="text-center">
               <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Forgot Password</h2>
               <p className="text-xs text-slate-400 mt-2 font-medium">
-                Enter your email address and we'll send you a password reset link.
+                Enter your registered email address and we'll send you a password reset link.
               </p>
             </div>
 
             <form className="mt-8 space-y-4" onSubmit={handleForgot}>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1" htmlFor="forgot-email">
-                  Email
+                  Registered Email
                 </label>
                 <input
                   id="forgot-email"
@@ -594,7 +616,8 @@ export const Login: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@anurag.edu.in"
-                  className="w-full h-10 px-3.5 border border-slate-350 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/50 bg-white text-slate-800"
+                  disabled={isLoading}
+                  className="w-full h-10 px-3.5 border border-slate-350 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/50 bg-white text-slate-800 disabled:bg-slate-50"
                 />
               </div>
 
@@ -608,14 +631,14 @@ export const Login: React.FC = () => {
                   }}
                   className="w-1/2 h-10 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold uppercase rounded-lg text-xs select-none transition-all"
                 >
-                  Cancel
+                  Back to Login
                 </button>
                 <button
                   type="submit"
                   disabled={isLoading}
                   className="w-1/2 h-10 bg-secondary hover:bg-secondary-dark disabled:bg-secondary/65 text-white font-bold uppercase rounded-lg text-xs select-none transition-all active:scale-[0.98]"
                 >
-                  {isLoading ? 'Sending...' : 'SUBMIT'}
+                  {isLoading ? 'Sending...' : 'Send Reset Link'}
                 </button>
               </div>
             </form>

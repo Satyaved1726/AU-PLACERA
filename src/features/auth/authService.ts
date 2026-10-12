@@ -1,5 +1,6 @@
 import { supabase } from '../../lib/supabase';
 import type { UserProfile } from '../../types';
+import { getResetPasswordRedirectUrl } from '../../lib/appUrl';
 
 export const authService = {
   // Sign in logic
@@ -102,8 +103,9 @@ export const authService = {
   // Reset password request
   async resetPassword(email: string): Promise<{ error: string | null }> {
     try {
+      const redirectTo = getResetPasswordRedirectUrl();
       const { error } = await supabase.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
-        redirectTo: `${window.location.origin}/login`
+        redirectTo
       });
       return { error: error ? error.message : null };
     } catch (err: any) {

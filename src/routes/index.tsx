@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from '../layouts/AppLayout';
 import { Login } from '../pages/Login';
+import { ResetPassword } from '../pages/ResetPassword';
 import { ProtectedRoute } from './ProtectedRoute';
 import { RoleGuard } from './RoleGuard';
 import { SuperAdminGuard } from './SuperAdminGuard';
@@ -50,6 +51,12 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <Login />,
+  },
+
+  // Public Reset Password Route
+  {
+    path: '/reset-password',
+    element: <ResetPassword />,
   },
   
   // Student Portal Protected Layout Routing (Protected & Role Guarded)
