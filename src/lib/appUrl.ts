@@ -8,14 +8,16 @@
  */
 
 export function getAppUrl(): string {
-  // 1. In browser development mode, always use the current local development server origin
+  // 1. In browser development mode, use local origin (e.g. 5173), but strictly block localhost:3000
   if (import.meta.env.DEV && typeof window !== 'undefined' && window.location?.origin) {
-    return window.location.origin.replace(/\/+$/, '');
+    if (!window.location.origin.includes(':3000')) {
+      return window.location.origin.replace(/\/+$/, '');
+    }
   }
 
   // 2. Check explicitly configured Vite environment variable
   const envUrl = import.meta.env.VITE_APP_URL;
-  if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim() && !envUrl.includes(':3000')) {
     return envUrl.trim().replace(/\/+$/, '');
   }
 
